@@ -16,14 +16,16 @@ jobs:
       - uses: dependabot/fetch-metadata@v2
         id: metadata
 
-      - if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+      # Auto-merge: any update for github-actions, but only non-major for nuget.
+      - if: steps.metadata.outputs.update-type != 'version-update:semver-major' || steps.metadata.outputs.package-ecosystem == 'github_actions'
         run: gh pr review "$PR_URL" --approve
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+      # Auto-merge: any update for github-actions, but only non-major for nuget.
+      - if: steps.metadata.outputs.update-type != 'version-update:semver-major' || steps.metadata.outputs.package-ecosystem == 'github_actions'
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
