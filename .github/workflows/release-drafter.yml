@@ -6,19 +6,27 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
 
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
-  update-release-draft:
-    name: Draft Release
+  autolabel:
+    name: Autolabel PR
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
-      - uses: release-drafter/release-drafter@v7
-        with:
-          # On PRs we only want autolabeling — don't try to update the draft
-          # release (target_commitish would be a merge ref, which the API rejects).
-          disable-releaser: ${{ github.event_name == 'pull_request' }}
+      - uses: release-drafter/release-drafter/autolabeler@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  draft:
+    name: Draft Release
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - uses: release-drafter/release-drafter/drafter@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
