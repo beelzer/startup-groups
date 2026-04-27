@@ -1693,7 +1693,21 @@
                                 <ui:Button Content="{loc:Translate Settings_Version_InstallNow}"
                                            Command="{Binding InstallUpdateCommand}"
                                            HorizontalAlignment="Left"
-                                           Margin="0,10,0,0" />
+                                           Margin="0,10,0,0"
+                                           Visibility="{Binding IsInstallingUpdate, Converter={StaticResource NotBoolToVisibility}}" />
+                                <StackPanel Orientation="Vertical"
+                                            Margin="0,10,0,0"
+                                            Visibility="{Binding IsInstallingUpdate, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="{loc:Translate Settings_Version_Downloading}"
+                                               FontSize="{StaticResource FontSizeMuted}"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                               Margin="0,0,0,4" />
+                                    <ProgressBar Value="{Binding UpdateDownloadProgress, Mode=OneWay}"
+                                                 Maximum="1"
+                                                 Height="6"
+                                                 HorizontalAlignment="Stretch"
+                                                 IsIndeterminate="False" />
+                                </StackPanel>
                             </StackPanel>
                             <ui:HyperlinkButton Grid.Column="2"
                                                 Content="{loc:Translate Settings_Version_SeeWhatsNew}"

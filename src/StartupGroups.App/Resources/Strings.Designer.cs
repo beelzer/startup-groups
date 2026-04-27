@@ -224,6 +224,7 @@ public static class Strings
     public static string Settings_Version_UpToDate => Get(nameof(Settings_Version_UpToDate));
     public static string Settings_Version_UpdateAvailable => Get(nameof(Settings_Version_UpdateAvailable));
     public static string Settings_Version_InstallNow => Get(nameof(Settings_Version_InstallNow));
+    public static string Settings_Version_Downloading => Get(nameof(Settings_Version_Downloading));
     public static string Settings_Version_SeeWhatsNew => Get(nameof(Settings_Version_SeeWhatsNew));
 
     // Tooltips
