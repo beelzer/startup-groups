@@ -1,4 +1,6 @@
 using System;
+using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -7,6 +9,27 @@ using Velopack;
 using Velopack.Sources;
 
 namespace StartupGroups.App.Services;
+
+/// <summary>
+/// HttpClient handler config that bypasses any system-level interception:
+/// no proxy (disregard WinHTTP / WPAD config), no Windows credentials, no
+/// cookies. Without this, some Windows systems return 401 from a proxy
+/// before the request ever reaches GitHub.
+/// </summary>
+internal sealed class CleanHttpClientFileDownloader : HttpClientFileDownloader
+{
+    protected override HttpClientHandler CreateHttpClientHandler() =>
+        new()
+        {
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 10,
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+            UseProxy = false,
+            UseDefaultCredentials = false,
+            UseCookies = false,
+            Credentials = null,
+        };
+}
 
 public sealed record UpdateCheckResult(
     string CurrentVersion,
@@ -40,7 +63,11 @@ public sealed class VelopackUpdateService : IUpdateService
     public VelopackUpdateService(ILogger<VelopackUpdateService> logger)
     {
         _logger = logger;
-        var source = new GithubSource(AppBranding.SupportUrl, accessToken: null, prerelease: false);
+        var source = new GithubSource(
+            AppBranding.SupportUrl,
+            accessToken: null,
+            prerelease: false,
+            downloader: new CleanHttpClientFileDownloader());
         _manager = new UpdateManager(source);
     }
 
@@ -94,7 +121,15 @@ public sealed class VelopackUpdateService : IUpdateService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Update check failed.");
-            return null;
+            // Still surface a result so the UI can display "Last checked at"
+            // even on failure — silent null returns leave the field blank.
+            return new UpdateCheckResult(
+                CurrentVersion: current,
+                LatestVersion: null,
+                ReleaseUrl: null,
+                ReleaseNotesMarkdown: null,
+                IsUpdateAvailable: false,
+                CheckedAt: DateTimeOffset.Now);
         }
     }
 
