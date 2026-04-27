@@ -10,10 +10,11 @@
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+    <!-- App.xaml is not the ApplicationDefinition (we own Main via Program.cs), so the
+         SDK auto-includes it as a Page. Don't add a duplicate Page item. -->
+    <!-- Use our own Main (Program.cs) so VelopackApp.Build().Run() runs before any WPF init. -->
+    <StartupObject>StartupGroups.App.Program</StartupObject>
   </PropertyGroup>
-  <ItemGroup>
-    <ApplicationDefinition Include="App.xaml" />
-  </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\tray-light.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -55,6 +56,7 @@
     <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="Serilog.Sinks.Debug" />
     <PackageReference Include="TaskScheduler" />
+    <PackageReference Include="Velopack" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\StartupGroups.Core\StartupGroups.Core.csproj" />
