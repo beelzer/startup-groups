@@ -83,6 +83,10 @@ Tests live in [tests/StartupGroups.Core.Tests](tests/StartupGroups.Core.Tests/) 
 
 4. The [release workflow](.github/workflows/release.yml) will build the MSI, run the tests, and publish a GitHub release with the installer attached. Auto-update will pick it up on the next check.
 
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for in-flight work, planned features, and migration notes.
+
 ## License
 
 [MIT](LICENSE) © 2026 beelzer
