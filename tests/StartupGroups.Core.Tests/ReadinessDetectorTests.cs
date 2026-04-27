@@ -9,10 +9,12 @@ public sealed class ReadinessDetectorTests
     [Fact]
     public async Task DetectAsync_FastestProbeWins()
     {
+        // Wide gap (10ms vs 2s = 200x) so heavily contended CI runners can't
+        // schedule the slow probe's continuation faster than the fast probe's.
         var probes = new IReadinessProbe[]
         {
-            new FakeProbe(ReadinessSignal.MainWindowVisible, TimeSpan.FromMilliseconds(50), fires: true),
-            new FakeProbe(ReadinessSignal.WaitForInputIdle, TimeSpan.FromMilliseconds(500), fires: true),
+            new FakeProbe(ReadinessSignal.MainWindowVisible, TimeSpan.FromMilliseconds(10), fires: true),
+            new FakeProbe(ReadinessSignal.WaitForInputIdle, TimeSpan.FromSeconds(2), fires: true),
         };
         var detector = new ReadinessDetector(probes);
 
