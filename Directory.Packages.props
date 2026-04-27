@@ -25,6 +25,6 @@
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="FluentAssertions" Version="7.2.2" />
     <PackageVersion Include="coverlet.collector" Version="10.0.0" />
-    <PackageVersion Include="Velopack" Version="0.0.1297" />
+    <PackageVersion Include="Velopack" Version="0.0.1589-ga2c5a97" />
   </ItemGroup>
 </Project>
