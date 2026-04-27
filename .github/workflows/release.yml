@@ -88,6 +88,27 @@ jobs:
             --packTitle "Startup Groups" `
             --icon src/StartupGroups.App/Assets/app.ico
 
+      # release-drafter autocreates draft releases on every push to main, which
+      # collide with vpk's "create new release for this tag" step (vpk refuses
+      # if any release with this tag already exists). Delete any pre-existing
+      # release for this tag — should always be a draft from release-drafter,
+      # never a published one.
+      - name: Remove any existing draft for this tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $existing = gh api "repos/${{ github.repository }}/releases" `
+            --jq ".[] | select(.tag_name == ""${{ github.ref_name }}"") | .id"
+          if ($existing) {
+            foreach ($id in $existing) {
+              Write-Host "Deleting pre-existing release id=$id for tag ${{ github.ref_name }}"
+              gh api -X DELETE "repos/${{ github.repository }}/releases/$id"
+            }
+          } else {
+            Write-Host "No pre-existing release for tag ${{ github.ref_name }}"
+          }
+
       # vpk creates and owns the release (as a draft). Doing this BEFORE
       # gh release create avoids the previous bug where vpk's --merge couldn't
       # cleanly merge into an already-published release and stranded a duplicate
