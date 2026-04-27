@@ -29,6 +29,55 @@ Tools considered and why each was rejected as the *sole* solution:
 - **NetSparkle**: lovely WPF UI, but no deltas — kills it for a 250 MB payload.
 - **Themed `WixStdBA`**: can match PowerToys' green-bar look but can't do Fluent / Mica / Dark-mode-following — limited to WiX's own widget set.
 
+### Phase 1 status (live notes — read first if continuing this work)
+
+**Current state of the world (as of v0.2.3 cut):**
+
+- ✅ Velopack code shipped (`UpdateService.cs`, `Program.cs` owning Main, `VelopackApp.Build().Run()` before WPF init).
+- ✅ Custom `CleanHttpClientFileDownloader` ships in `UpdateService.cs` and bypasses system proxy / credentials / cookies. **Without this, GitHub returned 401** on update checks via Velopack's default HttpClient — root cause never definitively identified (possibly WinHTTP/WPAD or stored Windows credentials), but disabling proxy + default credentials + cookies on the handler fixes it. Don't remove this without re-testing on Windows.
+- ✅ Release workflow produces both Velopack (`Setup.exe`, `releases.win.json`, full nupkg, delta nupkg from v0.2.x onward) and MSI artifacts. **Order matters** — see "Workflow gotchas" below.
+- ✅ Test fix: `DetectAsync_FastestProbeWins` had a 10x timing margin (50ms vs 500ms) that flaked on contended CI runners. Widened to 200x (10ms vs 2s). Also fixed `DetectAsync_CancelsOtherProbes_WhenOneFires` to await a TaskCompletionSource before asserting `WasCancelled`.
+- ✅ v0.2.1 is **the first known-good Velopack release**. v0.2.0 was broken by the proxy 401. v0.2.1 fixed it.
+- 🟡 v0.2.3 (or later) is the first release that will exercise the **delta update path** end-to-end. Validation: a v0.2.1 install clicking "Check now" should download a small (~1–10 MB) delta nupkg, not the full 83 MB Setup.exe.
+
+**Migration cliff for existing MSI users (v0.1.x):** they cannot auto-update to Velopack. The v0.1.x in-app updater downloads the latest MSI via the old code; v0.2.x ships an MSI alongside Velopack but a v0.2.x MSI install is *not* a Velopack install (lives in Program Files, not `%LocalAppData%`). Users have to uninstall the MSI and run `StartupGroups-win-Setup.exe` manually once to get on the Velopack track. Acceptable since the v0.1.x user base is essentially us.
+
+### Workflow gotchas (release.yml ordering — both sequences have a known failure mode)
+
+The release workflow has been through three iterations because of subtle interactions between `gh release create`, `vpk upload --merge`, and `release-drafter`. **Read this before changing release.yml.**
+
+**Sequence A: `gh release create` first, then `vpk upload --merge`** — caused **duplicate releases**. `gh release create` publishes immediately; `vpk upload --merge` then sees the existing published release but creates a new draft with the Velopack assets alongside it instead of merging. Fix: never use this order.
+
+**Sequence B: `vpk upload` first (no `--merge`), then `gh release upload` for the MSI** — what we have now. Fails when `release-drafter` has auto-created a draft for the same tag, because vpk refuses with `[FTL] There is already an existing release tagged 'vX.Y.Z'`. release-drafter creates a draft on every push to `main`, so by the time we tag, the draft exists. Fix: a step that deletes any pre-existing release for the tag *before* `vpk upload` runs. **This is what's in PR #20** (waiting to merge as of this writing).
+
+After PR #20 merges, the workflow is:
+
+1. Build MSI (single-file payload, separate publish dir).
+2. Publish for Velopack (multi-file, separate publish dir).
+3. `vpk pack`.
+4. **Delete any existing release for this tag** (will hit release-drafter's draft).
+5. `vpk upload github` (creates a new draft with all Velopack assets).
+6. `gh release upload --clobber` to append the MSI to that draft.
+7. `gh release edit --draft=false --generate-notes` to publish + auto-populate notes.
+
+**If you change this**, mind the constraint: vpk requires no pre-existing release with the tag, but release-drafter creates one for every PR merged into main. Future-proof by always running the delete step.
+
+### Battle scars (one-line summaries — useful when something inevitably breaks)
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Update check returns 401 from GitHub via Velopack | Some Windows-level proxy/credential injection — never fully identified | `CleanHttpClientFileDownloader` in `UpdateService.cs` overrides `CreateHttpClientHandler()` with `UseProxy = false`, `UseDefaultCredentials = false`, `UseCookies = false`, `Credentials = null` |
+| Two releases per tag (one published with MSI, one draft with Velopack assets) | `gh release create` + `vpk upload --merge` interaction | Remove `gh release create`. Let vpk own release creation. |
+| `vpk upload` fails with "release already exists" | release-drafter created a draft on PR merge | Delete pre-existing release for the tag in workflow before vpk runs |
+| `Velopack 0.0.1295 was not found` during NuGet restore | NU1603 treated as error because `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` | Pin to a version that exists. We use 0.0.1297. Bump deliberately. |
+| Update check threw → `Last checked at` never updates in UI | `CheckAsync` returned null on exception → ViewModel early-returned without setting `LastChecked` | Always return a `UpdateCheckResult` with `CheckedAt` set, even on error |
+| Setup.exe says "Already installed, Repair/Cancel" on a fresh machine | Velopack detects residual files in `%LocalAppData%\StartupGroups\` from prior MSI install | Click Repair — does a fresh install. Same per-user data folder is used by both installers. |
+| `release-drafter@v6` errored with `target_commitish=refs/pull/N/merge` | v6 monolithic action couldn't be told to skip release update on PR events | Migrate to v7 split-action: separate `release-drafter/autolabeler@v7` and `release-drafter/drafter@v7` jobs, gated by event |
+| `Page App.xaml` was duplicate after switching from `ApplicationDefinition` to own `Main` | WPF SDK auto-includes XAML files as Pages. Explicit `<Page Include>` duplicates. | Don't add explicit Page item — SDK handles it |
+| `actions/checkout@v6` PRs from Dependabot blocked auto-merge with "workflow permission" | Default `GITHUB_TOKEN` can't modify `.github/workflows/*.yml` files | Manually merge with user PAT, or just live with it (one PR per Dependabot bump that touches workflows) |
+| `Validate PR Title` job SKIPPED on Dependabot PRs blocks merge | Required check + skipped conclusion = blocked merge | Move `if:` from job-level to step-level so the job still reports SUCCESS |
+| FluentAssertions 8.x unavailable — license issue | 8.x uses Xceed Fair-Source (non-OSI, not free for commercial use) | Pinned to 7.x in `.github/dependabot.yml` ignore rules. Don't accept Dependabot major bumps for FluentAssertions. |
+
 ### Phase 1 — Velopack MVP on stable channel (~1–2 days)
 
 Replace the custom updater with Velopack while keeping the existing MSI build alive.
