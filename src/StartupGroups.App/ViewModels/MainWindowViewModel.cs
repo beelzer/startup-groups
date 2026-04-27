@@ -42,8 +42,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly ISettingsStore _settings;
     private readonly IDialogService _dialogs;
     private readonly ILanguageService _languageService;
-    private readonly IUpdateChecker _updateChecker;
-    private readonly IUpdateInstaller _updateInstaller;
+    private readonly IUpdateService _updateService;
     private readonly ILaunchTelemetryService? _telemetry;
     private readonly ILaunchBenchmarkStore? _benchmarkStore;
     private readonly IServiceProvider _serviceProvider;
@@ -61,8 +60,7 @@ public partial class MainWindowViewModel : ObservableObject
         ISettingsStore settings,
         IDialogService dialogs,
         ILanguageService languageService,
-        IUpdateChecker updateChecker,
-        IUpdateInstaller updateInstaller,
+        IUpdateService updateService,
         WindowsStartupViewModel windowsStartup,
         IServiceProvider serviceProvider,
         ILogger<MainWindowViewModel> logger,
@@ -77,8 +75,7 @@ public partial class MainWindowViewModel : ObservableObject
         _settings = settings;
         _dialogs = dialogs;
         _languageService = languageService;
-        _updateChecker = updateChecker;
-        _updateInstaller = updateInstaller;
+        _updateService = updateService;
         _telemetry = telemetry;
         _benchmarkStore = benchmarkStore;
         _serviceProvider = serviceProvider;
@@ -238,7 +235,6 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty] private bool _isUpdateAvailable;
     [ObservableProperty] private string _latestVersion = string.Empty;
     [ObservableProperty] private string? _releaseUrl;
-    [ObservableProperty] private string? _installerUrl;
     [ObservableProperty] private DateTimeOffset? _lastChecked;
     [ObservableProperty] private bool _isCheckingForUpdate;
     [ObservableProperty] private bool _isInstallingUpdate;
@@ -540,8 +536,9 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanInstallUpdate))]
     private async Task InstallUpdateAsync()
     {
-        // No MSI attached to the release? Fall back to opening the release page.
-        if (string.IsNullOrWhiteSpace(InstallerUrl))
+        // Not running under a Velopack install (dev / legacy MSI install) — fall back
+        // to opening the release page so the user can grab Setup.exe manually.
+        if (!_updateService.CanUpdate)
         {
             LaunchShell(ReleaseUrl ?? $"{AppBranding.SupportUrl}/releases/latest", "release page");
             return;
@@ -552,15 +549,15 @@ public partial class MainWindowViewModel : ObservableObject
         InstallUpdateCommand.NotifyCanExecuteChanged();
         CheckForUpdatesCommand.NotifyCanExecuteChanged();
 
-        var progress = new Progress<double>(p => UpdateDownloadProgress = p);
+        var progress = new Progress<int>(p => UpdateDownloadProgress = p / 100.0);
         try
         {
-            var msiPath = await _updateInstaller.DownloadAsync(InstallerUrl, progress, default).ConfigureAwait(true);
-            _updateInstaller.LaunchInstallerAndExit(msiPath);
+            // ApplyUpdatesAndRestart() restarts the process — we don't normally return.
+            await _updateService.DownloadAndApplyAsync(progress).ConfigureAwait(true);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to download or launch installer.");
+            _logger.LogError(ex, "Update download/apply failed.");
             await _dialogs.ShowErrorAsync(
                 Strings.Settings_Version_UpdateAvailable,
                 ex.Message).ConfigureAwait(true);
@@ -579,7 +576,7 @@ public partial class MainWindowViewModel : ObservableObject
         CheckForUpdatesCommand.NotifyCanExecuteChanged();
         try
         {
-            var result = await _updateChecker.CheckAsync().ConfigureAwait(true);
+            var result = await _updateService.CheckAsync().ConfigureAwait(true);
             if (result is null)
             {
                 return;
@@ -587,7 +584,6 @@ public partial class MainWindowViewModel : ObservableObject
 
             LatestVersion = result.LatestVersion ?? string.Empty;
             ReleaseUrl = result.ReleaseUrl;
-            InstallerUrl = result.InstallerAssetUrl;
             IsUpdateAvailable = result.IsUpdateAvailable;
             LastChecked = result.CheckedAt;
         }
