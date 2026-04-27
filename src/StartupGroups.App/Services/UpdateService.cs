@@ -63,7 +63,9 @@ public sealed class VelopackUpdateService : IUpdateService
     public VelopackUpdateService(ILogger<VelopackUpdateService> logger)
     {
         _logger = logger;
-        var source = new GithubSource(
+        // CachelessGithubSource works around GitHub's stale /releases CDN
+        // cache (15–30 min lag for anonymous requests). See class doc.
+        var source = new CachelessGithubSource(
             AppBranding.SupportUrl,
             accessToken: null,
             prerelease: false,
