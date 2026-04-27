@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
@@ -96,6 +97,14 @@ public partial class App : Application
 
         _trayViewModel = _host.Services.GetRequiredService<TrayViewModel>();
         _trayViewModel.Initialize();
+
+        // If launched by Velopack after applying an update, surface the main
+        // window so the user lands back in the app showing the new version
+        // instead of just a tray icon.
+        if (e.Args.Any(a => string.Equals(a, VelopackUpdateService.RestartedAfterUpdateArg, StringComparison.OrdinalIgnoreCase)))
+        {
+            _trayViewModel.ShowMainWindowCommand.Execute(null);
+        }
     }
 
     private void ApplyConfiguredTheme()

@@ -157,6 +157,12 @@ public sealed class VelopackUpdateService : IUpdateService
             cancelToken: cancellationToken).ConfigureAwait(false);
 
         // Restarts the process; we don't return from this in the normal case.
-        _manager.ApplyUpdatesAndRestart(_pending);
+        // Pass a marker arg so the new instance knows it came from an update and
+        // should open the main window (otherwise our launcher app would only
+        // restart the tray icon, which is confusing right after the user clicked
+        // "Install now").
+        _manager.ApplyUpdatesAndRestart(_pending, restartArgs: new[] { RestartedAfterUpdateArg });
     }
+
+    public const string RestartedAfterUpdateArg = "--restarted-after-update";
 }

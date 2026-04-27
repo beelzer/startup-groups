@@ -251,6 +251,7 @@ Run elevated now?</value></data>
   <data name="Settings_Version_UpToDate" xml:space="preserve"><value>You're up to date</value></data>
   <data name="Settings_Version_UpdateAvailable" xml:space="preserve"><value>An update is ready to install:</value></data>
   <data name="Settings_Version_InstallNow" xml:space="preserve"><value>Install now</value></data>
+  <data name="Settings_Version_Downloading" xml:space="preserve"><value>Downloading update...</value></data>
   <data name="Settings_Version_SeeWhatsNew" xml:space="preserve"><value>See what's new</value></data>
 
   <!-- ===== Tooltips ===== -->

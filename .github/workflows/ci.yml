@@ -3,8 +3,10 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore: ['**.md', 'docs/**', '.gitignore', 'LICENSE']
   pull_request:
     branches: [main]
+    paths-ignore: ['**.md', 'docs/**', '.gitignore', 'LICENSE']
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -23,6 +25,8 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
+          cache: true
+          cache-dependency-path: '**/*.csproj'
 
       - name: Restore
         run: dotnet restore StartupGroups.slnx
