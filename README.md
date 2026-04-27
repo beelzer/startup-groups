@@ -22,7 +22,9 @@ A Windows launcher that boots groups of apps in the right order — with adaptiv
 
 ## Install
 
-> Releases are coming. For now, build from source.
+Download the latest MSI from the [releases page](https://github.com/beelzer/startup-groups/releases) and run it.
+
+> The installer is unsigned, so Windows SmartScreen will show a warning on first install. Click **More info** → **Run anyway**.
 
 ## Build from source
 
@@ -67,6 +69,17 @@ Tests live in [tests/StartupGroups.Core.Tests](tests/StartupGroups.Core.Tests/) 
 ### Tech stack
 
 .NET 10 · WPF · WPF-UI · CommunityToolkit.Mvvm · Serilog · Microsoft.Data.Sqlite · WiX 4
+
+## Cutting a release
+
+1. Bump `<Version>` in [Directory.Build.props](Directory.Build.props).
+2. Commit and push to `main`.
+3. Tag the commit with a matching `vX.Y.Z` and push the tag:
+   ```bash
+   git tag v0.2.0
+   git push origin v0.2.0
+   ```
+4. The [release workflow](.github/workflows/release.yml) will build the MSI, run the tests, and publish a GitHub release with the installer attached. Auto-update will pick it up on the next check.
 
 ## License
 

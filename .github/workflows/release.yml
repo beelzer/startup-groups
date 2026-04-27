@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Extract version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag -replace '^v', ''
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+          # Sanity: tag version must match Directory.Build.props
+          [xml]$props = Get-Content Directory.Build.props
+          $propsVersion = [string]$props.Project.PropertyGroup.Version
+          if ($propsVersion -ne $version) {
+            Write-Error "Tag $tag (version $version) does not match Directory.Build.props version $propsVersion"
+            exit 1
+          }
+
+      - name: Install WiX
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 4.*
+          wix extension add -g WixToolset.UI.wixext
+          wix extension add -g WixToolset.Util.wixext
+
+      - name: Restore
+        run: dotnet restore StartupGroups.slnx
+
+      - name: Build
+        run: dotnet build StartupGroups.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test StartupGroups.slnx -c Release --no-build --verbosity normal
+
+      - name: Build MSI
+        shell: pwsh
+        run: ./installer/StartupGroups.Installer/build.ps1
+
+      - name: Rename MSI to versioned filename
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          Copy-Item artifacts/installer/StartupGroups.msi "artifacts/installer/StartupGroups-$version.msi"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          gh release create "${{ github.ref_name }}" `
+            "artifacts/installer/StartupGroups-$version.msi" `
+            --title "${{ github.ref_name }}" `
+            --generate-notes
