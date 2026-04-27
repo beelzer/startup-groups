@@ -1,0 +1,106 @@
+{
+  "_schema": "Each entry matches an installed app by exeName (case-insensitive, without .exe), aumid, or shellParseName. Arguments are suggestions shown in the editor; checking a chip appends the flag to the Args field. Set needsValue=true when the flag expects user-supplied data (path, ID, name) — the editor will immediately open the chip in edit mode with the cursor ready for the value. Only add entries with flags that have been personally verified to work — no guessing.",
+  "entries": [
+    {
+      "name": "Steam",
+      "match": { "exeName": "Steam" },
+      "arguments": [
+        { "flag": "-silent", "description": "Start minimized to the system tray, no main window" },
+        { "flag": "-noverifyfiles", "description": "Skip file integrity verification on launch" },
+        { "flag": "-forcesteamupdate", "description": "Force the Steam client to update on launch" },
+        { "flag": "-shutdown", "description": "Cleanly shut down a running Steam client" },
+        { "flag": "-applaunch", "description": "Launch a specific Steam AppID after start", "needsValue": true }
+      ]
+    },
+    {
+      "name": "qBittorrent",
+      "match": { "exeName": "qbittorrent" },
+      "arguments": [
+        { "flag": "--no-splash", "description": "Disable the splash screen on launch" },
+        { "flag": "--profile=", "description": "Use a custom config-files directory (append the path)", "needsValue": true },
+        { "flag": "--configuration=", "description": "Use a named configuration slot (portable-style)", "needsValue": true },
+        { "flag": "--add-paused=true", "description": "Queue added torrents in a paused state" }
+      ]
+    },
+    {
+      "name": "Sonarr",
+      "match": { "exeName": "Sonarr" },
+      "arguments": [
+        { "flag": "/data=", "description": "Use an alternate AppData/config directory (append the path)", "needsValue": true },
+        { "flag": "/nobrowser", "description": "Do not open the web UI on startup" }
+      ]
+    },
+    {
+      "name": "Radarr",
+      "match": { "exeName": "Radarr" },
+      "arguments": [
+        { "flag": "/data=", "description": "Use an alternate AppData/config directory (append the path)", "needsValue": true },
+        { "flag": "/nobrowser", "description": "Do not open the web UI on startup" }
+      ]
+    },
+    {
+      "name": "Prowlarr",
+      "match": { "exeName": "Prowlarr" },
+      "arguments": [
+        { "flag": "/data=", "description": "Use an alternate AppData/config directory (append the path)", "needsValue": true },
+        { "flag": "/nobrowser", "description": "Do not open the web UI on startup" }
+      ]
+    },
+    {
+      "name": "Visual Studio Code",
+      "match": { "exeName": "Code" },
+      "arguments": [
+        { "flag": "--disable-extensions", "description": "Start with all extensions disabled (safe mode)" },
+        { "flag": "--new-window", "description": "Force opening a new window" },
+        { "flag": "--reuse-window", "description": "Open folders/files in the last active window" },
+        { "flag": "--profile", "description": "Open with a specific user profile (append the name)", "needsValue": true },
+        { "flag": "--user-data-dir", "description": "Use an alternate user-data directory (append the path)", "needsValue": true }
+      ]
+    },
+    {
+      "name": "Windows Terminal",
+      "match": { "aumid": "Microsoft.WindowsTerminal_8wekyb3d8bbwe!App" },
+      "arguments": [
+        { "flag": "--maximized", "description": "Launch maximized" },
+        { "flag": "--fullscreen", "description": "Launch in full-screen mode" },
+        { "flag": "--focus", "description": "Launch in focus mode (hides tabs/titlebar)" }
+      ]
+    },
+    {
+      "name": "OneDrive",
+      "match": { "exeName": "OneDrive" },
+      "arguments": [
+        { "flag": "/background", "description": "Start silently in the background (what OneDrive itself uses at logon)" }
+      ]
+    },
+    {
+      "name": "Google Drive",
+      "match": { "exeName": "GoogleDriveFS" },
+      "arguments": [
+        { "flag": "--startup_mode", "description": "Launch in startup mode (what Drive itself uses at logon)" }
+      ]
+    },
+    {
+      "name": "Dropbox",
+      "match": { "exeName": "Dropbox" },
+      "arguments": [
+        { "flag": "/systemstartup", "description": "Start as a system-startup launch (what Dropbox itself uses at logon)" },
+        { "flag": "/home", "description": "Open the Dropbox home folder" }
+      ]
+    },
+    {
+      "name": "Proton Drive",
+      "match": { "exeName": "ProtonDrive" },
+      "arguments": [
+        { "flag": "-quiet", "description": "Start silently in the background (what Proton Drive itself uses at logon)" }
+      ]
+    },
+    {
+      "name": "SignalRGB",
+      "match": { "exeName": "SignalRgbLauncher" },
+      "arguments": [
+        { "flag": "--silent", "description": "Start silently in the background (what SignalRGB itself uses at logon)" }
+      ]
+    }
+  ]
+}

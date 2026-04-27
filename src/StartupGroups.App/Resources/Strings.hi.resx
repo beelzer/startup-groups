@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AI-translated. Pending native-speaker review. -->
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true"><xsd:complexType><xsd:choice maxOccurs="unbounded">
+      <xsd:element name="data"><xsd:complexType><xsd:sequence>
+        <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+        <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+      </xsd:sequence><xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+      <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+      <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+      <xsd:attribute xmlns:xml="http://www.w3.org/XML/1998/namespace" ref="xml:space" /></xsd:complexType></xsd:element>
+      <xsd:element name="resheader"><xsd:complexType><xsd:sequence>
+        <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+      </xsd:sequence><xsd:attribute name="name" type="xsd:string" use="required" /></xsd:complexType></xsd:element>
+    </xsd:choice></xsd:complexType></xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Window_Main_Title" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Window_AddApp_Title" xml:space="preserve"><value>ऐप जोड़ें</value></data>
+  <data name="Window_Group_Title" xml:space="preserve"><value>समूह</value></data>
+  <data name="Window_App_Title" xml:space="preserve"><value>ऐप</value></data>
+
+  <data name="Sidebar_Groups_Heading" xml:space="preserve"><value>समूह</value></data>
+  <data name="Sidebar_System_Heading" xml:space="preserve"><value>सिस्टम</value></data>
+  <data name="Sidebar_WindowsStartup_Label" xml:space="preserve"><value>Windows स्टार्टअप</value></data>
+
+  <data name="Action_New" xml:space="preserve"><value>नया</value></data>
+  <data name="Action_Add" xml:space="preserve"><value>जोड़ें</value></data>
+  <data name="Action_AddApp" xml:space="preserve"><value>ऐप जोड़ें</value></data>
+  <data name="Action_AddBlank" xml:space="preserve"><value>खाली जोड़ें</value></data>
+  <data name="Action_AddSelected" xml:space="preserve"><value>चयनित जोड़ें</value></data>
+  <data name="Action_EditSelected" xml:space="preserve"><value>चयनित संपादित करें</value></data>
+  <data name="Action_Save" xml:space="preserve"><value>सहेजें</value></data>
+  <data name="Action_Cancel" xml:space="preserve"><value>रद्द करें</value></data>
+  <data name="Action_Yes" xml:space="preserve"><value>हाँ</value></data>
+  <data name="Action_No" xml:space="preserve"><value>नहीं</value></data>
+  <data name="Action_Ok" xml:space="preserve"><value>ठीक है</value></data>
+  <data name="Action_Browse" xml:space="preserve"><value>ब्राउज़ करें...</value></data>
+  <data name="Action_LaunchAll" xml:space="preserve"><value>सभी लॉन्च करें</value></data>
+  <data name="Action_StopAll" xml:space="preserve"><value>सभी रोकें</value></data>
+  <data name="Action_Launch" xml:space="preserve"><value>लॉन्च करें</value></data>
+  <data name="Action_Stop" xml:space="preserve"><value>रोकें</value></data>
+  <data name="Action_Edit" xml:space="preserve"><value>संपादित करें</value></data>
+  <data name="Action_Remove" xml:space="preserve"><value>हटाएं</value></data>
+  <data name="Action_Refresh" xml:space="preserve"><value>ताज़ा करें</value></data>
+  <data name="Action_OpenLocation" xml:space="preserve"><value>स्थान खोलें</value></data>
+  <data name="Action_RenameGroup" xml:space="preserve"><value>समूह का नाम बदलें</value></data>
+  <data name="Action_RemoveGroup" xml:space="preserve"><value>समूह हटाएं</value></data>
+  <data name="Action_OpenConfigFolder" xml:space="preserve"><value>कॉन्फ़िग फ़ोल्डर खोलें</value></data>
+  <data name="Action_OpenLogFolder" xml:space="preserve"><value>लॉग फ़ोल्डर खोलें</value></data>
+  <data name="Action_Logs" xml:space="preserve"><value>लॉग</value></data>
+
+  <data name="Apps_Heading" xml:space="preserve"><value>ऐप्स</value></data>
+  <data name="Apps_NoGroupSelected" xml:space="preserve"><value>कोई समूह चयनित नहीं है</value></data>
+  <data name="Apps_CountFormat" xml:space="preserve"><value>{0} ऐप्स</value></data>
+  <data name="Apps_Column_Actions" xml:space="preserve"><value>कार्रवाइयाँ</value></data>
+
+  <data name="WinStartup_Description" xml:space="preserve"><value>जब आप साइन इन करते हैं तो Windows जो ऐप और सेवाएँ लॉन्च करता है।</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Title" xml:space="preserve"><value>साइन-इन पर Startup Groups लॉन्च करें</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Description" xml:space="preserve"><value>एक अनुसूचित कार्य पंजीकृत करता है ताकि ट्रे आइकन स्वचालित रूप से शुरू हो।</value></data>
+  <data name="WinStartup_Column_Enabled" xml:space="preserve"><value>सक्षम</value></data>
+  <data name="WinStartup_Column_Name" xml:space="preserve"><value>नाम</value></data>
+  <data name="WinStartup_Column_Command" xml:space="preserve"><value>कमांड</value></data>
+  <data name="WinStartup_Column_Source" xml:space="preserve"><value>स्रोत</value></data>
+  <data name="WinStartup_CountFormat" xml:space="preserve"><value>{0} स्टार्टअप आइटम</value></data>
+  <data name="WinStartup_AddedFormat" xml:space="preserve"><value>{0} जोड़ा गया</value></data>
+  <data name="WinStartup_RemovedFormat" xml:space="preserve"><value>{0} हटाया गया</value></data>
+  <data name="WinStartup_CannotModifyFormat" xml:space="preserve"><value>'{0}' {1} में है और हटाने के लिए व्यवस्थापक विशेषाधिकार की आवश्यकता है।</value></data>
+  <data name="WinStartup_RequiresAdmin" xml:space="preserve"><value>व्यवस्थापक विशेषाधिकार आवश्यक है। इस प्रविष्टि को संशोधित करने के लिए व्यवस्थापक के रूप में पुनः आरंभ करें।</value></data>
+  <data name="WinStartup_ToggleFailedFormat" xml:space="preserve"><value>'{0}' को टॉगल करने में विफल: {1}</value></data>
+  <data name="WinStartup_AddFailedFormat" xml:space="preserve"><value>जोड़ने में विफल: {0}</value></data>
+  <data name="WinStartup_RemoveFailedFormat" xml:space="preserve"><value>हटाने में विफल: {0}</value></data>
+
+  <data name="Dialog_DuplicateGroup_Title" xml:space="preserve"><value>डुप्लिकेट समूह</value></data>
+  <data name="Dialog_DuplicateGroup_MessageFormat" xml:space="preserve"><value>आईडी '{0}' वाला समूह पहले से मौजूद है।</value></data>
+  <data name="Dialog_RemoveGroup_Title" xml:space="preserve"><value>समूह हटाएं</value></data>
+  <data name="Dialog_RemoveGroup_MessageFormat" xml:space="preserve"><value>समूह '{0}' और इसके सभी ऐप्स हटाएं?</value></data>
+  <data name="Dialog_RemoveApp_Title" xml:space="preserve"><value>ऐप हटाएं</value></data>
+  <data name="Dialog_RemoveApp_MessageFormat" xml:space="preserve"><value>'{0}' को {1} से हटाएं?</value></data>
+  <data name="Dialog_RemoveStartupItem_Title" xml:space="preserve"><value>स्टार्टअप आइटम हटाएं</value></data>
+  <data name="Dialog_RemoveStartupItem_MessageFormat" xml:space="preserve"><value>'{0}' को Windows स्टार्टअप से हटाएं?</value></data>
+  <data name="Dialog_Startup_Title" xml:space="preserve"><value>स्टार्टअप</value></data>
+  <data name="Dialog_AutoStart_Title" xml:space="preserve"><value>स्वतः प्रारंभ</value></data>
+  <data name="Dialog_AdministratorRequired_Title" xml:space="preserve"><value>व्यवस्थापक आवश्यक</value></data>
+  <data name="Dialog_AdministratorRequired_StartFormat" xml:space="preserve"><value>निम्नलिखित सेवाओं को शुरू करने के लिए व्यवस्थापक विशेषाधिकार की आवश्यकता है:
+
+{0}
+
+क्या अभी उन्नत विशेषाधिकार से चलाएँ?</value></data>
+  <data name="Dialog_AdministratorRequired_StopFormat" xml:space="preserve"><value>निम्नलिखित सेवाओं को रोकने के लिए व्यवस्थापक विशेषाधिकार की आवश्यकता है:
+
+{0}
+
+क्या अभी उन्नत विशेषाधिकार से चलाएँ?</value></data>
+  <data name="Dialog_UnexpectedErrorFormat" xml:space="preserve"><value>{0} — अप्रत्याशित त्रुटि</value></data>
+
+  <data name="FileDialog_SelectExecutable_Title" xml:space="preserve"><value>निष्पादन योग्य फ़ाइल चुनें</value></data>
+  <data name="FileDialog_SelectExecutable_Filter" xml:space="preserve"><value>निष्पादन योग्य फ़ाइलें (*.exe)|*.exe|सभी फ़ाइलें (*.*)|*.*</value></data>
+  <data name="FileDialog_SelectFolder_Title" xml:space="preserve"><value>फ़ोल्डर चुनें</value></data>
+
+  <data name="Status_Ready" xml:space="preserve"><value>तैयार</value></data>
+  <data name="Status_LaunchingFormat" xml:space="preserve"><value>{0} लॉन्च हो रहा है...</value></data>
+  <data name="Status_StoppingFormat" xml:space="preserve"><value>{0} रुक रहा है...</value></data>
+  <data name="Status_AppResultFormat" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Status_AddedAppFormat" xml:space="preserve"><value>{0} जोड़ा गया</value></data>
+  <data name="Status_AddedAppsFormat" xml:space="preserve"><value>{0} ऐप्स जोड़े गए</value></data>
+  <data name="Status_ElevationFailed" xml:space="preserve"><value>उन्नयन विफल या रद्द किया गया।</value></data>
+  <data name="Status_GroupActionFormat" xml:space="preserve"><value>{0} {1}: {2} सफल</value></data>
+  <data name="Status_GroupActionWithFailureFormat" xml:space="preserve"><value>{0} {1}: {2} सफल, {3} विफल</value></data>
+  <data name="Status_VerbLaunch" xml:space="preserve"><value>लॉन्च</value></data>
+  <data name="Status_VerbStop" xml:space="preserve"><value>रोकें</value></data>
+
+  <data name="AddAppPicker_Heading" xml:space="preserve"><value>स्थापित ऐप्स चुनें</value></data>
+  <data name="AddAppPicker_Subtitle" xml:space="preserve"><value>जिन्हें जोड़ना चाहते हैं उन्हें टिक करें। सहेजने से पहले किसी एक को बदलने के लिए "चयनित संपादित करें" का उपयोग करें, या मैन्युअल रूप से प्रविष्टि बनाने के लिए "खाली जोड़ें"।</value></data>
+  <data name="AddAppPicker_SearchPlaceholder" xml:space="preserve"><value>नाम या पथ से खोजें...</value></data>
+  <data name="AddAppPicker_SelectedFormat" xml:space="preserve"><value>{0} चयनित</value></data>
+  <data name="AddAppPicker_SourceStore" xml:space="preserve"><value>स्टोर</value></data>
+  <data name="AddAppPicker_SourceDesktop" xml:space="preserve"><value>डेस्कटॉप</value></data>
+  <data name="AddAppPicker_SourceService" xml:space="preserve"><value>सेवा</value></data>
+  <data name="AddAppPicker_SourceShell" xml:space="preserve"><value>शेल</value></data>
+  <data name="AddAppPicker_SourceScoop" xml:space="preserve"><value>Scoop</value></data>
+
+  <data name="GroupEditor_Heading" xml:space="preserve"><value>समूह विवरण</value></data>
+  <data name="GroupEditor_Id_Label" xml:space="preserve"><value>आईडी (स्थिर, कॉन्फ़िग में प्रयुक्त)</value></data>
+  <data name="GroupEditor_Name_Label" xml:space="preserve"><value>नाम (UI में दिखाया गया)</value></data>
+  <data name="GroupEditor_Icon_Label" xml:space="preserve"><value>आइकन</value></data>
+  <data name="GroupEditor_IconSearch_Placeholder" xml:space="preserve"><value>आइकन खोजें...</value></data>
+  <data name="GroupEditor_IconTab_Apps" xml:space="preserve"><value>ऐप्स</value></data>
+  <data name="GroupEditor_IconTab_Outline" xml:space="preserve"><value>रूपरेखा</value></data>
+  <data name="GroupEditor_IconTab_Filled" xml:space="preserve"><value>भरा हुआ</value></data>
+  <data name="GroupEditor_IconTab_Windows" xml:space="preserve"><value>Windows</value></data>
+
+  <data name="AppEditor_Heading" xml:space="preserve"><value>ऐप विवरण</value></data>
+  <data name="AppEditor_Name_Label" xml:space="preserve"><value>नाम</value></data>
+  <data name="AppEditor_Kind_Label" xml:space="preserve"><value>प्रकार</value></data>
+  <data name="AppEditor_Target_Label" xml:space="preserve"><value>लक्ष्य (निष्पादन योग्य, %ENV% पथ, * ग्लोब, या shell:AppsFolder\item)</value></data>
+  <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>आर्ग्युमेंट्स (वैकल्पिक)</value></data>
+  <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>सुझाए गए आर्ग्युमेंट्स</value></data>
+  <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>कार्य निर्देशिका (वैकल्पिक)</value></data>
+  <data name="AppEditor_Service_Label" xml:space="preserve"><value>सेवा का नाम (services.msc में सूचीबद्ध)</value></data>
+  <data name="AppEditor_Delay_Label" xml:space="preserve"><value>लॉन्च के बाद विलंब (सेकंड)</value></data>
+  <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>सक्षम (समूह लॉन्च में शामिल करें)</value></data>
+
+  <data name="RunningState_Running" xml:space="preserve"><value>चल रहा है</value></data>
+  <data name="RunningState_Stopped" xml:space="preserve"><value>बंद</value></data>
+
+  <data name="Tray_Tooltip" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Tray_OpenMain" xml:space="preserve"><value>Startup Groups खोलें</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>बाहर निकलें</value></data>
+
+  <data name="Settings_Language_Label" xml:space="preserve"><value>भाषा</value></data>
+  <data name="Settings_Language_Hint" xml:space="preserve"><value>अंग्रेज़ी के अलावा अनुवाद AI-सहायता प्राप्त हैं और उनमें त्रुटियाँ हो सकती हैं। समस्याएँ GitHub पर रिपोर्ट करें।</value></data>
+
+  <data name="Tooltip_OpenConfigFolder" xml:space="preserve"><value>कॉन्फ़िग फ़ोल्डर खोलें</value></data>
+  <data name="Tooltip_OpenLogFolder" xml:space="preserve"><value>लॉग फ़ोल्डर खोलें</value></data>
+
+  <data name="Sidebar_Settings_Label" xml:space="preserve"><value>सेटिंग्स</value></data>
+  <data name="Settings_Heading" xml:space="preserve"><value>सेटिंग्स</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>उपस्थिति, व्यवहार और स्टार्टअप के लिए प्राथमिकताएँ।</value></data>
+  <data name="Settings_Section_Appearance" xml:space="preserve"><value>उपस्थिति</value></data>
+  <data name="Settings_Section_Behavior" xml:space="preserve"><value>व्यवहार</value></data>
+  <data name="Settings_Section_About" xml:space="preserve"><value>के बारे में</value></data>
+  <data name="Settings_Theme_Label" xml:space="preserve"><value>थीम</value></data>
+  <data name="Settings_Theme_Hint" xml:space="preserve"><value>हल्की, गहरी, या Windows सिस्टम सेटिंग का पालन करें।</value></data>
+  <data name="Settings_Theme_System" xml:space="preserve"><value>सिस्टम</value></data>
+  <data name="Settings_Theme_Light" xml:space="preserve"><value>हल्की</value></data>
+  <data name="Settings_Theme_Dark" xml:space="preserve"><value>गहरी</value></data>
+  <data name="Settings_Theme_OpenWindowsColors" xml:space="preserve"><value>Windows रंग सेटिंग्स</value></data>
+  <data name="Settings_AutoStart_OpenTaskScheduler" xml:space="preserve"><value>टास्क शेड्यूलर खोलें</value></data>
+  <data name="Settings_Language_ReportIssue" xml:space="preserve"><value>अनुवाद समस्या रिपोर्ट करें</value></data>
+  <data name="Settings_MinimizeToTray_Label" xml:space="preserve"><value>बंद करने पर ट्रे में छोटा करें</value></data>
+  <data name="Settings_MinimizeToTray_Hint" xml:space="preserve"><value>विंडो बंद होने पर पृष्ठभूमि में चलते रहें।</value></data>
+  <data name="Settings_Notifications_Label" xml:space="preserve"><value>सूचनाएँ दिखाएँ</value></data>
+  <data name="Settings_Notifications_Hint" xml:space="preserve"><value>ऐप्स को लॉन्च या रोकने पर टोस्ट सूचनाएँ।</value></data>
+  <data name="Settings_AutoStart_Label" xml:space="preserve"><value>साइन-इन पर लॉन्च करें</value></data>
+  <data name="Settings_AutoStart_Hint" xml:space="preserve"><value>एक अनुसूचित कार्य पंजीकृत करता है ताकि ट्रे आइकन स्वचालित रूप से शुरू हो।</value></data>
+  <data name="Settings_About_VersionFormat" xml:space="preserve"><value>संस्करण {0}</value></data>
+  <data name="Settings_About_OpenGitHub" xml:space="preserve"><value>GitHub पर खोलें</value></data>
+
+  <data name="Settings_Section_Updates" xml:space="preserve"><value>संस्करण और अपडेट</value></data>
+  <data name="Settings_Version_ReleaseNotes" xml:space="preserve"><value>रिलीज़ नोट्स</value></data>
+  <data name="Settings_Version_LastCheckedFormat" xml:space="preserve"><value>अंतिम जाँच: {0:g}</value></data>
+  <data name="Settings_Version_CheckNow" xml:space="preserve"><value>अभी जाँच करें</value></data>
+  <data name="Settings_Version_Checking" xml:space="preserve"><value>अपडेट की जाँच हो रही है...</value></data>
+  <data name="Settings_Version_UpToDate" xml:space="preserve"><value>आप नवीनतम हैं</value></data>
+  <data name="Settings_Version_UpdateAvailable" xml:space="preserve"><value>इंस्टॉल के लिए अपडेट तैयार है:</value></data>
+  <data name="Settings_Version_InstallNow" xml:space="preserve"><value>अभी इंस्टॉल करें</value></data>
+  <data name="Settings_Version_SeeWhatsNew" xml:space="preserve"><value>नया क्या है देखें</value></data>
+
+  <data name="Empty_NoAppsInGroup_Title" xml:space="preserve"><value>अभी तक कोई ऐप नहीं जोड़ा गया</value></data>
+  <data name="Empty_NoAppsInGroup_Hint" xml:space="preserve"><value>इस समूह में ऐप्स या सेवाएँ जोड़ने के लिए "ऐप जोड़ें" पर क्लिक करें।</value></data>
+  <data name="Empty_NoAppIcons_Title" xml:space="preserve"><value>कोई ऐप आइकन उपलब्ध नहीं</value></data>
+  <data name="Empty_NoAppIcons_Hint" xml:space="preserve"><value>उनके आइकन यहाँ उपयोग करने के लिए इस समूह में ऐप्स जोड़ें।</value></data>
+  <data name="Empty_NoStartupItems_Title" xml:space="preserve"><value>कोई स्टार्टअप आइटम नहीं</value></data>
+  <data name="Empty_NoStartupItems_Hint" xml:space="preserve"><value>Windows साइन-इन पर कोई ऐप लॉन्च नहीं कर रहा है।</value></data>
+</root>

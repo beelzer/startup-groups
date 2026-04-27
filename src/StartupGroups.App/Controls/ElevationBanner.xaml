@@ -1,0 +1,135 @@
+<UserControl x:Class="StartupGroups.App.Controls.ElevationBanner"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:loc="clr-namespace:StartupGroups.App.Localization"
+             xmlns:conv="clr-namespace:StartupGroups.App.Converters">
+    <UserControl.Resources>
+        <!-- UserControls don't inherit MainWindow.Resources at parse time, so the converter is scoped locally. -->
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityLocal" />
+    </UserControl.Resources>
+    <Border Margin="0,0,0,12"
+            Padding="8,4"
+            CornerRadius="{StaticResource RadiusMd}"
+            Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
+            BorderBrush="{DynamicResource SystemFillColorCautionBrush}"
+            BorderThickness="1"
+            Visibility="{Binding DataContext.ShouldShowElevationWarning, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibilityLocal}}">
+        <StackPanel>
+            <ToggleButton IsChecked="{Binding DataContext.IsElevationWarningExpanded, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          Padding="0"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Stretch"
+                          VerticalContentAlignment="Stretch"
+                          Cursor="Hand"
+                          Focusable="False"
+                          ToolTip="{loc:Translate ElevationBanner_ToggleDetailsTooltip}">
+                <ToggleButton.Template>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+                        </Border>
+                    </ControlTemplate>
+                </ToggleButton.Template>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:SymbolIcon Grid.Column="0"
+                                   FontSize="14"
+                                   VerticalAlignment="Center"
+                                   Margin="6,0,0,0">
+                        <ui:SymbolIcon.Style>
+                            <Style TargetType="ui:SymbolIcon">
+                                <Setter Property="Symbol" Value="ChevronRight24" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DataContext.IsElevationWarningExpanded, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                        <Setter Property="Symbol" Value="ChevronDown24" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:SymbolIcon.Style>
+                    </ui:SymbolIcon>
+                    <ui:SymbolIcon Grid.Column="1"
+                                   Symbol="ShieldError24"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                                   FontSize="16"
+                                   Margin="8,0,8,0" />
+                    <TextBlock Grid.Column="2"
+                               Text="{loc:Translate ElevationBanner_Heading}"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    <ui:Button Grid.Column="3"
+                               Appearance="Secondary"
+                               Content="{loc:Translate ElevationBanner_RestartAsAdmin}"
+                               VerticalAlignment="Center"
+                               Margin="8,0,0,0"
+                               Command="{Binding DataContext.RestartAsAdminCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <ui:Button Grid.Column="4"
+                               Appearance="Transparent"
+                               Icon="{ui:SymbolIcon Dismiss24}"
+                               VerticalAlignment="Center"
+                               Margin="4,0,0,0"
+                               ToolTip="{loc:Translate ElevationBanner_DismissTooltip}"
+                               Command="{Binding DataContext.DismissElevationWarningCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                </Grid>
+            </ToggleButton>
+
+            <StackPanel Margin="36,8,8,8"
+                        Visibility="{Binding DataContext.IsElevationWarningExpanded, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibilityLocal}}">
+                <TextBlock Margin="0,0,0,10"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           Text="{loc:Translate ElevationBanner_Intro}" />
+
+                <StackPanel Margin="0,0,0,10">
+                    <TextBlock FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                               Text="{loc:Translate ElevationBanner_SilentService_Heading}" />
+                    <TextBlock Style="{StaticResource AppMuted}"
+                               TextWrapping="Wrap"
+                               Margin="0,2,0,0"
+                               Text="{loc:Translate ElevationBanner_SilentService_Body}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,10">
+                    <TextBlock FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                               Text="{loc:Translate ElevationBanner_Etw_Heading}" />
+                    <TextBlock Style="{StaticResource AppMuted}"
+                               TextWrapping="Wrap"
+                               Margin="0,2,0,0"
+                               Text="{loc:Translate ElevationBanner_Etw_Body}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,10">
+                    <TextBlock FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                               Text="{loc:Translate ElevationBanner_SystemStartup_Heading}" />
+                    <TextBlock Style="{StaticResource AppMuted}"
+                               TextWrapping="Wrap"
+                               Margin="0,2,0,0"
+                               Text="{loc:Translate ElevationBanner_SystemStartup_Body}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,0">
+                    <TextBlock FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                               Text="{loc:Translate ElevationBanner_ElevatedApps_Heading}" />
+                    <TextBlock Style="{StaticResource AppMuted}"
+                               TextWrapping="Wrap"
+                               Margin="0,2,0,0"
+                               Text="{loc:Translate ElevationBanner_ElevatedApps_Body}" />
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

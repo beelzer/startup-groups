@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AI-translated. Pending native-speaker review. -->
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true"><xsd:complexType><xsd:choice maxOccurs="unbounded">
+      <xsd:element name="data"><xsd:complexType><xsd:sequence>
+        <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+        <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+      </xsd:sequence><xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+      <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+      <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+      <xsd:attribute xmlns:xml="http://www.w3.org/XML/1998/namespace" ref="xml:space" /></xsd:complexType></xsd:element>
+      <xsd:element name="resheader"><xsd:complexType><xsd:sequence>
+        <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+      </xsd:sequence><xsd:attribute name="name" type="xsd:string" use="required" /></xsd:complexType></xsd:element>
+    </xsd:choice></xsd:complexType></xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Window_Main_Title" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Window_AddApp_Title" xml:space="preserve"><value>إضافة تطبيق</value></data>
+  <data name="Window_Group_Title" xml:space="preserve"><value>مجموعة</value></data>
+  <data name="Window_App_Title" xml:space="preserve"><value>تطبيق</value></data>
+
+  <data name="Sidebar_Groups_Heading" xml:space="preserve"><value>المجموعات</value></data>
+  <data name="Sidebar_System_Heading" xml:space="preserve"><value>النظام</value></data>
+  <data name="Sidebar_WindowsStartup_Label" xml:space="preserve"><value>بدء تشغيل ويندوز</value></data>
+
+  <data name="Action_New" xml:space="preserve"><value>جديد</value></data>
+  <data name="Action_Add" xml:space="preserve"><value>إضافة</value></data>
+  <data name="Action_AddApp" xml:space="preserve"><value>إضافة تطبيق</value></data>
+  <data name="Action_AddBlank" xml:space="preserve"><value>إضافة فارغ</value></data>
+  <data name="Action_AddSelected" xml:space="preserve"><value>إضافة المحدد</value></data>
+  <data name="Action_EditSelected" xml:space="preserve"><value>تعديل المحدد</value></data>
+  <data name="Action_Save" xml:space="preserve"><value>حفظ</value></data>
+  <data name="Action_Cancel" xml:space="preserve"><value>إلغاء</value></data>
+  <data name="Action_Yes" xml:space="preserve"><value>نعم</value></data>
+  <data name="Action_No" xml:space="preserve"><value>لا</value></data>
+  <data name="Action_Ok" xml:space="preserve"><value>موافق</value></data>
+  <data name="Action_Browse" xml:space="preserve"><value>استعراض...</value></data>
+  <data name="Action_LaunchAll" xml:space="preserve"><value>تشغيل الكل</value></data>
+  <data name="Action_StopAll" xml:space="preserve"><value>إيقاف الكل</value></data>
+  <data name="Action_Launch" xml:space="preserve"><value>تشغيل</value></data>
+  <data name="Action_Stop" xml:space="preserve"><value>إيقاف</value></data>
+  <data name="Action_Edit" xml:space="preserve"><value>تعديل</value></data>
+  <data name="Action_Remove" xml:space="preserve"><value>إزالة</value></data>
+  <data name="Action_Refresh" xml:space="preserve"><value>تحديث</value></data>
+  <data name="Action_OpenLocation" xml:space="preserve"><value>فتح الموقع</value></data>
+  <data name="Action_RenameGroup" xml:space="preserve"><value>إعادة تسمية المجموعة</value></data>
+  <data name="Action_RemoveGroup" xml:space="preserve"><value>إزالة المجموعة</value></data>
+  <data name="Action_OpenConfigFolder" xml:space="preserve"><value>فتح مجلد الإعدادات</value></data>
+  <data name="Action_OpenLogFolder" xml:space="preserve"><value>فتح مجلد السجلات</value></data>
+  <data name="Action_Logs" xml:space="preserve"><value>السجلات</value></data>
+
+  <data name="Apps_Heading" xml:space="preserve"><value>التطبيقات</value></data>
+  <data name="Apps_NoGroupSelected" xml:space="preserve"><value>لم يتم تحديد مجموعة</value></data>
+  <data name="Apps_CountFormat" xml:space="preserve"><value>{0} تطبيقات</value></data>
+  <data name="Apps_Column_Actions" xml:space="preserve"><value>الإجراءات</value></data>
+
+  <data name="WinStartup_Description" xml:space="preserve"><value>التطبيقات والخدمات التي يشغلها ويندوز عند تسجيل الدخول.</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Title" xml:space="preserve"><value>تشغيل Startup Groups عند تسجيل الدخول</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Description" xml:space="preserve"><value>يُسجل مهمة مجدولة ليبدأ أيقونة الشريط تلقائياً.</value></data>
+  <data name="WinStartup_Column_Enabled" xml:space="preserve"><value>مُفعل</value></data>
+  <data name="WinStartup_Column_Name" xml:space="preserve"><value>الاسم</value></data>
+  <data name="WinStartup_Column_Command" xml:space="preserve"><value>الأمر</value></data>
+  <data name="WinStartup_Column_Source" xml:space="preserve"><value>المصدر</value></data>
+  <data name="WinStartup_CountFormat" xml:space="preserve"><value>{0} عنصر بدء تشغيل</value></data>
+  <data name="WinStartup_AddedFormat" xml:space="preserve"><value>تمت إضافة {0}</value></data>
+  <data name="WinStartup_RemovedFormat" xml:space="preserve"><value>تمت إزالة {0}</value></data>
+  <data name="WinStartup_CannotModifyFormat" xml:space="preserve"><value>'{0}' موجود في {1} ويتطلب صلاحيات المسؤول للإزالة.</value></data>
+  <data name="WinStartup_RequiresAdmin" xml:space="preserve"><value>يتطلب صلاحيات المسؤول. أعد التشغيل كمسؤول لتعديل هذا الإدخال.</value></data>
+  <data name="WinStartup_ToggleFailedFormat" xml:space="preserve"><value>فشل التبديل لـ '{0}': {1}</value></data>
+  <data name="WinStartup_AddFailedFormat" xml:space="preserve"><value>فشلت الإضافة: {0}</value></data>
+  <data name="WinStartup_RemoveFailedFormat" xml:space="preserve"><value>فشلت الإزالة: {0}</value></data>
+
+  <data name="Dialog_DuplicateGroup_Title" xml:space="preserve"><value>مجموعة مكررة</value></data>
+  <data name="Dialog_DuplicateGroup_MessageFormat" xml:space="preserve"><value>توجد مجموعة بالمعرف '{0}' بالفعل.</value></data>
+  <data name="Dialog_RemoveGroup_Title" xml:space="preserve"><value>إزالة المجموعة</value></data>
+  <data name="Dialog_RemoveGroup_MessageFormat" xml:space="preserve"><value>إزالة المجموعة '{0}' وجميع تطبيقاتها؟</value></data>
+  <data name="Dialog_RemoveApp_Title" xml:space="preserve"><value>إزالة التطبيق</value></data>
+  <data name="Dialog_RemoveApp_MessageFormat" xml:space="preserve"><value>إزالة '{0}' من {1}؟</value></data>
+  <data name="Dialog_RemoveStartupItem_Title" xml:space="preserve"><value>إزالة عنصر بدء التشغيل</value></data>
+  <data name="Dialog_RemoveStartupItem_MessageFormat" xml:space="preserve"><value>إزالة '{0}' من بدء تشغيل ويندوز؟</value></data>
+  <data name="Dialog_Startup_Title" xml:space="preserve"><value>بدء التشغيل</value></data>
+  <data name="Dialog_AutoStart_Title" xml:space="preserve"><value>التشغيل التلقائي</value></data>
+  <data name="Dialog_AdministratorRequired_Title" xml:space="preserve"><value>صلاحيات المسؤول مطلوبة</value></data>
+  <data name="Dialog_AdministratorRequired_StartFormat" xml:space="preserve"><value>تتطلب الخدمات التالية صلاحيات المسؤول للبدء:
+
+{0}
+
+تشغيل بصلاحيات مرتفعة الآن؟</value></data>
+  <data name="Dialog_AdministratorRequired_StopFormat" xml:space="preserve"><value>تتطلب الخدمات التالية صلاحيات المسؤول للإيقاف:
+
+{0}
+
+تشغيل بصلاحيات مرتفعة الآن؟</value></data>
+  <data name="Dialog_UnexpectedErrorFormat" xml:space="preserve"><value>{0} — خطأ غير متوقع</value></data>
+
+  <data name="FileDialog_SelectExecutable_Title" xml:space="preserve"><value>اختيار ملف تنفيذي</value></data>
+  <data name="FileDialog_SelectExecutable_Filter" xml:space="preserve"><value>ملفات تنفيذية (*.exe)|*.exe|جميع الملفات (*.*)|*.*</value></data>
+  <data name="FileDialog_SelectFolder_Title" xml:space="preserve"><value>اختيار مجلد</value></data>
+
+  <data name="Status_Ready" xml:space="preserve"><value>جاهز</value></data>
+  <data name="Status_LaunchingFormat" xml:space="preserve"><value>جارٍ تشغيل {0}...</value></data>
+  <data name="Status_StoppingFormat" xml:space="preserve"><value>جارٍ إيقاف {0}...</value></data>
+  <data name="Status_AppResultFormat" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Status_AddedAppFormat" xml:space="preserve"><value>تمت إضافة {0}</value></data>
+  <data name="Status_AddedAppsFormat" xml:space="preserve"><value>تمت إضافة {0} تطبيقات</value></data>
+  <data name="Status_ElevationFailed" xml:space="preserve"><value>فشل رفع الصلاحيات أو تم إلغاؤه.</value></data>
+  <data name="Status_GroupActionFormat" xml:space="preserve"><value>{0} {1}: {2} ناجح</value></data>
+  <data name="Status_GroupActionWithFailureFormat" xml:space="preserve"><value>{0} {1}: {2} ناجح، {3} فاشل</value></data>
+  <data name="Status_VerbLaunch" xml:space="preserve"><value>تشغيل</value></data>
+  <data name="Status_VerbStop" xml:space="preserve"><value>إيقاف</value></data>
+
+  <data name="AddAppPicker_Heading" xml:space="preserve"><value>اختر التطبيقات المثبتة</value></data>
+  <data name="AddAppPicker_Subtitle" xml:space="preserve"><value>حدد التطبيقات التي تريد إضافتها. استخدم «تعديل المحدد» لضبط أحدها قبل الحفظ، أو «إضافة فارغ» لإنشاء إدخال يدوياً.</value></data>
+  <data name="AddAppPicker_SearchPlaceholder" xml:space="preserve"><value>البحث بالاسم أو المسار...</value></data>
+  <data name="AddAppPicker_SelectedFormat" xml:space="preserve"><value>{0} محدد</value></data>
+  <data name="AddAppPicker_SourceStore" xml:space="preserve"><value>المتجر</value></data>
+  <data name="AddAppPicker_SourceDesktop" xml:space="preserve"><value>سطح المكتب</value></data>
+  <data name="AddAppPicker_SourceService" xml:space="preserve"><value>خدمة</value></data>
+  <data name="AddAppPicker_SourceShell" xml:space="preserve"><value>الصدفة</value></data>
+  <data name="AddAppPicker_SourceScoop" xml:space="preserve"><value>Scoop</value></data>
+
+  <data name="GroupEditor_Heading" xml:space="preserve"><value>تفاصيل المجموعة</value></data>
+  <data name="GroupEditor_Id_Label" xml:space="preserve"><value>المعرف (ثابت، يُستخدم في الإعدادات)</value></data>
+  <data name="GroupEditor_Name_Label" xml:space="preserve"><value>الاسم (يظهر في الواجهة)</value></data>
+  <data name="GroupEditor_Icon_Label" xml:space="preserve"><value>الأيقونة</value></data>
+  <data name="GroupEditor_IconSearch_Placeholder" xml:space="preserve"><value>البحث عن الأيقونات...</value></data>
+  <data name="GroupEditor_IconTab_Apps" xml:space="preserve"><value>التطبيقات</value></data>
+  <data name="GroupEditor_IconTab_Outline" xml:space="preserve"><value>مخطط</value></data>
+  <data name="GroupEditor_IconTab_Filled" xml:space="preserve"><value>معبأ</value></data>
+  <data name="GroupEditor_IconTab_Windows" xml:space="preserve"><value>ويندوز</value></data>
+
+  <data name="AppEditor_Heading" xml:space="preserve"><value>تفاصيل التطبيق</value></data>
+  <data name="AppEditor_Name_Label" xml:space="preserve"><value>الاسم</value></data>
+  <data name="AppEditor_Kind_Label" xml:space="preserve"><value>النوع</value></data>
+  <data name="AppEditor_Target_Label" xml:space="preserve"><value>الهدف (ملف تنفيذي، مسار %ENV%، نمط * أو shell:AppsFolder\item)</value></data>
+  <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>المعاملات (اختياري)</value></data>
+  <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>المعاملات المقترحة</value></data>
+  <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>دليل العمل (اختياري)</value></data>
+  <data name="AppEditor_Service_Label" xml:space="preserve"><value>اسم الخدمة (كما هو في services.msc)</value></data>
+  <data name="AppEditor_Delay_Label" xml:space="preserve"><value>التأخير بعد التشغيل (ثواني)</value></data>
+  <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>مُفعل (تضمينه في تشغيل المجموعة)</value></data>
+
+  <data name="RunningState_Running" xml:space="preserve"><value>قيد التشغيل</value></data>
+  <data name="RunningState_Stopped" xml:space="preserve"><value>متوقف</value></data>
+
+  <data name="Tray_Tooltip" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Tray_OpenMain" xml:space="preserve"><value>فتح Startup Groups</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>خروج</value></data>
+
+  <data name="Settings_Language_Label" xml:space="preserve"><value>اللغة</value></data>
+  <data name="Settings_Language_Hint" xml:space="preserve"><value>الترجمات بخلاف الإنجليزية مُنتجة بمساعدة الذكاء الاصطناعي وقد تحتوي على أخطاء. أبلغ عن المشكلات على GitHub.</value></data>
+
+  <data name="Tooltip_OpenConfigFolder" xml:space="preserve"><value>فتح مجلد الإعدادات</value></data>
+  <data name="Tooltip_OpenLogFolder" xml:space="preserve"><value>فتح مجلد السجلات</value></data>
+
+  <data name="Sidebar_Settings_Label" xml:space="preserve"><value>الإعدادات</value></data>
+  <data name="Settings_Heading" xml:space="preserve"><value>الإعدادات</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>تفضيلات المظهر والسلوك وبدء التشغيل.</value></data>
+  <data name="Settings_Section_Appearance" xml:space="preserve"><value>المظهر</value></data>
+  <data name="Settings_Section_Behavior" xml:space="preserve"><value>السلوك</value></data>
+  <data name="Settings_Section_About" xml:space="preserve"><value>حول</value></data>
+  <data name="Settings_Theme_Label" xml:space="preserve"><value>السمة</value></data>
+  <data name="Settings_Theme_Hint" xml:space="preserve"><value>فاتح، داكن، أو اتباع إعداد النظام في ويندوز.</value></data>
+  <data name="Settings_Theme_System" xml:space="preserve"><value>النظام</value></data>
+  <data name="Settings_Theme_Light" xml:space="preserve"><value>فاتح</value></data>
+  <data name="Settings_Theme_Dark" xml:space="preserve"><value>داكن</value></data>
+  <data name="Settings_Theme_OpenWindowsColors" xml:space="preserve"><value>إعدادات ألوان ويندوز</value></data>
+  <data name="Settings_AutoStart_OpenTaskScheduler" xml:space="preserve"><value>فتح برنامج جدولة المهام</value></data>
+  <data name="Settings_Language_ReportIssue" xml:space="preserve"><value>الإبلاغ عن مشكلة ترجمة</value></data>
+  <data name="Settings_MinimizeToTray_Label" xml:space="preserve"><value>تصغير إلى شريط المهام عند الإغلاق</value></data>
+  <data name="Settings_MinimizeToTray_Hint" xml:space="preserve"><value>المواصلة في الخلفية عند إغلاق النافذة.</value></data>
+  <data name="Settings_Notifications_Label" xml:space="preserve"><value>إظهار الإشعارات</value></data>
+  <data name="Settings_Notifications_Hint" xml:space="preserve"><value>إشعارات توست عند تشغيل أو إيقاف التطبيقات.</value></data>
+  <data name="Settings_AutoStart_Label" xml:space="preserve"><value>التشغيل عند تسجيل الدخول</value></data>
+  <data name="Settings_AutoStart_Hint" xml:space="preserve"><value>يُسجل مهمة مجدولة ليبدأ أيقونة الشريط تلقائياً.</value></data>
+  <data name="Settings_About_VersionFormat" xml:space="preserve"><value>الإصدار {0}</value></data>
+  <data name="Settings_About_OpenGitHub" xml:space="preserve"><value>فتح على GitHub</value></data>
+
+  <data name="Settings_Section_Updates" xml:space="preserve"><value>الإصدار والتحديثات</value></data>
+  <data name="Settings_Version_ReleaseNotes" xml:space="preserve"><value>ملاحظات الإصدار</value></data>
+  <data name="Settings_Version_LastCheckedFormat" xml:space="preserve"><value>آخر فحص: {0:g}</value></data>
+  <data name="Settings_Version_CheckNow" xml:space="preserve"><value>فحص الآن</value></data>
+  <data name="Settings_Version_Checking" xml:space="preserve"><value>جارٍ البحث عن التحديثات...</value></data>
+  <data name="Settings_Version_UpToDate" xml:space="preserve"><value>أنت تستخدم الإصدار الأحدث</value></data>
+  <data name="Settings_Version_UpdateAvailable" xml:space="preserve"><value>تحديث جاهز للتثبيت:</value></data>
+  <data name="Settings_Version_InstallNow" xml:space="preserve"><value>ثبّت الآن</value></data>
+  <data name="Settings_Version_SeeWhatsNew" xml:space="preserve"><value>عرض الجديد</value></data>
+
+  <data name="Empty_NoAppsInGroup_Title" xml:space="preserve"><value>لم تتم إضافة أي تطبيق بعد</value></data>
+  <data name="Empty_NoAppsInGroup_Hint" xml:space="preserve"><value>انقر على «إضافة تطبيق» لإضافة تطبيقات أو خدمات إلى هذه المجموعة.</value></data>
+  <data name="Empty_NoAppIcons_Title" xml:space="preserve"><value>لا توجد أيقونات تطبيقات متاحة</value></data>
+  <data name="Empty_NoAppIcons_Hint" xml:space="preserve"><value>أضف تطبيقات إلى هذه المجموعة لاستخدام أيقوناتها هنا.</value></data>
+  <data name="Empty_NoStartupItems_Title" xml:space="preserve"><value>لا توجد عناصر بدء تشغيل</value></data>
+  <data name="Empty_NoStartupItems_Hint" xml:space="preserve"><value>لا يُطلق ويندوز أي تطبيق عند تسجيل الدخول.</value></data>
+</root>

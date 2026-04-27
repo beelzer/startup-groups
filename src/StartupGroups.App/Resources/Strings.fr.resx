@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AI-translated. Pending native-speaker review. -->
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true"><xsd:complexType><xsd:choice maxOccurs="unbounded">
+      <xsd:element name="data"><xsd:complexType><xsd:sequence>
+        <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+        <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+      </xsd:sequence><xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+      <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+      <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+      <xsd:attribute xmlns:xml="http://www.w3.org/XML/1998/namespace" ref="xml:space" /></xsd:complexType></xsd:element>
+      <xsd:element name="resheader"><xsd:complexType><xsd:sequence>
+        <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+      </xsd:sequence><xsd:attribute name="name" type="xsd:string" use="required" /></xsd:complexType></xsd:element>
+    </xsd:choice></xsd:complexType></xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Window_Main_Title" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Window_AddApp_Title" xml:space="preserve"><value>Ajouter une application</value></data>
+  <data name="Window_Group_Title" xml:space="preserve"><value>Groupe</value></data>
+  <data name="Window_App_Title" xml:space="preserve"><value>Application</value></data>
+
+  <data name="Sidebar_Groups_Heading" xml:space="preserve"><value>Groupes</value></data>
+  <data name="Sidebar_System_Heading" xml:space="preserve"><value>Système</value></data>
+  <data name="Sidebar_WindowsStartup_Label" xml:space="preserve"><value>Démarrage Windows</value></data>
+
+  <data name="Action_New" xml:space="preserve"><value>Nouveau</value></data>
+  <data name="Action_Add" xml:space="preserve"><value>Ajouter</value></data>
+  <data name="Action_AddApp" xml:space="preserve"><value>Ajouter une application</value></data>
+  <data name="Action_AddBlank" xml:space="preserve"><value>Ajouter vierge</value></data>
+  <data name="Action_AddSelected" xml:space="preserve"><value>Ajouter la sélection</value></data>
+  <data name="Action_EditSelected" xml:space="preserve"><value>Modifier la sélection</value></data>
+  <data name="Action_Save" xml:space="preserve"><value>Enregistrer</value></data>
+  <data name="Action_Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Action_Yes" xml:space="preserve"><value>Oui</value></data>
+  <data name="Action_No" xml:space="preserve"><value>Non</value></data>
+  <data name="Action_Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="Action_Browse" xml:space="preserve"><value>Parcourir...</value></data>
+  <data name="Action_LaunchAll" xml:space="preserve"><value>Tout lancer</value></data>
+  <data name="Action_StopAll" xml:space="preserve"><value>Tout arrêter</value></data>
+  <data name="Action_Launch" xml:space="preserve"><value>Lancer</value></data>
+  <data name="Action_Stop" xml:space="preserve"><value>Arrêter</value></data>
+  <data name="Action_Edit" xml:space="preserve"><value>Modifier</value></data>
+  <data name="Action_Remove" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="Action_Refresh" xml:space="preserve"><value>Actualiser</value></data>
+  <data name="Action_OpenLocation" xml:space="preserve"><value>Ouvrir l'emplacement</value></data>
+  <data name="Action_RenameGroup" xml:space="preserve"><value>Renommer le groupe</value></data>
+  <data name="Action_RemoveGroup" xml:space="preserve"><value>Supprimer le groupe</value></data>
+  <data name="Action_OpenConfigFolder" xml:space="preserve"><value>Ouvrir le dossier de configuration</value></data>
+  <data name="Action_OpenLogFolder" xml:space="preserve"><value>Ouvrir le dossier des journaux</value></data>
+  <data name="Action_Logs" xml:space="preserve"><value>Journaux</value></data>
+
+  <data name="Apps_Heading" xml:space="preserve"><value>Applications</value></data>
+  <data name="Apps_NoGroupSelected" xml:space="preserve"><value>Aucun groupe sélectionné</value></data>
+  <data name="Apps_CountFormat" xml:space="preserve"><value>{0} applications</value></data>
+  <data name="Apps_Column_Actions" xml:space="preserve"><value>Actions</value></data>
+
+  <data name="WinStartup_Description" xml:space="preserve"><value>Applications et services que Windows lance à votre connexion.</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Title" xml:space="preserve"><value>Lancer Startup Groups à la connexion</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Description" xml:space="preserve"><value>Enregistre une tâche planifiée pour démarrer automatiquement l'icône de la barre d'état.</value></data>
+  <data name="WinStartup_Column_Enabled" xml:space="preserve"><value>Activé</value></data>
+  <data name="WinStartup_Column_Name" xml:space="preserve"><value>Nom</value></data>
+  <data name="WinStartup_Column_Command" xml:space="preserve"><value>Commande</value></data>
+  <data name="WinStartup_Column_Source" xml:space="preserve"><value>Source</value></data>
+  <data name="WinStartup_CountFormat" xml:space="preserve"><value>{0} éléments de démarrage</value></data>
+  <data name="WinStartup_AddedFormat" xml:space="preserve"><value>{0} ajouté</value></data>
+  <data name="WinStartup_RemovedFormat" xml:space="preserve"><value>{0} supprimé</value></data>
+  <data name="WinStartup_CannotModifyFormat" xml:space="preserve"><value>'{0}' se trouve dans {1} et nécessite des privilèges administrateur pour être supprimé.</value></data>
+  <data name="WinStartup_RequiresAdmin" xml:space="preserve"><value>Nécessite des privilèges administrateur. Redémarrez en tant qu'administrateur pour modifier cette entrée.</value></data>
+  <data name="WinStartup_ToggleFailedFormat" xml:space="preserve"><value>Échec du changement de '{0}' : {1}</value></data>
+  <data name="WinStartup_AddFailedFormat" xml:space="preserve"><value>Échec de l'ajout : {0}</value></data>
+  <data name="WinStartup_RemoveFailedFormat" xml:space="preserve"><value>Échec de la suppression : {0}</value></data>
+
+  <data name="Dialog_DuplicateGroup_Title" xml:space="preserve"><value>Groupe dupliqué</value></data>
+  <data name="Dialog_DuplicateGroup_MessageFormat" xml:space="preserve"><value>Un groupe avec l'identifiant '{0}' existe déjà.</value></data>
+  <data name="Dialog_RemoveGroup_Title" xml:space="preserve"><value>Supprimer le groupe</value></data>
+  <data name="Dialog_RemoveGroup_MessageFormat" xml:space="preserve"><value>Supprimer le groupe '{0}' et toutes ses applications ?</value></data>
+  <data name="Dialog_RemoveApp_Title" xml:space="preserve"><value>Supprimer l'application</value></data>
+  <data name="Dialog_RemoveApp_MessageFormat" xml:space="preserve"><value>Supprimer '{0}' de {1} ?</value></data>
+  <data name="Dialog_RemoveStartupItem_Title" xml:space="preserve"><value>Supprimer l'élément de démarrage</value></data>
+  <data name="Dialog_RemoveStartupItem_MessageFormat" xml:space="preserve"><value>Supprimer '{0}' du démarrage Windows ?</value></data>
+  <data name="Dialog_Startup_Title" xml:space="preserve"><value>Démarrage</value></data>
+  <data name="Dialog_AutoStart_Title" xml:space="preserve"><value>Démarrage automatique</value></data>
+  <data name="Dialog_AdministratorRequired_Title" xml:space="preserve"><value>Privilèges administrateur requis</value></data>
+  <data name="Dialog_AdministratorRequired_StartFormat" xml:space="preserve"><value>Les services suivants nécessitent des privilèges administrateur pour démarrer :
+
+{0}
+
+Exécuter en tant qu'administrateur maintenant ?</value></data>
+  <data name="Dialog_AdministratorRequired_StopFormat" xml:space="preserve"><value>Les services suivants nécessitent des privilèges administrateur pour s'arrêter :
+
+{0}
+
+Exécuter en tant qu'administrateur maintenant ?</value></data>
+  <data name="Dialog_UnexpectedErrorFormat" xml:space="preserve"><value>{0} — Erreur inattendue</value></data>
+
+  <data name="FileDialog_SelectExecutable_Title" xml:space="preserve"><value>Sélectionner un exécutable</value></data>
+  <data name="FileDialog_SelectExecutable_Filter" xml:space="preserve"><value>Fichiers exécutables (*.exe)|*.exe|Tous les fichiers (*.*)|*.*</value></data>
+  <data name="FileDialog_SelectFolder_Title" xml:space="preserve"><value>Sélectionner un dossier</value></data>
+
+  <data name="Status_Ready" xml:space="preserve"><value>Prêt</value></data>
+  <data name="Status_LaunchingFormat" xml:space="preserve"><value>Lancement de {0}...</value></data>
+  <data name="Status_StoppingFormat" xml:space="preserve"><value>Arrêt de {0}...</value></data>
+  <data name="Status_AppResultFormat" xml:space="preserve"><value>{0} : {1}</value></data>
+  <data name="Status_AddedAppFormat" xml:space="preserve"><value>{0} ajouté</value></data>
+  <data name="Status_AddedAppsFormat" xml:space="preserve"><value>{0} applications ajoutées</value></data>
+  <data name="Status_ElevationFailed" xml:space="preserve"><value>Élévation échouée ou annulée.</value></data>
+  <data name="Status_GroupActionFormat" xml:space="preserve"><value>{0} {1} : {2} réussi</value></data>
+  <data name="Status_GroupActionWithFailureFormat" xml:space="preserve"><value>{0} {1} : {2} réussi, {3} échoué</value></data>
+  <data name="Status_VerbLaunch" xml:space="preserve"><value>lancement</value></data>
+  <data name="Status_VerbStop" xml:space="preserve"><value>arrêt</value></data>
+
+  <data name="AddAppPicker_Heading" xml:space="preserve"><value>Choisir des applications installées</value></data>
+  <data name="AddAppPicker_Subtitle" xml:space="preserve"><value>Cochez celles à ajouter. Utilisez Modifier la sélection pour ajuster une entrée avant d'enregistrer, ou Ajouter vierge pour créer une entrée manuellement.</value></data>
+  <data name="AddAppPicker_SearchPlaceholder" xml:space="preserve"><value>Rechercher par nom ou chemin...</value></data>
+  <data name="AddAppPicker_SelectedFormat" xml:space="preserve"><value>{0} sélectionné(s)</value></data>
+  <data name="AddAppPicker_SourceStore" xml:space="preserve"><value>Store</value></data>
+  <data name="AddAppPicker_SourceDesktop" xml:space="preserve"><value>Bureau</value></data>
+  <data name="AddAppPicker_SourceService" xml:space="preserve"><value>Service</value></data>
+  <data name="AddAppPicker_SourceShell" xml:space="preserve"><value>Shell</value></data>
+  <data name="AddAppPicker_SourceScoop" xml:space="preserve"><value>Scoop</value></data>
+
+  <data name="GroupEditor_Heading" xml:space="preserve"><value>Détails du groupe</value></data>
+  <data name="GroupEditor_Id_Label" xml:space="preserve"><value>ID (stable, utilisé dans la configuration)</value></data>
+  <data name="GroupEditor_Name_Label" xml:space="preserve"><value>Nom (affiché dans l'interface)</value></data>
+  <data name="GroupEditor_Icon_Label" xml:space="preserve"><value>Icône</value></data>
+  <data name="GroupEditor_IconSearch_Placeholder" xml:space="preserve"><value>Rechercher des icônes...</value></data>
+  <data name="GroupEditor_IconTab_Apps" xml:space="preserve"><value>Applications</value></data>
+  <data name="GroupEditor_IconTab_Outline" xml:space="preserve"><value>Contour</value></data>
+  <data name="GroupEditor_IconTab_Filled" xml:space="preserve"><value>Plein</value></data>
+  <data name="GroupEditor_IconTab_Windows" xml:space="preserve"><value>Windows</value></data>
+
+  <data name="AppEditor_Heading" xml:space="preserve"><value>Détails de l'application</value></data>
+  <data name="AppEditor_Name_Label" xml:space="preserve"><value>Nom</value></data>
+  <data name="AppEditor_Kind_Label" xml:space="preserve"><value>Type</value></data>
+  <data name="AppEditor_Target_Label" xml:space="preserve"><value>Cible (exécutable, chemin %ENV%, glob * ou shell:AppsFolder\item)</value></data>
+  <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>Arguments (facultatif)</value></data>
+  <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>Arguments suggérés</value></data>
+  <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>Répertoire de travail (facultatif)</value></data>
+  <data name="AppEditor_Service_Label" xml:space="preserve"><value>Nom du service (tel qu'affiché dans services.msc)</value></data>
+  <data name="AppEditor_Delay_Label" xml:space="preserve"><value>Délai après le lancement (secondes)</value></data>
+  <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>Activé (inclure dans le lancement du groupe)</value></data>
+
+  <data name="RunningState_Running" xml:space="preserve"><value>En cours</value></data>
+  <data name="RunningState_Stopped" xml:space="preserve"><value>Arrêté</value></data>
+
+  <data name="Tray_Tooltip" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Tray_OpenMain" xml:space="preserve"><value>Ouvrir Startup Groups</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>Quitter</value></data>
+
+  <data name="Settings_Language_Label" xml:space="preserve"><value>Langue</value></data>
+  <data name="Settings_Language_Hint" xml:space="preserve"><value>Les traductions autres que l'anglais sont assistées par IA et peuvent contenir des erreurs. Signalez les problèmes sur GitHub.</value></data>
+
+  <data name="Tooltip_OpenConfigFolder" xml:space="preserve"><value>Ouvrir le dossier de configuration</value></data>
+  <data name="Tooltip_OpenLogFolder" xml:space="preserve"><value>Ouvrir le dossier des journaux</value></data>
+
+  <data name="Sidebar_Settings_Label" xml:space="preserve"><value>Paramètres</value></data>
+  <data name="Settings_Heading" xml:space="preserve"><value>Paramètres</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>Préférences pour l'apparence, le comportement et le démarrage.</value></data>
+  <data name="Settings_Section_Appearance" xml:space="preserve"><value>Apparence</value></data>
+  <data name="Settings_Section_Behavior" xml:space="preserve"><value>Comportement</value></data>
+  <data name="Settings_Section_About" xml:space="preserve"><value>À propos</value></data>
+  <data name="Settings_Theme_Label" xml:space="preserve"><value>Thème</value></data>
+  <data name="Settings_Theme_Hint" xml:space="preserve"><value>Clair, sombre ou suivre le paramètre Windows.</value></data>
+  <data name="Settings_Theme_System" xml:space="preserve"><value>Système</value></data>
+  <data name="Settings_Theme_Light" xml:space="preserve"><value>Clair</value></data>
+  <data name="Settings_Theme_Dark" xml:space="preserve"><value>Sombre</value></data>
+  <data name="Settings_Theme_OpenWindowsColors" xml:space="preserve"><value>Paramètres de couleurs Windows</value></data>
+  <data name="Settings_AutoStart_OpenTaskScheduler" xml:space="preserve"><value>Ouvrir le Planificateur de tâches</value></data>
+  <data name="Settings_Language_ReportIssue" xml:space="preserve"><value>Signaler un problème de traduction</value></data>
+  <data name="Settings_MinimizeToTray_Label" xml:space="preserve"><value>Réduire dans la barre d'état à la fermeture</value></data>
+  <data name="Settings_MinimizeToTray_Hint" xml:space="preserve"><value>Continuer à s'exécuter en arrière-plan lorsque la fenêtre est fermée.</value></data>
+  <data name="Settings_Notifications_Label" xml:space="preserve"><value>Afficher les notifications</value></data>
+  <data name="Settings_Notifications_Hint" xml:space="preserve"><value>Notifications toast lors du lancement ou de l'arrêt des applications.</value></data>
+  <data name="Settings_AutoStart_Label" xml:space="preserve"><value>Lancer à la connexion</value></data>
+  <data name="Settings_AutoStart_Hint" xml:space="preserve"><value>Enregistre une tâche planifiée pour démarrer automatiquement l'icône de la barre d'état.</value></data>
+  <data name="Settings_About_VersionFormat" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="Settings_About_OpenGitHub" xml:space="preserve"><value>Ouvrir sur GitHub</value></data>
+
+  <data name="Settings_Section_Updates" xml:space="preserve"><value>Version et mises à jour</value></data>
+  <data name="Settings_Version_ReleaseNotes" xml:space="preserve"><value>Notes de version</value></data>
+  <data name="Settings_Version_LastCheckedFormat" xml:space="preserve"><value>Dernière vérification : {0:g}</value></data>
+  <data name="Settings_Version_CheckNow" xml:space="preserve"><value>Vérifier maintenant</value></data>
+  <data name="Settings_Version_Checking" xml:space="preserve"><value>Recherche de mises à jour...</value></data>
+  <data name="Settings_Version_UpToDate" xml:space="preserve"><value>Vous êtes à jour</value></data>
+  <data name="Settings_Version_UpdateAvailable" xml:space="preserve"><value>Une mise à jour est prête à être installée :</value></data>
+  <data name="Settings_Version_InstallNow" xml:space="preserve"><value>Installer maintenant</value></data>
+  <data name="Settings_Version_SeeWhatsNew" xml:space="preserve"><value>Nouveautés</value></data>
+
+  <data name="Empty_NoAppsInGroup_Title" xml:space="preserve"><value>Aucune application ajoutée</value></data>
+  <data name="Empty_NoAppsInGroup_Hint" xml:space="preserve"><value>Cliquez sur Ajouter une application pour ajouter des applications ou services à ce groupe.</value></data>
+  <data name="Empty_NoAppIcons_Title" xml:space="preserve"><value>Aucune icône d'application disponible</value></data>
+  <data name="Empty_NoAppIcons_Hint" xml:space="preserve"><value>Ajoutez des applications à ce groupe pour utiliser leurs icônes ici.</value></data>
+  <data name="Empty_NoStartupItems_Title" xml:space="preserve"><value>Aucun élément de démarrage</value></data>
+  <data name="Empty_NoStartupItems_Hint" xml:space="preserve"><value>Windows ne lance aucune application à la connexion.</value></data>
+</root>

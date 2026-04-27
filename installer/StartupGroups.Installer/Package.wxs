@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+    <Package
+        Name="$(var.ProductName)"
+        Manufacturer="$(var.CompanyName)"
+        Version="$(var.ProductVersion)"
+        UpgradeCode="$(var.UpgradeCode)"
+        Scope="perUserOrMachine"
+        InstallerVersion="500">
+
+        <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" />
+        <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+        <Icon Id="AppIcon.exe" SourceFile="$(var.PublishDir)\$(var.MainExeName)" />
+        <Property Id="ARPPRODUCTICON" Value="AppIcon.exe" />
+        <Property Id="ARPHELPLINK" Value="$(var.SupportUrl)" />
+        <Property Id="ARPURLINFOABOUT" Value="$(var.AboutUrl)" />
+
+        <Feature Id="MainFeature" Title="$(var.ProductName)" Level="1" AllowAbsent="no">
+            <ComponentGroupRef Id="AppFiles" />
+            <ComponentGroupRef Id="Shortcuts" />
+        </Feature>
+
+        <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+        <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+
+        <StandardDirectory Id="ProgramFiles64Folder">
+            <Directory Id="INSTALLFOLDER" Name="$(var.ProductName)" />
+        </StandardDirectory>
+
+        <StandardDirectory Id="ProgramMenuFolder">
+            <Directory Id="AppStartMenuFolder" Name="$(var.ProductName)" />
+        </StandardDirectory>
+
+        <!-- Post-install: launch the app so user sees the tray icon immediately -->
+        <CustomAction
+            Id="LaunchApp"
+            FileRef="AppExe"
+            ExeCommand=""
+            Return="asyncNoWait"
+            Impersonate="yes" />
+
+        <InstallExecuteSequence>
+            <Custom Action="LaunchApp" After="InstallFinalize" Condition="NOT Installed" />
+        </InstallExecuteSequence>
+    </Package>
+
+    <Fragment>
+        <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+            <Component Id="MainExe" Guid="*">
+                <File Id="AppExe"
+                      Source="$(var.PublishDir)\$(var.MainExeName)"
+                      KeyPath="yes" />
+            </Component>
+            <Component Id="ElevatorExe" Guid="*">
+                <File Source="$(var.PublishDir)\$(var.ElevatorExeName)" KeyPath="yes" />
+            </Component>
+            <Component Id="AssetAppIcon" Guid="*" Directory="AssetsFolder">
+                <File Source="$(var.PublishDir)\Assets\app.ico" KeyPath="yes" />
+            </Component>
+            <Component Id="AssetTrayLight" Guid="*" Directory="AssetsFolder">
+                <File Source="$(var.PublishDir)\Assets\tray-light.ico" KeyPath="yes" />
+            </Component>
+            <Component Id="AssetTrayDark" Guid="*" Directory="AssetsFolder">
+                <File Source="$(var.PublishDir)\Assets\tray-dark.ico" KeyPath="yes" />
+            </Component>
+        </ComponentGroup>
+
+        <DirectoryRef Id="INSTALLFOLDER">
+            <Directory Id="AssetsFolder" Name="Assets" />
+        </DirectoryRef>
+
+        <ComponentGroup Id="Shortcuts">
+            <Component Id="StartMenuShortcut" Directory="AppStartMenuFolder" Guid="*">
+                <Shortcut Id="StartMenuExeShortcut"
+                          Name="$(var.ProductName)"
+                          Description="!(loc.ShortcutDescription)"
+                          Target="[#AppExe]"
+                          WorkingDirectory="INSTALLFOLDER"
+                          Icon="AppIcon.exe"
+                          IconIndex="0" />
+                <RemoveFolder Id="RemoveStartMenuFolder" On="uninstall" />
+                <RegistryValue Root="HKCU"
+                               Key="$(var.RegistryKey)"
+                               Name="StartMenuShortcut"
+                               Type="integer"
+                               Value="1"
+                               KeyPath="yes" />
+            </Component>
+        </ComponentGroup>
+    </Fragment>
+</Wix>

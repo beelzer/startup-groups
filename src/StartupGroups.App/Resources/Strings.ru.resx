@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AI-translated. Pending native-speaker review. -->
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true"><xsd:complexType><xsd:choice maxOccurs="unbounded">
+      <xsd:element name="data"><xsd:complexType><xsd:sequence>
+        <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+        <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+      </xsd:sequence><xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+      <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+      <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+      <xsd:attribute xmlns:xml="http://www.w3.org/XML/1998/namespace" ref="xml:space" /></xsd:complexType></xsd:element>
+      <xsd:element name="resheader"><xsd:complexType><xsd:sequence>
+        <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+      </xsd:sequence><xsd:attribute name="name" type="xsd:string" use="required" /></xsd:complexType></xsd:element>
+    </xsd:choice></xsd:complexType></xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Window_Main_Title" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Window_AddApp_Title" xml:space="preserve"><value>Добавить приложение</value></data>
+  <data name="Window_Group_Title" xml:space="preserve"><value>Группа</value></data>
+  <data name="Window_App_Title" xml:space="preserve"><value>Приложение</value></data>
+
+  <data name="Sidebar_Groups_Heading" xml:space="preserve"><value>Группы</value></data>
+  <data name="Sidebar_System_Heading" xml:space="preserve"><value>Система</value></data>
+  <data name="Sidebar_WindowsStartup_Label" xml:space="preserve"><value>Автозагрузка Windows</value></data>
+
+  <data name="Action_New" xml:space="preserve"><value>Новая</value></data>
+  <data name="Action_Add" xml:space="preserve"><value>Добавить</value></data>
+  <data name="Action_AddApp" xml:space="preserve"><value>Добавить приложение</value></data>
+  <data name="Action_AddBlank" xml:space="preserve"><value>Добавить пустую</value></data>
+  <data name="Action_AddSelected" xml:space="preserve"><value>Добавить выбранные</value></data>
+  <data name="Action_EditSelected" xml:space="preserve"><value>Изменить выбранное</value></data>
+  <data name="Action_Save" xml:space="preserve"><value>Сохранить</value></data>
+  <data name="Action_Cancel" xml:space="preserve"><value>Отмена</value></data>
+  <data name="Action_Yes" xml:space="preserve"><value>Да</value></data>
+  <data name="Action_No" xml:space="preserve"><value>Нет</value></data>
+  <data name="Action_Ok" xml:space="preserve"><value>ОК</value></data>
+  <data name="Action_Browse" xml:space="preserve"><value>Обзор...</value></data>
+  <data name="Action_LaunchAll" xml:space="preserve"><value>Запустить все</value></data>
+  <data name="Action_StopAll" xml:space="preserve"><value>Остановить все</value></data>
+  <data name="Action_Launch" xml:space="preserve"><value>Запустить</value></data>
+  <data name="Action_Stop" xml:space="preserve"><value>Остановить</value></data>
+  <data name="Action_Edit" xml:space="preserve"><value>Изменить</value></data>
+  <data name="Action_Remove" xml:space="preserve"><value>Удалить</value></data>
+  <data name="Action_Refresh" xml:space="preserve"><value>Обновить</value></data>
+  <data name="Action_OpenLocation" xml:space="preserve"><value>Открыть расположение</value></data>
+  <data name="Action_RenameGroup" xml:space="preserve"><value>Переименовать группу</value></data>
+  <data name="Action_RemoveGroup" xml:space="preserve"><value>Удалить группу</value></data>
+  <data name="Action_OpenConfigFolder" xml:space="preserve"><value>Открыть папку конфигурации</value></data>
+  <data name="Action_OpenLogFolder" xml:space="preserve"><value>Открыть папку журналов</value></data>
+  <data name="Action_Logs" xml:space="preserve"><value>Журналы</value></data>
+
+  <data name="Apps_Heading" xml:space="preserve"><value>Приложения</value></data>
+  <data name="Apps_NoGroupSelected" xml:space="preserve"><value>Группа не выбрана</value></data>
+  <data name="Apps_CountFormat" xml:space="preserve"><value>Приложений: {0}</value></data>
+  <data name="Apps_Column_Actions" xml:space="preserve"><value>Действия</value></data>
+
+  <data name="WinStartup_Description" xml:space="preserve"><value>Приложения и службы, которые Windows запускает при входе.</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Title" xml:space="preserve"><value>Запускать Startup Groups при входе</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Description" xml:space="preserve"><value>Регистрирует запланированную задачу, чтобы значок в трее запускался автоматически.</value></data>
+  <data name="WinStartup_Column_Enabled" xml:space="preserve"><value>Включено</value></data>
+  <data name="WinStartup_Column_Name" xml:space="preserve"><value>Имя</value></data>
+  <data name="WinStartup_Column_Command" xml:space="preserve"><value>Команда</value></data>
+  <data name="WinStartup_Column_Source" xml:space="preserve"><value>Источник</value></data>
+  <data name="WinStartup_CountFormat" xml:space="preserve"><value>Записей автозагрузки: {0}</value></data>
+  <data name="WinStartup_AddedFormat" xml:space="preserve"><value>Добавлено: {0}</value></data>
+  <data name="WinStartup_RemovedFormat" xml:space="preserve"><value>Удалено: {0}</value></data>
+  <data name="WinStartup_CannotModifyFormat" xml:space="preserve"><value>'{0}' находится в {1} и требует прав администратора для удаления.</value></data>
+  <data name="WinStartup_RequiresAdmin" xml:space="preserve"><value>Требуются права администратора. Перезапустите от имени администратора, чтобы изменить эту запись.</value></data>
+  <data name="WinStartup_ToggleFailedFormat" xml:space="preserve"><value>Не удалось переключить '{0}': {1}</value></data>
+  <data name="WinStartup_AddFailedFormat" xml:space="preserve"><value>Не удалось добавить: {0}</value></data>
+  <data name="WinStartup_RemoveFailedFormat" xml:space="preserve"><value>Не удалось удалить: {0}</value></data>
+
+  <data name="Dialog_DuplicateGroup_Title" xml:space="preserve"><value>Дублирующаяся группа</value></data>
+  <data name="Dialog_DuplicateGroup_MessageFormat" xml:space="preserve"><value>Группа с идентификатором '{0}' уже существует.</value></data>
+  <data name="Dialog_RemoveGroup_Title" xml:space="preserve"><value>Удалить группу</value></data>
+  <data name="Dialog_RemoveGroup_MessageFormat" xml:space="preserve"><value>Удалить группу '{0}' и все её приложения?</value></data>
+  <data name="Dialog_RemoveApp_Title" xml:space="preserve"><value>Удалить приложение</value></data>
+  <data name="Dialog_RemoveApp_MessageFormat" xml:space="preserve"><value>Удалить '{0}' из {1}?</value></data>
+  <data name="Dialog_RemoveStartupItem_Title" xml:space="preserve"><value>Удалить элемент автозагрузки</value></data>
+  <data name="Dialog_RemoveStartupItem_MessageFormat" xml:space="preserve"><value>Удалить '{0}' из автозагрузки Windows?</value></data>
+  <data name="Dialog_Startup_Title" xml:space="preserve"><value>Автозагрузка</value></data>
+  <data name="Dialog_AutoStart_Title" xml:space="preserve"><value>Автозапуск</value></data>
+  <data name="Dialog_AdministratorRequired_Title" xml:space="preserve"><value>Требуются права администратора</value></data>
+  <data name="Dialog_AdministratorRequired_StartFormat" xml:space="preserve"><value>Для запуска следующих служб требуются права администратора:
+
+{0}
+
+Запустить с повышенными правами сейчас?</value></data>
+  <data name="Dialog_AdministratorRequired_StopFormat" xml:space="preserve"><value>Для остановки следующих служб требуются права администратора:
+
+{0}
+
+Запустить с повышенными правами сейчас?</value></data>
+  <data name="Dialog_UnexpectedErrorFormat" xml:space="preserve"><value>{0} — Непредвиденная ошибка</value></data>
+
+  <data name="FileDialog_SelectExecutable_Title" xml:space="preserve"><value>Выбрать исполняемый файл</value></data>
+  <data name="FileDialog_SelectExecutable_Filter" xml:space="preserve"><value>Исполняемые файлы (*.exe)|*.exe|Все файлы (*.*)|*.*</value></data>
+  <data name="FileDialog_SelectFolder_Title" xml:space="preserve"><value>Выбрать папку</value></data>
+
+  <data name="Status_Ready" xml:space="preserve"><value>Готово</value></data>
+  <data name="Status_LaunchingFormat" xml:space="preserve"><value>Запуск {0}...</value></data>
+  <data name="Status_StoppingFormat" xml:space="preserve"><value>Остановка {0}...</value></data>
+  <data name="Status_AppResultFormat" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Status_AddedAppFormat" xml:space="preserve"><value>Добавлено: {0}</value></data>
+  <data name="Status_AddedAppsFormat" xml:space="preserve"><value>Добавлено приложений: {0}</value></data>
+  <data name="Status_ElevationFailed" xml:space="preserve"><value>Повышение прав не выполнено или отменено.</value></data>
+  <data name="Status_GroupActionFormat" xml:space="preserve"><value>{0} {1}: {2} успешно</value></data>
+  <data name="Status_GroupActionWithFailureFormat" xml:space="preserve"><value>{0} {1}: {2} успешно, {3} с ошибкой</value></data>
+  <data name="Status_VerbLaunch" xml:space="preserve"><value>запуск</value></data>
+  <data name="Status_VerbStop" xml:space="preserve"><value>остановка</value></data>
+
+  <data name="AddAppPicker_Heading" xml:space="preserve"><value>Выбрать установленные приложения</value></data>
+  <data name="AddAppPicker_Subtitle" xml:space="preserve"><value>Отметьте те, которые хотите добавить. Используйте «Изменить выбранное», чтобы настроить запись перед сохранением, или «Добавить пустую» для ручного создания.</value></data>
+  <data name="AddAppPicker_SearchPlaceholder" xml:space="preserve"><value>Поиск по имени или пути...</value></data>
+  <data name="AddAppPicker_SelectedFormat" xml:space="preserve"><value>Выбрано: {0}</value></data>
+  <data name="AddAppPicker_SourceStore" xml:space="preserve"><value>Магазин</value></data>
+  <data name="AddAppPicker_SourceDesktop" xml:space="preserve"><value>Рабочий стол</value></data>
+  <data name="AddAppPicker_SourceService" xml:space="preserve"><value>Служба</value></data>
+  <data name="AddAppPicker_SourceShell" xml:space="preserve"><value>Оболочка</value></data>
+  <data name="AddAppPicker_SourceScoop" xml:space="preserve"><value>Scoop</value></data>
+
+  <data name="GroupEditor_Heading" xml:space="preserve"><value>Сведения о группе</value></data>
+  <data name="GroupEditor_Id_Label" xml:space="preserve"><value>ID (постоянный, используется в конфигурации)</value></data>
+  <data name="GroupEditor_Name_Label" xml:space="preserve"><value>Имя (отображается в интерфейсе)</value></data>
+  <data name="GroupEditor_Icon_Label" xml:space="preserve"><value>Значок</value></data>
+  <data name="GroupEditor_IconSearch_Placeholder" xml:space="preserve"><value>Поиск значков...</value></data>
+  <data name="GroupEditor_IconTab_Apps" xml:space="preserve"><value>Приложения</value></data>
+  <data name="GroupEditor_IconTab_Outline" xml:space="preserve"><value>Контур</value></data>
+  <data name="GroupEditor_IconTab_Filled" xml:space="preserve"><value>Заливка</value></data>
+  <data name="GroupEditor_IconTab_Windows" xml:space="preserve"><value>Windows</value></data>
+
+  <data name="AppEditor_Heading" xml:space="preserve"><value>Сведения о приложении</value></data>
+  <data name="AppEditor_Name_Label" xml:space="preserve"><value>Имя</value></data>
+  <data name="AppEditor_Kind_Label" xml:space="preserve"><value>Тип</value></data>
+  <data name="AppEditor_Target_Label" xml:space="preserve"><value>Цель (исполняемый файл, путь %ENV%, * шаблон или shell:AppsFolder\item)</value></data>
+  <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>Аргументы (необязательно)</value></data>
+  <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>Предлагаемые аргументы</value></data>
+  <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>Рабочий каталог (необязательно)</value></data>
+  <data name="AppEditor_Service_Label" xml:space="preserve"><value>Имя службы (как в services.msc)</value></data>
+  <data name="AppEditor_Delay_Label" xml:space="preserve"><value>Задержка после запуска (секунды)</value></data>
+  <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>Включено (включить в запуск группы)</value></data>
+
+  <data name="RunningState_Running" xml:space="preserve"><value>Выполняется</value></data>
+  <data name="RunningState_Stopped" xml:space="preserve"><value>Остановлено</value></data>
+
+  <data name="Tray_Tooltip" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Tray_OpenMain" xml:space="preserve"><value>Открыть Startup Groups</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>Выход</value></data>
+
+  <data name="Settings_Language_Label" xml:space="preserve"><value>Язык</value></data>
+  <data name="Settings_Language_Hint" xml:space="preserve"><value>Переводы, отличные от английского, выполнены с помощью ИИ и могут содержать ошибки. Сообщайте о проблемах на GitHub.</value></data>
+
+  <data name="Tooltip_OpenConfigFolder" xml:space="preserve"><value>Открыть папку конфигурации</value></data>
+  <data name="Tooltip_OpenLogFolder" xml:space="preserve"><value>Открыть папку журналов</value></data>
+
+  <data name="Sidebar_Settings_Label" xml:space="preserve"><value>Настройки</value></data>
+  <data name="Settings_Heading" xml:space="preserve"><value>Настройки</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>Параметры внешнего вида, поведения и запуска.</value></data>
+  <data name="Settings_Section_Appearance" xml:space="preserve"><value>Внешний вид</value></data>
+  <data name="Settings_Section_Behavior" xml:space="preserve"><value>Поведение</value></data>
+  <data name="Settings_Section_About" xml:space="preserve"><value>О программе</value></data>
+  <data name="Settings_Theme_Label" xml:space="preserve"><value>Тема</value></data>
+  <data name="Settings_Theme_Hint" xml:space="preserve"><value>Светлая, тёмная или следовать системной настройке Windows.</value></data>
+  <data name="Settings_Theme_System" xml:space="preserve"><value>Системная</value></data>
+  <data name="Settings_Theme_Light" xml:space="preserve"><value>Светлая</value></data>
+  <data name="Settings_Theme_Dark" xml:space="preserve"><value>Тёмная</value></data>
+  <data name="Settings_Theme_OpenWindowsColors" xml:space="preserve"><value>Настройки цветов Windows</value></data>
+  <data name="Settings_AutoStart_OpenTaskScheduler" xml:space="preserve"><value>Открыть Планировщик заданий</value></data>
+  <data name="Settings_Language_ReportIssue" xml:space="preserve"><value>Сообщить о проблеме перевода</value></data>
+  <data name="Settings_MinimizeToTray_Label" xml:space="preserve"><value>Сворачивать в трей при закрытии</value></data>
+  <data name="Settings_MinimizeToTray_Hint" xml:space="preserve"><value>Продолжать работу в фоне при закрытии окна.</value></data>
+  <data name="Settings_Notifications_Label" xml:space="preserve"><value>Показывать уведомления</value></data>
+  <data name="Settings_Notifications_Hint" xml:space="preserve"><value>Всплывающие уведомления при запуске или остановке приложений.</value></data>
+  <data name="Settings_AutoStart_Label" xml:space="preserve"><value>Запускать при входе</value></data>
+  <data name="Settings_AutoStart_Hint" xml:space="preserve"><value>Регистрирует запланированную задачу, чтобы значок в трее запускался автоматически.</value></data>
+  <data name="Settings_About_VersionFormat" xml:space="preserve"><value>Версия {0}</value></data>
+  <data name="Settings_About_OpenGitHub" xml:space="preserve"><value>Открыть на GitHub</value></data>
+
+  <data name="Settings_Section_Updates" xml:space="preserve"><value>Версия и обновления</value></data>
+  <data name="Settings_Version_ReleaseNotes" xml:space="preserve"><value>Заметки о выпуске</value></data>
+  <data name="Settings_Version_LastCheckedFormat" xml:space="preserve"><value>Последняя проверка: {0:g}</value></data>
+  <data name="Settings_Version_CheckNow" xml:space="preserve"><value>Проверить сейчас</value></data>
+  <data name="Settings_Version_Checking" xml:space="preserve"><value>Проверка обновлений...</value></data>
+  <data name="Settings_Version_UpToDate" xml:space="preserve"><value>У вас актуальная версия</value></data>
+  <data name="Settings_Version_UpdateAvailable" xml:space="preserve"><value>Обновление готово к установке:</value></data>
+  <data name="Settings_Version_InstallNow" xml:space="preserve"><value>Установить сейчас</value></data>
+  <data name="Settings_Version_SeeWhatsNew" xml:space="preserve"><value>Что нового</value></data>
+
+  <data name="Empty_NoAppsInGroup_Title" xml:space="preserve"><value>Приложения ещё не добавлены</value></data>
+  <data name="Empty_NoAppsInGroup_Hint" xml:space="preserve"><value>Нажмите «Добавить приложение», чтобы добавить приложения или службы в эту группу.</value></data>
+  <data name="Empty_NoAppIcons_Title" xml:space="preserve"><value>Значки приложений недоступны</value></data>
+  <data name="Empty_NoAppIcons_Hint" xml:space="preserve"><value>Добавьте приложения в эту группу, чтобы использовать их значки здесь.</value></data>
+  <data name="Empty_NoStartupItems_Title" xml:space="preserve"><value>Нет элементов автозагрузки</value></data>
+  <data name="Empty_NoStartupItems_Hint" xml:space="preserve"><value>Windows не запускает никаких приложений при входе.</value></data>
+</root>

@@ -1,0 +1,80 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Scalar spacing units. Use Thicknesses below for margin/padding shorthand. -->
+    <system:Double x:Key="SpaceXxs">2</system:Double>
+    <system:Double x:Key="SpaceXs">4</system:Double>
+    <system:Double x:Key="SpaceSm">6</system:Double>
+    <system:Double x:Key="SpaceBase">8</system:Double>
+    <system:Double x:Key="SpaceMd">10</system:Double>
+    <system:Double x:Key="SpaceLg">12</system:Double>
+    <system:Double x:Key="SpaceXl">14</system:Double>
+    <system:Double x:Key="SpaceXxl">16</system:Double>
+    <system:Double x:Key="Space2xl">20</system:Double>
+    <system:Double x:Key="Space3xl">24</system:Double>
+    <system:Double x:Key="Space4xl">28</system:Double>
+    <system:Double x:Key="Space5xl">32</system:Double>
+
+    <!-- Uniform Thicknesses -->
+    <Thickness x:Key="ThicknessXs">4</Thickness>
+    <Thickness x:Key="ThicknessSm">8</Thickness>
+    <Thickness x:Key="ThicknessMd">12</Thickness>
+    <Thickness x:Key="ThicknessLg">16</Thickness>
+    <Thickness x:Key="ThicknessXl">20</Thickness>
+    <Thickness x:Key="ThicknessXxl">24</Thickness>
+
+    <!-- Semantic paddings for common layout rhythm -->
+    <Thickness x:Key="ContentPagePadding">12,8,24,12</Thickness>
+    <Thickness x:Key="SidebarPadding">16,16,16,8</Thickness>
+    <Thickness x:Key="DialogPadding">28,12,28,24</Thickness>
+    <Thickness x:Key="ListRowPadding">20,14</Thickness>
+    <Thickness x:Key="StatusBarPadding">24,6</Thickness>
+
+    <!-- Corner radii -->
+    <CornerRadius x:Key="RadiusXs">4</CornerRadius>
+    <CornerRadius x:Key="RadiusSm">6</CornerRadius>
+    <CornerRadius x:Key="RadiusMd">8</CornerRadius>
+    <CornerRadius x:Key="RadiusLg">10</CornerRadius>
+    <CornerRadius x:Key="RadiusChip">12</CornerRadius>
+
+    <!-- Main window default dimensions -->
+    <system:Double x:Key="WindowMainWidth">1180</system:Double>
+    <system:Double x:Key="WindowMainHeight">760</system:Double>
+    <system:Double x:Key="WindowMainMinWidth">960</system:Double>
+    <system:Double x:Key="WindowMainMinHeight">560</system:Double>
+
+    <!-- Sidebar -->
+    <system:Double x:Key="SidebarWidth">300</system:Double>
+    <GridLength x:Key="SidebarWidthGridLength">300</GridLength>
+    <system:Double x:Key="SidebarIndicatorWidth">3</system:Double>
+    <system:Double x:Key="SidebarIndicatorHeight">16</system:Double>
+
+    <!-- Dialog dimensions -->
+    <system:Double x:Key="WindowGroupEditorWidth">620</system:Double>
+    <system:Double x:Key="WindowAppEditorWidth">600</system:Double>
+    <system:Double x:Key="WindowAddAppPickerWidth">780</system:Double>
+    <system:Double x:Key="WindowAddAppPickerHeight">620</system:Double>
+    <system:Double x:Key="WindowAddAppPickerMinWidth">620</system:Double>
+    <system:Double x:Key="WindowAddAppPickerMinHeight">480</system:Double>
+
+    <!-- Icon sizes -->
+    <system:Double x:Key="IconSizeXs">16</system:Double>
+    <system:Double x:Key="IconSizeSm">20</system:Double>
+    <system:Double x:Key="IconSizeMd">22</system:Double>
+    <system:Double x:Key="IconSizeLg">24</system:Double>
+    <system:Double x:Key="IconSizeXl">30</system:Double>
+    <system:Double x:Key="IconSizeXxl">32</system:Double>
+
+    <!-- Button minimum sizes -->
+    <system:Double x:Key="ButtonMinHeight">36</system:Double>
+    <system:Double x:Key="ButtonMinWidth">36</system:Double>
+
+    <!-- List row height -->
+    <system:Double x:Key="ListRowHeight">72</system:Double>
+
+    <!-- ScrollBar -->
+    <system:Double x:Key="ScrollBarWidth">8</system:Double>
+    <system:Double x:Key="ScrollBarHeight">8</system:Double>
+
+</ResourceDictionary>

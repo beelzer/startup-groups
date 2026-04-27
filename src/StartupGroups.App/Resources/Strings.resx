@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <!-- ===== Window titles ===== -->
+  <data name="Window_Main_Title" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Window_AddApp_Title" xml:space="preserve"><value>Add app</value></data>
+  <data name="Window_Group_Title" xml:space="preserve"><value>Group</value></data>
+  <data name="Window_App_Title" xml:space="preserve"><value>App</value></data>
+  <data name="Window_RegistryEditor_Title" xml:space="preserve"><value>Registry value</value></data>
+
+  <!-- ===== Sidebar ===== -->
+  <data name="Sidebar_Groups_Heading" xml:space="preserve"><value>Groups</value></data>
+  <data name="Sidebar_System_Heading" xml:space="preserve"><value>System</value></data>
+  <data name="Sidebar_WindowsStartup_Label" xml:space="preserve"><value>Windows Startup</value></data>
+
+  <!-- ===== Common actions ===== -->
+  <data name="Action_New" xml:space="preserve"><value>New</value></data>
+  <data name="Action_Add" xml:space="preserve"><value>Add</value></data>
+  <data name="Action_AddApp" xml:space="preserve"><value>Add app</value></data>
+  <data name="Action_AddBlank" xml:space="preserve"><value>Add blank</value></data>
+  <data name="Action_AddSelected" xml:space="preserve"><value>Add selected</value></data>
+  <data name="Action_EditSelected" xml:space="preserve"><value>Edit selected</value></data>
+  <data name="Action_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Action_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Action_Yes" xml:space="preserve"><value>Yes</value></data>
+  <data name="Action_No" xml:space="preserve"><value>No</value></data>
+  <data name="Action_Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="Action_Browse" xml:space="preserve"><value>Browse...</value></data>
+  <data name="Action_LaunchAll" xml:space="preserve"><value>Launch all</value></data>
+  <data name="Action_StopAll" xml:space="preserve"><value>Stop all</value></data>
+  <data name="Action_Launch" xml:space="preserve"><value>Launch</value></data>
+  <data name="Action_Stop" xml:space="preserve"><value>Stop</value></data>
+  <data name="Action_Edit" xml:space="preserve"><value>Edit</value></data>
+  <data name="Action_Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="Action_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Action_OpenLocation" xml:space="preserve"><value>Open location</value></data>
+  <data name="Action_RenameGroup" xml:space="preserve"><value>Edit group</value></data>
+  <data name="Action_RemoveGroup" xml:space="preserve"><value>Remove group</value></data>
+  <data name="Action_OpenConfigFolder" xml:space="preserve"><value>Open config folder</value></data>
+  <data name="Action_OpenLogFolder" xml:space="preserve"><value>Open log folder</value></data>
+  <data name="Action_Logs" xml:space="preserve"><value>Logs</value></data>
+
+  <!-- ===== Apps pane ===== -->
+  <data name="Apps_Heading" xml:space="preserve"><value>Apps</value></data>
+  <data name="ViewMode_Compact" xml:space="preserve"><value>Compact view</value></data>
+  <data name="ViewMode_Detailed" xml:space="preserve"><value>Detailed view</value></data>
+  <data name="Apps_NoGroupSelected" xml:space="preserve"><value>No group selected</value></data>
+  <data name="Apps_CountFormat" xml:space="preserve"><value>{0} apps</value><comment>{0} = numeric count</comment></data>
+  <data name="Apps_Column_Actions" xml:space="preserve"><value>Actions</value></data>
+
+  <!-- ===== Windows Startup pane ===== -->
+  <data name="WinStartup_Description" xml:space="preserve"><value>Apps and services Windows launches when you sign in.</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Title" xml:space="preserve"><value>Launch Startup Groups at sign-in</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Description" xml:space="preserve"><value>Registers a scheduled task so the tray icon starts automatically.</value></data>
+  <data name="WinStartup_Column_Enabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="WinStartup_Column_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="WinStartup_Column_Command" xml:space="preserve"><value>Command</value></data>
+  <data name="WinStartup_Column_Source" xml:space="preserve"><value>Source</value></data>
+  <data name="WinStartup_CountFormat" xml:space="preserve"><value>{0} startup items</value></data>
+  <data name="WinStartup_AddedFormat" xml:space="preserve"><value>Added {0}</value></data>
+  <data name="WinStartup_RemovedFormat" xml:space="preserve"><value>Removed {0}</value></data>
+  <data name="WinStartup_CannotModifyFormat" xml:space="preserve"><value>'{0}' lives in {1} and needs administrator privileges to remove.</value></data>
+  <data name="WinStartup_RequiresAdmin" xml:space="preserve"><value>Requires administrator privileges. Restart as administrator to modify this entry.</value></data>
+  <data name="WinStartup_ToggleFailedFormat" xml:space="preserve"><value>Failed to toggle '{0}': {1}</value></data>
+  <data name="WinStartup_AddFailedFormat" xml:space="preserve"><value>Failed to add: {0}</value></data>
+  <data name="WinStartup_RemoveFailedFormat" xml:space="preserve"><value>Failed to remove: {0}</value></data>
+  <data name="WinStartup_EditRegistryValue" xml:space="preserve"><value>Edit registry value</value></data>
+
+  <!-- ===== Dialogs ===== -->
+  <data name="Dialog_DuplicateGroup_Title" xml:space="preserve"><value>Duplicate group</value></data>
+  <data name="Dialog_DuplicateGroup_MessageFormat" xml:space="preserve"><value>A group with id '{0}' already exists.</value></data>
+  <data name="Dialog_RemoveGroup_Title" xml:space="preserve"><value>Remove group</value></data>
+  <data name="Dialog_RemoveGroup_MessageFormat" xml:space="preserve"><value>Remove group '{0}' and all its apps?</value></data>
+  <data name="Dialog_RemoveApp_Title" xml:space="preserve"><value>Remove app</value></data>
+  <data name="Dialog_RemoveApp_MessageFormat" xml:space="preserve"><value>Remove '{0}' from {1}?</value></data>
+  <data name="Dialog_RemoveStartupItem_Title" xml:space="preserve"><value>Remove startup item</value></data>
+  <data name="Dialog_RemoveStartupItem_MessageFormat" xml:space="preserve"><value>Remove '{0}' from Windows startup?</value></data>
+  <data name="Dialog_Startup_Title" xml:space="preserve"><value>Startup</value></data>
+  <data name="Dialog_AutoStart_Title" xml:space="preserve"><value>Auto-start</value></data>
+  <data name="Dialog_AdministratorRequired_Title" xml:space="preserve"><value>Administrator required</value></data>
+  <data name="Dialog_AdministratorRequired_StartFormat" xml:space="preserve"><value>The following services need admin privileges to start:
+
+{0}
+
+Run elevated now?</value></data>
+  <data name="Dialog_AdministratorRequired_StopFormat" xml:space="preserve"><value>The following services need admin privileges to stop:
+
+{0}
+
+Run elevated now?</value></data>
+  <data name="Dialog_UnexpectedErrorFormat" xml:space="preserve"><value>{0} — Unexpected error</value></data>
+
+  <!-- ===== File / folder dialogs ===== -->
+  <data name="FileDialog_SelectExecutable_Title" xml:space="preserve"><value>Select executable</value></data>
+  <data name="FileDialog_SelectExecutable_Filter" xml:space="preserve"><value>Executable files (*.exe)|*.exe|All files (*.*)|*.*</value></data>
+  <data name="FileDialog_SelectFolder_Title" xml:space="preserve"><value>Select folder</value></data>
+
+  <!-- ===== Status messages ===== -->
+  <data name="Status_Ready" xml:space="preserve"><value>Ready</value></data>
+  <data name="Status_LaunchingFormat" xml:space="preserve"><value>Launching {0}...</value></data>
+  <data name="Status_StoppingFormat" xml:space="preserve"><value>Stopping {0}...</value></data>
+  <data name="Status_AppResultFormat" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Status_AddedAppFormat" xml:space="preserve"><value>Added {0}</value></data>
+  <data name="Status_AddedAppsFormat" xml:space="preserve"><value>Added {0} apps</value></data>
+  <data name="Status_ElevationFailed" xml:space="preserve"><value>Elevation failed or cancelled.</value></data>
+  <data name="Status_GroupActionFormat" xml:space="preserve"><value>{0} {1}: {2} ok</value></data>
+  <data name="Status_GroupActionWithFailureFormat" xml:space="preserve"><value>{0} {1}: {2} ok, {3} failed</value></data>
+  <data name="Status_VerbLaunch" xml:space="preserve"><value>launch</value></data>
+  <data name="Status_VerbStop" xml:space="preserve"><value>stop</value></data>
+
+  <!-- ===== Add App picker ===== -->
+  <data name="AddAppPicker_Heading" xml:space="preserve"><value>Pick installed apps</value></data>
+  <data name="AddAppPicker_Subtitle" xml:space="preserve"><value>Tick any you'd like to add. Use Edit selected to tweak one before saving, or Add blank to create an entry manually.</value></data>
+  <data name="AddAppPicker_SearchPlaceholder" xml:space="preserve"><value>Search by name or path...</value></data>
+  <data name="AddAppPicker_SelectedFormat" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="AddAppPicker_SourceStore" xml:space="preserve"><value>Store</value></data>
+  <data name="AddAppPicker_SourceDesktop" xml:space="preserve"><value>Desktop</value></data>
+  <data name="AddAppPicker_SourceService" xml:space="preserve"><value>Service</value></data>
+  <data name="AddAppPicker_SourceShell" xml:space="preserve"><value>Shell</value></data>
+  <data name="AddAppPicker_SourceScoop" xml:space="preserve"><value>Scoop</value></data>
+
+  <!-- ===== Group editor ===== -->
+  <data name="GroupEditor_Heading" xml:space="preserve"><value>Group details</value></data>
+  <data name="GroupEditor_Id_Label" xml:space="preserve"><value>ID (stable, used in config)</value></data>
+  <data name="GroupEditor_Name_Label" xml:space="preserve"><value>Name (shown in UI)</value></data>
+  <data name="GroupEditor_Icon_Label" xml:space="preserve"><value>Icon</value></data>
+  <data name="GroupEditor_IconSearch_Placeholder" xml:space="preserve"><value>Search icons...</value></data>
+  <data name="GroupEditor_IconTab_Apps" xml:space="preserve"><value>Apps</value></data>
+  <data name="GroupEditor_IconTab_Outline" xml:space="preserve"><value>Outline</value></data>
+  <data name="GroupEditor_IconTab_Filled" xml:space="preserve"><value>Filled</value></data>
+  <data name="GroupEditor_IconTab_Windows" xml:space="preserve"><value>Windows</value></data>
+
+  <!-- ===== App editor ===== -->
+  <data name="AppEditor_Heading" xml:space="preserve"><value>App details</value></data>
+  <data name="AppEditor_Name_Label" xml:space="preserve"><value>Name</value></data>
+  <data name="AppEditor_Kind_Label" xml:space="preserve"><value>Kind</value></data>
+  <data name="AppEditor_Target_Label" xml:space="preserve"><value>Target (executable, %ENV% path, * glob, or shell:AppsFolder\item)</value></data>
+  <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>Arguments (optional)</value></data>
+  <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>Suggested arguments</value></data>
+  <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>Working directory (optional)</value></data>
+  <data name="AppEditor_Service_Label" xml:space="preserve"><value>Service name (as listed in services.msc)</value></data>
+  <data name="AppEditor_Delay_Label" xml:space="preserve"><value>Delay after launching (seconds)</value></data>
+  <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>Enabled (include in group launch)</value></data>
+
+  <!-- ===== Registry editor ===== -->
+  <data name="RegEditor_Heading" xml:space="preserve"><value>Registry value</value></data>
+  <data name="RegEditor_KeyPath_Label" xml:space="preserve"><value>Key</value></data>
+  <data name="RegEditor_CopyKeyPath_Tooltip" xml:space="preserve"><value>Copy full path</value></data>
+  <data name="RegEditor_OpenInRegedit_Tooltip" xml:space="preserve"><value>Open this key in regedit</value></data>
+  <data name="RegEditor_OpenInRegeditFailedFormat" xml:space="preserve"><value>Could not launch regedit: {0}</value></data>
+  <data name="RegEditor_KeyPathCopied" xml:space="preserve"><value>Path copied to clipboard.</value></data>
+  <data name="RegEditor_ValueName_Label" xml:space="preserve"><value>Value name</value></data>
+  <data name="RegEditor_ValueData_Label" xml:space="preserve"><value>Value data</value></data>
+  <data name="RegEditor_Path_Label" xml:space="preserve"><value>Path (executable)</value></data>
+  <data name="RegEditor_Arguments_Label" xml:space="preserve"><value>Arguments</value></data>
+  <data name="RegEditor_RawMode_Hint" xml:space="preserve"><value>This command uses a complex format and is shown verbatim. Edit the full string above.</value></data>
+  <data name="RegEditor_Type_Label" xml:space="preserve"><value>Type</value></data>
+  <data name="RegEditor_Type_String" xml:space="preserve"><value>REG_SZ (string)</value></data>
+  <data name="RegEditor_Type_ExpandString" xml:space="preserve"><value>REG_EXPAND_SZ (expandable string)</value></data>
+  <data name="RegEditor_RequiresAdmin_Hint" xml:space="preserve"><value>This entry lives in HKEY_LOCAL_MACHINE. Saving will prompt for administrator privileges.</value></data>
+  <data name="RegEditor_NameRequired" xml:space="preserve"><value>Value name is required.</value></data>
+  <data name="RegEditor_CommandRequired" xml:space="preserve"><value>Value data is required.</value></data>
+  <data name="RegEditor_NameConflictFormat" xml:space="preserve"><value>A value named '{0}' already exists in this key.</value></data>
+  <data name="RegEditor_SaveFailedFormat" xml:space="preserve"><value>Save failed: {0}</value></data>
+  <data name="RegEditor_ElevationDeclined" xml:space="preserve"><value>Administrator elevation was cancelled. Your changes were not saved.</value></data>
+  <data name="RegEditor_Saved" xml:space="preserve"><value>Saved.</value></data>
+  <data name="RegEditor_ReadFailed" xml:space="preserve"><value>Could not read the live registry value. Showing the cached command.</value></data>
+
+  <!-- ===== Running state ===== -->
+  <data name="RunningState_Running" xml:space="preserve"><value>Running</value></data>
+  <data name="RunningState_Stopped" xml:space="preserve"><value>Stopped</value></data>
+
+  <!-- ===== Tray menu ===== -->
+  <data name="Tray_Tooltip" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Tray_OpenMain" xml:space="preserve"><value>Open Startup Groups</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>Exit</value></data>
+
+  <!-- ===== Settings page ===== -->
+  <data name="Sidebar_Settings_Label" xml:space="preserve"><value>Settings</value></data>
+  <data name="Settings_Heading" xml:space="preserve"><value>Settings</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>Preferences for appearance, behavior, and startup.</value></data>
+  <data name="Settings_Section_Appearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="Settings_Section_Behavior" xml:space="preserve"><value>Behavior</value></data>
+  <data name="Settings_Section_Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="Settings_ConfigFile_Label" xml:space="preserve"><value>Config file</value></data>
+  <data name="Settings_LogFolder_Label" xml:space="preserve"><value>Log folder</value></data>
+  <data name="Settings_LogFolder_Hint" xml:space="preserve"><value>Open folder containing log files for troubleshooting.</value></data>
+  <data name="Settings_Section_About" xml:space="preserve"><value>About</value></data>
+
+  <data name="Settings_Theme_Label" xml:space="preserve"><value>Theme</value></data>
+  <data name="Settings_Theme_Hint" xml:space="preserve"><value>Light, dark, or follow the Windows system setting.</value></data>
+  <data name="Settings_Theme_System" xml:space="preserve"><value>System</value></data>
+  <data name="Settings_Theme_Light" xml:space="preserve"><value>Light</value></data>
+  <data name="Settings_Theme_Dark" xml:space="preserve"><value>Dark</value></data>
+  <data name="Settings_Theme_OpenWindowsColors" xml:space="preserve"><value>Windows color settings</value></data>
+  <data name="Settings_AutoStart_OpenTaskScheduler" xml:space="preserve"><value>Open Task Scheduler</value></data>
+  <data name="Settings_Language_ReportIssue" xml:space="preserve"><value>Report translation issue</value></data>
+
+  <data name="Settings_Language_Label" xml:space="preserve"><value>Language</value></data>
+  <data name="Settings_Language_Hint" xml:space="preserve"><value>Translations other than English are AI-assisted and may contain errors. Report issues on GitHub.</value></data>
+
+  <data name="Settings_MinimizeToTray_Label" xml:space="preserve"><value>Minimize to tray on close</value></data>
+  <data name="Settings_MinimizeToTray_Hint" xml:space="preserve"><value>Keep running in the background when the window is closed.</value></data>
+  <data name="Settings_Notifications_Label" xml:space="preserve"><value>Show notifications</value></data>
+  <data name="Settings_Notifications_Hint" xml:space="preserve"><value>Toast notifications when launching or stopping apps.</value></data>
+  <data name="Settings_AutoStart_Label" xml:space="preserve"><value>Launch at sign-in</value></data>
+  <data name="Settings_AutoStart_Hint" xml:space="preserve"><value>Registers a scheduled task so the tray icon starts automatically.</value></data>
+
+  <data name="Settings_About_VersionFormat" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="Settings_About_OpenGitHub" xml:space="preserve"><value>Open on GitHub</value></data>
+
+  <!-- ===== Version & updates ===== -->
+  <data name="Settings_Section_Updates" xml:space="preserve"><value>Version &amp; updates</value></data>
+  <data name="Settings_Version_ReleaseNotes" xml:space="preserve"><value>Release notes</value></data>
+  <data name="Settings_Version_LastCheckedFormat" xml:space="preserve"><value>Last checked: {0:g}</value></data>
+  <data name="Settings_Version_CheckNow" xml:space="preserve"><value>Check now</value></data>
+  <data name="Settings_Version_Checking" xml:space="preserve"><value>Checking for updates...</value></data>
+  <data name="Settings_Version_UpToDate" xml:space="preserve"><value>You're up to date</value></data>
+  <data name="Settings_Version_UpdateAvailable" xml:space="preserve"><value>An update is ready to install:</value></data>
+  <data name="Settings_Version_InstallNow" xml:space="preserve"><value>Install now</value></data>
+  <data name="Settings_Version_SeeWhatsNew" xml:space="preserve"><value>See what's new</value></data>
+
+  <!-- ===== Tooltips ===== -->
+  <data name="Tooltip_OpenConfigFolder" xml:space="preserve"><value>Open config folder</value></data>
+  <data name="Tooltip_OpenLogFolder" xml:space="preserve"><value>Open log folder</value></data>
+
+  <!-- ===== Empty states ===== -->
+  <data name="Empty_NoAppsInGroup_Title" xml:space="preserve"><value>No apps added yet</value></data>
+  <data name="Empty_NoAppsInGroup_Hint" xml:space="preserve"><value>Click Add app to add apps or services to this group.</value></data>
+  <data name="Empty_NoAppIcons_Title" xml:space="preserve"><value>No app icons available</value></data>
+  <data name="Empty_NoAppIcons_Hint" xml:space="preserve"><value>Add apps to this group to use their icons here.</value></data>
+  <data name="Empty_NoStartupItems_Title" xml:space="preserve"><value>No startup items</value></data>
+  <data name="Empty_NoStartupItems_Hint" xml:space="preserve"><value>Windows isn't launching any apps at sign-in.</value></data>
+
+  <!-- ===== Admin status / pill ===== -->
+  <data name="Admin_Pill_Recommended" xml:space="preserve"><value>Admin recommended</value></data>
+  <data name="Admin_Pill_Active" xml:space="preserve"><value>Admin</value></data>
+  <data name="Admin_Status_Running" xml:space="preserve"><value>Running as administrator</value></data>
+  <data name="Admin_Status_Standard" xml:space="preserve"><value>Running as standard user</value></data>
+
+  <!-- ===== Elevation banner ===== -->
+  <data name="ElevationBanner_ToggleDetailsTooltip" xml:space="preserve"><value>Show details</value></data>
+  <data name="ElevationBanner_Heading" xml:space="preserve"><value>Administrator mode recommended</value></data>
+  <data name="ElevationBanner_RestartAsAdmin" xml:space="preserve"><value>Restart as administrator</value></data>
+  <data name="ElevationBanner_DismissTooltip" xml:space="preserve"><value>Dismiss for this session</value></data>
+  <data name="ElevationBanner_Intro" xml:space="preserve"><value>Running Startup Groups as administrator unlocks the following. The app still works without it — these features silently no-op or route through a UAC prompt per action.</value></data>
+  <data name="ElevationBanner_SilentService_Heading" xml:space="preserve"><value>Silent service control</value></data>
+  <data name="ElevationBanner_SilentService_Body" xml:space="preserve"><value>Start and stop Windows services inside your groups without a UAC prompt for each action. Non-admin sessions fall back to a helper process that prompts once per operation.</value></data>
+  <data name="ElevationBanner_Etw_Heading" xml:space="preserve"><value>ETW launch-dependency inference</value></data>
+  <data name="ElevationBanner_Etw_Body" xml:space="preserve"><value>Uses Event Tracing for Windows (kernel sessions) to observe process starts, file opens, and network activity while a group launches, so the orchestrator can learn which app waits on which and sequence them more accurately next time. Kernel ETW providers require admin.</value></data>
+  <data name="ElevationBanner_SystemStartup_Heading" xml:space="preserve"><value>System-wide startup management</value></data>
+  <data name="ElevationBanner_SystemStartup_Body" xml:space="preserve"><value>Toggle and delete HKLM Run and Common startup folder entries on the Windows Startup page. Without admin those rows are read-only — you can see them but not change them.</value></data>
+  <data name="ElevationBanner_ElevatedApps_Heading" xml:space="preserve"><value>Smoother handling of elevated apps</value></data>
+  <data name="ElevationBanner_ElevatedApps_Body" xml:space="preserve"><value>Apps that themselves require admin (e.g. tools with an embedded manifest) can be launched, readiness-checked, and stopped without a UAC dialog interrupting the middle of a group sequence.</value></data>
+
+  <!-- ===== Sidebar (continued) ===== -->
+  <data name="Sidebar_Benchmarks_Label" xml:space="preserve"><value>Benchmarks</value></data>
+
+  <!-- ===== Benchmarks page ===== -->
+  <data name="Benchmarks_Heading" xml:space="preserve"><value>Launch benchmarks</value></data>
+  <data name="Benchmarks_Subtitle" xml:space="preserve"><value>Observed launches, durations, and cold/warm trends.</value></data>
+  <data name="Benchmarks_Metric_TotalLaunches" xml:space="preserve"><value>TOTAL LAUNCHES</value></data>
+  <data name="Benchmarks_Metric_Ready" xml:space="preserve"><value>READY</value></data>
+  <data name="Benchmarks_Metric_TimedOut" xml:space="preserve"><value>TIMED OUT</value></data>
+  <data name="Benchmarks_Metric_ColdMedian" xml:space="preserve"><value>COLD MEDIAN</value></data>
+  <data name="Benchmarks_Metric_WarmMedian" xml:space="preserve"><value>WARM MEDIAN</value></data>
+  <data name="Benchmarks_Section_PerApp" xml:space="preserve"><value>Per app</value></data>
+  <data name="Benchmarks_Metric_Last" xml:space="preserve"><value>LAST</value></data>
+  <data name="Benchmarks_Metric_Median" xml:space="preserve"><value>MEDIAN</value></data>
+  <data name="Benchmarks_Metric_ColdMed" xml:space="preserve"><value>COLD MED</value></data>
+  <data name="Benchmarks_Metric_WarmMed" xml:space="preserve"><value>WARM MED</value></data>
+  <data name="Benchmarks_Section_SuggestedOrder" xml:space="preserve"><value>Suggested order</value></data>
+  <data name="Benchmarks_SuggestedOrder_Hint" xml:space="preserve"><value>Inferred from observed file-access patterns during group runs. Elevation required for ETW capture; hints only appear after enough runs with shared resources.</value></data>
+  <data name="Benchmarks_Hint_GroupLabel" xml:space="preserve"><value>Group: </value></data>
+  <data name="Benchmarks_Hint_CurrentLabel" xml:space="preserve"><value>Current: </value></data>
+  <data name="Benchmarks_Hint_SuggestedLabel" xml:space="preserve"><value>Suggested: </value></data>
+  <data name="Benchmarks_Hint_ApplyButton" xml:space="preserve"><value>Apply</value></data>
+  <data name="Benchmarks_Section_GroupRuns" xml:space="preserve"><value>Group runs</value></data>
+  <data name="Benchmarks_Metric_Total" xml:space="preserve"><value>TOTAL</value></data>
+  <data name="Benchmarks_Metric_Bottleneck" xml:space="preserve"><value>BOTTLENECK</value></data>
+  <data name="Benchmarks_Section_RecentLaunches" xml:space="preserve"><value>Recent launches</value></data>
+  <data name="Benchmarks_Regression_Tooltip" xml:space="preserve"><value>Slower than this app's median</value></data>
+
+  <!-- ===== Settings page: administrator mode ===== -->
+  <data name="Settings_Section_AdminMode" xml:space="preserve"><value>Administrator mode</value></data>
+  <data name="Settings_AdminMode_Description" xml:space="preserve"><value>Elevate to unlock launch-dependency inference and manage admin-only services without per-launch UAC.</value></data>
+  <data name="Settings_AdminMode_RestartAsAdmin" xml:space="preserve"><value>Restart as administrator</value></data>
+  <data name="Settings_AdminMode_AlwaysRunLabel" xml:space="preserve"><value>Always run as administrator</value></data>
+  <data name="Settings_AdminMode_AlwaysRunHint_NeedsAdmin" xml:space="preserve"><value>This setting can only be changed when running as administrator.</value></data>
+  <data name="Settings_AdminMode_AlwaysRunHint_Active" xml:space="preserve"><value>The app will relaunch with UAC on startup; also applies to auto-start.</value></data>
+  <data name="Settings_AdminMode_WarnLabel" xml:space="preserve"><value>Warn about elevated applications</value></data>
+  <data name="Settings_AdminMode_WarnHint" xml:space="preserve"><value>Show a warning when interacting with apps that are running with higher privileges.</value></data>
+</root>

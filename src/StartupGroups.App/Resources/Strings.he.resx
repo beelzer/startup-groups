@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AI-translated. Pending native-speaker review. -->
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true"><xsd:complexType><xsd:choice maxOccurs="unbounded">
+      <xsd:element name="data"><xsd:complexType><xsd:sequence>
+        <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+        <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+      </xsd:sequence><xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+      <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+      <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+      <xsd:attribute xmlns:xml="http://www.w3.org/XML/1998/namespace" ref="xml:space" /></xsd:complexType></xsd:element>
+      <xsd:element name="resheader"><xsd:complexType><xsd:sequence>
+        <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+      </xsd:sequence><xsd:attribute name="name" type="xsd:string" use="required" /></xsd:complexType></xsd:element>
+    </xsd:choice></xsd:complexType></xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Window_Main_Title" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Window_AddApp_Title" xml:space="preserve"><value>הוסף אפליקציה</value></data>
+  <data name="Window_Group_Title" xml:space="preserve"><value>קבוצה</value></data>
+  <data name="Window_App_Title" xml:space="preserve"><value>אפליקציה</value></data>
+
+  <data name="Sidebar_Groups_Heading" xml:space="preserve"><value>קבוצות</value></data>
+  <data name="Sidebar_System_Heading" xml:space="preserve"><value>מערכת</value></data>
+  <data name="Sidebar_WindowsStartup_Label" xml:space="preserve"><value>הפעלה של Windows</value></data>
+
+  <data name="Action_New" xml:space="preserve"><value>חדש</value></data>
+  <data name="Action_Add" xml:space="preserve"><value>הוסף</value></data>
+  <data name="Action_AddApp" xml:space="preserve"><value>הוסף אפליקציה</value></data>
+  <data name="Action_AddBlank" xml:space="preserve"><value>הוסף ריק</value></data>
+  <data name="Action_AddSelected" xml:space="preserve"><value>הוסף את הנבחרים</value></data>
+  <data name="Action_EditSelected" xml:space="preserve"><value>ערוך נבחר</value></data>
+  <data name="Action_Save" xml:space="preserve"><value>שמור</value></data>
+  <data name="Action_Cancel" xml:space="preserve"><value>ביטול</value></data>
+  <data name="Action_Yes" xml:space="preserve"><value>כן</value></data>
+  <data name="Action_No" xml:space="preserve"><value>לא</value></data>
+  <data name="Action_Ok" xml:space="preserve"><value>אישור</value></data>
+  <data name="Action_Browse" xml:space="preserve"><value>עיון...</value></data>
+  <data name="Action_LaunchAll" xml:space="preserve"><value>הפעל הכול</value></data>
+  <data name="Action_StopAll" xml:space="preserve"><value>עצור הכול</value></data>
+  <data name="Action_Launch" xml:space="preserve"><value>הפעל</value></data>
+  <data name="Action_Stop" xml:space="preserve"><value>עצור</value></data>
+  <data name="Action_Edit" xml:space="preserve"><value>ערוך</value></data>
+  <data name="Action_Remove" xml:space="preserve"><value>הסר</value></data>
+  <data name="Action_Refresh" xml:space="preserve"><value>רענן</value></data>
+  <data name="Action_OpenLocation" xml:space="preserve"><value>פתח מיקום</value></data>
+  <data name="Action_RenameGroup" xml:space="preserve"><value>שנה שם קבוצה</value></data>
+  <data name="Action_RemoveGroup" xml:space="preserve"><value>הסר קבוצה</value></data>
+  <data name="Action_OpenConfigFolder" xml:space="preserve"><value>פתח תיקיית תצורה</value></data>
+  <data name="Action_OpenLogFolder" xml:space="preserve"><value>פתח תיקיית יומנים</value></data>
+  <data name="Action_Logs" xml:space="preserve"><value>יומנים</value></data>
+
+  <data name="Apps_Heading" xml:space="preserve"><value>אפליקציות</value></data>
+  <data name="Apps_NoGroupSelected" xml:space="preserve"><value>לא נבחרה קבוצה</value></data>
+  <data name="Apps_CountFormat" xml:space="preserve"><value>{0} אפליקציות</value></data>
+  <data name="Apps_Column_Actions" xml:space="preserve"><value>פעולות</value></data>
+
+  <data name="WinStartup_Description" xml:space="preserve"><value>אפליקציות ושירותים ש-Windows מפעיל כשאתה נכנס.</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Title" xml:space="preserve"><value>הפעל את Startup Groups בכניסה</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Description" xml:space="preserve"><value>רושם משימה מתוזמנת כך שסמל מגש המערכת יופעל באופן אוטומטי.</value></data>
+  <data name="WinStartup_Column_Enabled" xml:space="preserve"><value>מופעל</value></data>
+  <data name="WinStartup_Column_Name" xml:space="preserve"><value>שם</value></data>
+  <data name="WinStartup_Column_Command" xml:space="preserve"><value>פקודה</value></data>
+  <data name="WinStartup_Column_Source" xml:space="preserve"><value>מקור</value></data>
+  <data name="WinStartup_CountFormat" xml:space="preserve"><value>{0} פריטי הפעלה</value></data>
+  <data name="WinStartup_AddedFormat" xml:space="preserve"><value>נוסף {0}</value></data>
+  <data name="WinStartup_RemovedFormat" xml:space="preserve"><value>הוסר {0}</value></data>
+  <data name="WinStartup_CannotModifyFormat" xml:space="preserve"><value>'{0}' נמצא ב-{1} ודורש הרשאות מנהל כדי להסירו.</value></data>
+  <data name="WinStartup_RequiresAdmin" xml:space="preserve"><value>דורש הרשאות מנהל. הפעל מחדש כמנהל כדי לשנות ערך זה.</value></data>
+  <data name="WinStartup_ToggleFailedFormat" xml:space="preserve"><value>המעבר עבור '{0}' נכשל: {1}</value></data>
+  <data name="WinStartup_AddFailedFormat" xml:space="preserve"><value>ההוספה נכשלה: {0}</value></data>
+  <data name="WinStartup_RemoveFailedFormat" xml:space="preserve"><value>ההסרה נכשלה: {0}</value></data>
+
+  <data name="Dialog_DuplicateGroup_Title" xml:space="preserve"><value>קבוצה כפולה</value></data>
+  <data name="Dialog_DuplicateGroup_MessageFormat" xml:space="preserve"><value>קבוצה עם המזהה '{0}' כבר קיימת.</value></data>
+  <data name="Dialog_RemoveGroup_Title" xml:space="preserve"><value>הסר קבוצה</value></data>
+  <data name="Dialog_RemoveGroup_MessageFormat" xml:space="preserve"><value>להסיר את הקבוצה '{0}' ואת כל האפליקציות שלה?</value></data>
+  <data name="Dialog_RemoveApp_Title" xml:space="preserve"><value>הסר אפליקציה</value></data>
+  <data name="Dialog_RemoveApp_MessageFormat" xml:space="preserve"><value>להסיר את '{0}' מ-{1}?</value></data>
+  <data name="Dialog_RemoveStartupItem_Title" xml:space="preserve"><value>הסר פריט הפעלה</value></data>
+  <data name="Dialog_RemoveStartupItem_MessageFormat" xml:space="preserve"><value>להסיר את '{0}' מהפעלת Windows?</value></data>
+  <data name="Dialog_Startup_Title" xml:space="preserve"><value>הפעלה</value></data>
+  <data name="Dialog_AutoStart_Title" xml:space="preserve"><value>הפעלה אוטומטית</value></data>
+  <data name="Dialog_AdministratorRequired_Title" xml:space="preserve"><value>נדרשות הרשאות מנהל</value></data>
+  <data name="Dialog_AdministratorRequired_StartFormat" xml:space="preserve"><value>השירותים הבאים דורשים הרשאות מנהל כדי להפעיל:
+
+{0}
+
+להריץ עם הרשאות מוגברות עכשיו?</value></data>
+  <data name="Dialog_AdministratorRequired_StopFormat" xml:space="preserve"><value>השירותים הבאים דורשים הרשאות מנהל כדי לעצור:
+
+{0}
+
+להריץ עם הרשאות מוגברות עכשיו?</value></data>
+  <data name="Dialog_UnexpectedErrorFormat" xml:space="preserve"><value>{0} — שגיאה בלתי צפויה</value></data>
+
+  <data name="FileDialog_SelectExecutable_Title" xml:space="preserve"><value>בחר קובץ הפעלה</value></data>
+  <data name="FileDialog_SelectExecutable_Filter" xml:space="preserve"><value>קבצי הפעלה (*.exe)|*.exe|כל הקבצים (*.*)|*.*</value></data>
+  <data name="FileDialog_SelectFolder_Title" xml:space="preserve"><value>בחר תיקייה</value></data>
+
+  <data name="Status_Ready" xml:space="preserve"><value>מוכן</value></data>
+  <data name="Status_LaunchingFormat" xml:space="preserve"><value>מפעיל את {0}...</value></data>
+  <data name="Status_StoppingFormat" xml:space="preserve"><value>עוצר את {0}...</value></data>
+  <data name="Status_AppResultFormat" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Status_AddedAppFormat" xml:space="preserve"><value>נוסף {0}</value></data>
+  <data name="Status_AddedAppsFormat" xml:space="preserve"><value>נוספו {0} אפליקציות</value></data>
+  <data name="Status_ElevationFailed" xml:space="preserve"><value>העלאת ההרשאות נכשלה או בוטלה.</value></data>
+  <data name="Status_GroupActionFormat" xml:space="preserve"><value>{0} {1}: {2} בהצלחה</value></data>
+  <data name="Status_GroupActionWithFailureFormat" xml:space="preserve"><value>{0} {1}: {2} בהצלחה, {3} נכשלו</value></data>
+  <data name="Status_VerbLaunch" xml:space="preserve"><value>הפעלה</value></data>
+  <data name="Status_VerbStop" xml:space="preserve"><value>עצירה</value></data>
+
+  <data name="AddAppPicker_Heading" xml:space="preserve"><value>בחר אפליקציות מותקנות</value></data>
+  <data name="AddAppPicker_Subtitle" xml:space="preserve"><value>סמן את אלה שברצונך להוסיף. השתמש ב"ערוך נבחר" כדי לכוונן אחד לפני שמירה, או ב"הוסף ריק" כדי ליצור ערך ידנית.</value></data>
+  <data name="AddAppPicker_SearchPlaceholder" xml:space="preserve"><value>חיפוש לפי שם או נתיב...</value></data>
+  <data name="AddAppPicker_SelectedFormat" xml:space="preserve"><value>{0} נבחרו</value></data>
+  <data name="AddAppPicker_SourceStore" xml:space="preserve"><value>חנות</value></data>
+  <data name="AddAppPicker_SourceDesktop" xml:space="preserve"><value>שולחן עבודה</value></data>
+  <data name="AddAppPicker_SourceService" xml:space="preserve"><value>שירות</value></data>
+  <data name="AddAppPicker_SourceShell" xml:space="preserve"><value>מעטפת</value></data>
+  <data name="AddAppPicker_SourceScoop" xml:space="preserve"><value>Scoop</value></data>
+
+  <data name="GroupEditor_Heading" xml:space="preserve"><value>פרטי הקבוצה</value></data>
+  <data name="GroupEditor_Id_Label" xml:space="preserve"><value>מזהה (קבוע, בשימוש בתצורה)</value></data>
+  <data name="GroupEditor_Name_Label" xml:space="preserve"><value>שם (מוצג בממשק)</value></data>
+  <data name="GroupEditor_Icon_Label" xml:space="preserve"><value>סמל</value></data>
+  <data name="GroupEditor_IconSearch_Placeholder" xml:space="preserve"><value>חפש סמלים...</value></data>
+  <data name="GroupEditor_IconTab_Apps" xml:space="preserve"><value>אפליקציות</value></data>
+  <data name="GroupEditor_IconTab_Outline" xml:space="preserve"><value>מתאר</value></data>
+  <data name="GroupEditor_IconTab_Filled" xml:space="preserve"><value>מלא</value></data>
+  <data name="GroupEditor_IconTab_Windows" xml:space="preserve"><value>Windows</value></data>
+
+  <data name="AppEditor_Heading" xml:space="preserve"><value>פרטי האפליקציה</value></data>
+  <data name="AppEditor_Name_Label" xml:space="preserve"><value>שם</value></data>
+  <data name="AppEditor_Kind_Label" xml:space="preserve"><value>סוג</value></data>
+  <data name="AppEditor_Target_Label" xml:space="preserve"><value>יעד (קובץ הפעלה, נתיב %ENV%, * glob, או shell:AppsFolder\item)</value></data>
+  <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>ארגומנטים (אופציונלי)</value></data>
+  <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>ארגומנטים מוצעים</value></data>
+  <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>תיקיית עבודה (אופציונלי)</value></data>
+  <data name="AppEditor_Service_Label" xml:space="preserve"><value>שם שירות (כפי שמופיע ב-services.msc)</value></data>
+  <data name="AppEditor_Delay_Label" xml:space="preserve"><value>עיכוב לאחר הפעלה (שניות)</value></data>
+  <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>מופעל (כלול בהפעלת הקבוצה)</value></data>
+
+  <data name="RunningState_Running" xml:space="preserve"><value>פועל</value></data>
+  <data name="RunningState_Stopped" xml:space="preserve"><value>עצור</value></data>
+
+  <data name="Tray_Tooltip" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Tray_OpenMain" xml:space="preserve"><value>פתח את Startup Groups</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>יציאה</value></data>
+
+  <data name="Settings_Language_Label" xml:space="preserve"><value>שפה</value></data>
+  <data name="Settings_Language_Hint" xml:space="preserve"><value>תרגומים שאינם אנגלית נעשו בסיוע AI ועלולים להכיל שגיאות. דווח על בעיות ב-GitHub.</value></data>
+
+  <data name="Tooltip_OpenConfigFolder" xml:space="preserve"><value>פתח תיקיית תצורה</value></data>
+  <data name="Tooltip_OpenLogFolder" xml:space="preserve"><value>פתח תיקיית יומנים</value></data>
+
+  <data name="Sidebar_Settings_Label" xml:space="preserve"><value>הגדרות</value></data>
+  <data name="Settings_Heading" xml:space="preserve"><value>הגדרות</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>העדפות למראה, התנהגות והפעלה.</value></data>
+  <data name="Settings_Section_Appearance" xml:space="preserve"><value>מראה</value></data>
+  <data name="Settings_Section_Behavior" xml:space="preserve"><value>התנהגות</value></data>
+  <data name="Settings_Section_About" xml:space="preserve"><value>אודות</value></data>
+  <data name="Settings_Theme_Label" xml:space="preserve"><value>ערכת נושא</value></data>
+  <data name="Settings_Theme_Hint" xml:space="preserve"><value>בהיר, כהה, או לפי הגדרת מערכת Windows.</value></data>
+  <data name="Settings_Theme_System" xml:space="preserve"><value>מערכת</value></data>
+  <data name="Settings_Theme_Light" xml:space="preserve"><value>בהיר</value></data>
+  <data name="Settings_Theme_Dark" xml:space="preserve"><value>כהה</value></data>
+  <data name="Settings_Theme_OpenWindowsColors" xml:space="preserve"><value>הגדרות צבעים של Windows</value></data>
+  <data name="Settings_AutoStart_OpenTaskScheduler" xml:space="preserve"><value>פתח מתזמן משימות</value></data>
+  <data name="Settings_Language_ReportIssue" xml:space="preserve"><value>דווח על בעיית תרגום</value></data>
+  <data name="Settings_MinimizeToTray_Label" xml:space="preserve"><value>מזער לשורת המשימות בעת סגירה</value></data>
+  <data name="Settings_MinimizeToTray_Hint" xml:space="preserve"><value>המשך ריצה ברקע כשהחלון נסגר.</value></data>
+  <data name="Settings_Notifications_Label" xml:space="preserve"><value>הצג התראות</value></data>
+  <data name="Settings_Notifications_Hint" xml:space="preserve"><value>התראות טוסט בעת הפעלת או עצירת אפליקציות.</value></data>
+  <data name="Settings_AutoStart_Label" xml:space="preserve"><value>הפעל בכניסה</value></data>
+  <data name="Settings_AutoStart_Hint" xml:space="preserve"><value>רושם משימה מתוזמנת כך שסמל מגש המערכת יופעל באופן אוטומטי.</value></data>
+  <data name="Settings_About_VersionFormat" xml:space="preserve"><value>גרסה {0}</value></data>
+  <data name="Settings_About_OpenGitHub" xml:space="preserve"><value>פתח ב-GitHub</value></data>
+
+  <data name="Settings_Section_Updates" xml:space="preserve"><value>גרסה ועדכונים</value></data>
+  <data name="Settings_Version_ReleaseNotes" xml:space="preserve"><value>הערות גרסה</value></data>
+  <data name="Settings_Version_LastCheckedFormat" xml:space="preserve"><value>נבדק לאחרונה: {0:g}</value></data>
+  <data name="Settings_Version_CheckNow" xml:space="preserve"><value>בדוק עכשיו</value></data>
+  <data name="Settings_Version_Checking" xml:space="preserve"><value>בודק עדכונים...</value></data>
+  <data name="Settings_Version_UpToDate" xml:space="preserve"><value>אתה בגרסה העדכנית ביותר</value></data>
+  <data name="Settings_Version_UpdateAvailable" xml:space="preserve"><value>עדכון מוכן להתקנה:</value></data>
+  <data name="Settings_Version_InstallNow" xml:space="preserve"><value>התקן עכשיו</value></data>
+  <data name="Settings_Version_SeeWhatsNew" xml:space="preserve"><value>מה חדש</value></data>
+
+  <data name="Empty_NoAppsInGroup_Title" xml:space="preserve"><value>לא נוספו אפליקציות עדיין</value></data>
+  <data name="Empty_NoAppsInGroup_Hint" xml:space="preserve"><value>לחץ על "הוסף אפליקציה" כדי להוסיף אפליקציות או שירותים לקבוצה זו.</value></data>
+  <data name="Empty_NoAppIcons_Title" xml:space="preserve"><value>אין סמלי אפליקציה זמינים</value></data>
+  <data name="Empty_NoAppIcons_Hint" xml:space="preserve"><value>הוסף אפליקציות לקבוצה זו כדי להשתמש בסמלים שלהן כאן.</value></data>
+  <data name="Empty_NoStartupItems_Title" xml:space="preserve"><value>אין פריטי הפעלה</value></data>
+  <data name="Empty_NoStartupItems_Hint" xml:space="preserve"><value>Windows לא מפעיל אפליקציות בכניסה.</value></data>
+</root>

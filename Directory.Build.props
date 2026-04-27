@@ -1,0 +1,20 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Deterministic>true</Deterministic>
+    <Product>Startup Groups</Product>
+    <Company>Startup Groups</Company>
+    <Copyright>Copyright (c) $([System.DateTime]::UtcNow.Year)</Copyright>
+    <Version>1.0.0</Version>
+    <InformationalVersion>$(Version)</InformationalVersion>
+    <AppId>startup-groups</AppId>
+    <AppUpgradeCode>B2F3A4E5-1C6D-4B9A-9F8E-0D6A2B1C3E4F</AppUpgradeCode>
+    <AppSupportUrl>https://github.com/beelzer/startup-groups</AppSupportUrl>
+    <AppAboutUrl>https://github.com/beelzer/startup-groups</AppAboutUrl>
+  </PropertyGroup>
+</Project>

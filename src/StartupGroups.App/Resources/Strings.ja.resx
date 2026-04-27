@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AI-translated. Pending native-speaker review. -->
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true"><xsd:complexType><xsd:choice maxOccurs="unbounded">
+      <xsd:element name="data"><xsd:complexType><xsd:sequence>
+        <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+        <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+      </xsd:sequence><xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+      <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+      <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+      <xsd:attribute xmlns:xml="http://www.w3.org/XML/1998/namespace" ref="xml:space" /></xsd:complexType></xsd:element>
+      <xsd:element name="resheader"><xsd:complexType><xsd:sequence>
+        <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+      </xsd:sequence><xsd:attribute name="name" type="xsd:string" use="required" /></xsd:complexType></xsd:element>
+    </xsd:choice></xsd:complexType></xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Window_Main_Title" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Window_AddApp_Title" xml:space="preserve"><value>アプリを追加</value></data>
+  <data name="Window_Group_Title" xml:space="preserve"><value>グループ</value></data>
+  <data name="Window_App_Title" xml:space="preserve"><value>アプリ</value></data>
+
+  <data name="Sidebar_Groups_Heading" xml:space="preserve"><value>グループ</value></data>
+  <data name="Sidebar_System_Heading" xml:space="preserve"><value>システム</value></data>
+  <data name="Sidebar_WindowsStartup_Label" xml:space="preserve"><value>Windowsスタートアップ</value></data>
+
+  <data name="Action_New" xml:space="preserve"><value>新規</value></data>
+  <data name="Action_Add" xml:space="preserve"><value>追加</value></data>
+  <data name="Action_AddApp" xml:space="preserve"><value>アプリを追加</value></data>
+  <data name="Action_AddBlank" xml:space="preserve"><value>空で追加</value></data>
+  <data name="Action_AddSelected" xml:space="preserve"><value>選択を追加</value></data>
+  <data name="Action_EditSelected" xml:space="preserve"><value>選択を編集</value></data>
+  <data name="Action_Save" xml:space="preserve"><value>保存</value></data>
+  <data name="Action_Cancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="Action_Yes" xml:space="preserve"><value>はい</value></data>
+  <data name="Action_No" xml:space="preserve"><value>いいえ</value></data>
+  <data name="Action_Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="Action_Browse" xml:space="preserve"><value>参照...</value></data>
+  <data name="Action_LaunchAll" xml:space="preserve"><value>すべて起動</value></data>
+  <data name="Action_StopAll" xml:space="preserve"><value>すべて停止</value></data>
+  <data name="Action_Launch" xml:space="preserve"><value>起動</value></data>
+  <data name="Action_Stop" xml:space="preserve"><value>停止</value></data>
+  <data name="Action_Edit" xml:space="preserve"><value>編集</value></data>
+  <data name="Action_Remove" xml:space="preserve"><value>削除</value></data>
+  <data name="Action_Refresh" xml:space="preserve"><value>更新</value></data>
+  <data name="Action_OpenLocation" xml:space="preserve"><value>場所を開く</value></data>
+  <data name="Action_RenameGroup" xml:space="preserve"><value>グループ名を変更</value></data>
+  <data name="Action_RemoveGroup" xml:space="preserve"><value>グループを削除</value></data>
+  <data name="Action_OpenConfigFolder" xml:space="preserve"><value>設定フォルダーを開く</value></data>
+  <data name="Action_OpenLogFolder" xml:space="preserve"><value>ログフォルダーを開く</value></data>
+  <data name="Action_Logs" xml:space="preserve"><value>ログ</value></data>
+
+  <data name="Apps_Heading" xml:space="preserve"><value>アプリ</value></data>
+  <data name="Apps_NoGroupSelected" xml:space="preserve"><value>グループが選択されていません</value></data>
+  <data name="Apps_CountFormat" xml:space="preserve"><value>{0}個のアプリ</value></data>
+  <data name="Apps_Column_Actions" xml:space="preserve"><value>操作</value></data>
+
+  <data name="WinStartup_Description" xml:space="preserve"><value>サインイン時にWindowsが起動するアプリとサービスです。</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Title" xml:space="preserve"><value>サインイン時にStartup Groupsを起動</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Description" xml:space="preserve"><value>トレイアイコンが自動的に起動するようスケジュールタスクを登録します。</value></data>
+  <data name="WinStartup_Column_Enabled" xml:space="preserve"><value>有効</value></data>
+  <data name="WinStartup_Column_Name" xml:space="preserve"><value>名前</value></data>
+  <data name="WinStartup_Column_Command" xml:space="preserve"><value>コマンド</value></data>
+  <data name="WinStartup_Column_Source" xml:space="preserve"><value>ソース</value></data>
+  <data name="WinStartup_CountFormat" xml:space="preserve"><value>{0}個のスタートアップ項目</value></data>
+  <data name="WinStartup_AddedFormat" xml:space="preserve"><value>{0}を追加しました</value></data>
+  <data name="WinStartup_RemovedFormat" xml:space="preserve"><value>{0}を削除しました</value></data>
+  <data name="WinStartup_CannotModifyFormat" xml:space="preserve"><value>'{0}'は{1}にあり、削除には管理者権限が必要です。</value></data>
+  <data name="WinStartup_RequiresAdmin" xml:space="preserve"><value>管理者権限が必要です。このエントリを変更するには管理者として再起動してください。</value></data>
+  <data name="WinStartup_ToggleFailedFormat" xml:space="preserve"><value>'{0}'の切り替えに失敗しました: {1}</value></data>
+  <data name="WinStartup_AddFailedFormat" xml:space="preserve"><value>追加に失敗しました: {0}</value></data>
+  <data name="WinStartup_RemoveFailedFormat" xml:space="preserve"><value>削除に失敗しました: {0}</value></data>
+
+  <data name="Dialog_DuplicateGroup_Title" xml:space="preserve"><value>グループの重複</value></data>
+  <data name="Dialog_DuplicateGroup_MessageFormat" xml:space="preserve"><value>ID '{0}'のグループは既に存在します。</value></data>
+  <data name="Dialog_RemoveGroup_Title" xml:space="preserve"><value>グループを削除</value></data>
+  <data name="Dialog_RemoveGroup_MessageFormat" xml:space="preserve"><value>グループ'{0}'とそのすべてのアプリを削除しますか?</value></data>
+  <data name="Dialog_RemoveApp_Title" xml:space="preserve"><value>アプリを削除</value></data>
+  <data name="Dialog_RemoveApp_MessageFormat" xml:space="preserve"><value>'{0}'を{1}から削除しますか?</value></data>
+  <data name="Dialog_RemoveStartupItem_Title" xml:space="preserve"><value>スタートアップ項目を削除</value></data>
+  <data name="Dialog_RemoveStartupItem_MessageFormat" xml:space="preserve"><value>'{0}'をWindowsスタートアップから削除しますか?</value></data>
+  <data name="Dialog_Startup_Title" xml:space="preserve"><value>スタートアップ</value></data>
+  <data name="Dialog_AutoStart_Title" xml:space="preserve"><value>自動起動</value></data>
+  <data name="Dialog_AdministratorRequired_Title" xml:space="preserve"><value>管理者権限が必要</value></data>
+  <data name="Dialog_AdministratorRequired_StartFormat" xml:space="preserve"><value>以下のサービスを開始するには管理者権限が必要です:
+
+{0}
+
+権限を昇格して実行しますか?</value></data>
+  <data name="Dialog_AdministratorRequired_StopFormat" xml:space="preserve"><value>以下のサービスを停止するには管理者権限が必要です:
+
+{0}
+
+権限を昇格して実行しますか?</value></data>
+  <data name="Dialog_UnexpectedErrorFormat" xml:space="preserve"><value>{0} — 予期しないエラー</value></data>
+
+  <data name="FileDialog_SelectExecutable_Title" xml:space="preserve"><value>実行ファイルを選択</value></data>
+  <data name="FileDialog_SelectExecutable_Filter" xml:space="preserve"><value>実行ファイル (*.exe)|*.exe|すべてのファイル (*.*)|*.*</value></data>
+  <data name="FileDialog_SelectFolder_Title" xml:space="preserve"><value>フォルダーを選択</value></data>
+
+  <data name="Status_Ready" xml:space="preserve"><value>準備完了</value></data>
+  <data name="Status_LaunchingFormat" xml:space="preserve"><value>{0}を起動中...</value></data>
+  <data name="Status_StoppingFormat" xml:space="preserve"><value>{0}を停止中...</value></data>
+  <data name="Status_AppResultFormat" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Status_AddedAppFormat" xml:space="preserve"><value>{0}を追加しました</value></data>
+  <data name="Status_AddedAppsFormat" xml:space="preserve"><value>{0}個のアプリを追加しました</value></data>
+  <data name="Status_ElevationFailed" xml:space="preserve"><value>昇格に失敗、またはキャンセルされました。</value></data>
+  <data name="Status_GroupActionFormat" xml:space="preserve"><value>{0} {1}: {2}件成功</value></data>
+  <data name="Status_GroupActionWithFailureFormat" xml:space="preserve"><value>{0} {1}: {2}件成功、{3}件失敗</value></data>
+  <data name="Status_VerbLaunch" xml:space="preserve"><value>起動</value></data>
+  <data name="Status_VerbStop" xml:space="preserve"><value>停止</value></data>
+
+  <data name="AddAppPicker_Heading" xml:space="preserve"><value>インストール済みアプリを選択</value></data>
+  <data name="AddAppPicker_Subtitle" xml:space="preserve"><value>追加したいものにチェックを入れてください。保存前に調整するには「選択を編集」、手動で作成するには「空で追加」を使います。</value></data>
+  <data name="AddAppPicker_SearchPlaceholder" xml:space="preserve"><value>名前またはパスで検索...</value></data>
+  <data name="AddAppPicker_SelectedFormat" xml:space="preserve"><value>{0}件選択中</value></data>
+  <data name="AddAppPicker_SourceStore" xml:space="preserve"><value>ストア</value></data>
+  <data name="AddAppPicker_SourceDesktop" xml:space="preserve"><value>デスクトップ</value></data>
+  <data name="AddAppPicker_SourceService" xml:space="preserve"><value>サービス</value></data>
+  <data name="AddAppPicker_SourceShell" xml:space="preserve"><value>シェル</value></data>
+  <data name="AddAppPicker_SourceScoop" xml:space="preserve"><value>Scoop</value></data>
+
+  <data name="GroupEditor_Heading" xml:space="preserve"><value>グループの詳細</value></data>
+  <data name="GroupEditor_Id_Label" xml:space="preserve"><value>ID (固定、設定で使用)</value></data>
+  <data name="GroupEditor_Name_Label" xml:space="preserve"><value>名前 (UIに表示)</value></data>
+  <data name="GroupEditor_Icon_Label" xml:space="preserve"><value>アイコン</value></data>
+  <data name="GroupEditor_IconSearch_Placeholder" xml:space="preserve"><value>アイコンを検索...</value></data>
+  <data name="GroupEditor_IconTab_Apps" xml:space="preserve"><value>アプリ</value></data>
+  <data name="GroupEditor_IconTab_Outline" xml:space="preserve"><value>アウトライン</value></data>
+  <data name="GroupEditor_IconTab_Filled" xml:space="preserve"><value>塗りつぶし</value></data>
+  <data name="GroupEditor_IconTab_Windows" xml:space="preserve"><value>Windows</value></data>
+
+  <data name="AppEditor_Heading" xml:space="preserve"><value>アプリの詳細</value></data>
+  <data name="AppEditor_Name_Label" xml:space="preserve"><value>名前</value></data>
+  <data name="AppEditor_Kind_Label" xml:space="preserve"><value>種類</value></data>
+  <data name="AppEditor_Target_Label" xml:space="preserve"><value>ターゲット (実行ファイル、%ENV%パス、*グロブ、shell:AppsFolder\item)</value></data>
+  <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>引数 (任意)</value></data>
+  <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>推奨の引数</value></data>
+  <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>作業ディレクトリ (任意)</value></data>
+  <data name="AppEditor_Service_Label" xml:space="preserve"><value>サービス名 (services.mscに表示される名前)</value></data>
+  <data name="AppEditor_Delay_Label" xml:space="preserve"><value>起動後の遅延 (秒)</value></data>
+  <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>有効 (グループ起動に含める)</value></data>
+
+  <data name="RunningState_Running" xml:space="preserve"><value>実行中</value></data>
+  <data name="RunningState_Stopped" xml:space="preserve"><value>停止中</value></data>
+
+  <data name="Tray_Tooltip" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Tray_OpenMain" xml:space="preserve"><value>Startup Groupsを開く</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>終了</value></data>
+
+  <data name="Settings_Language_Label" xml:space="preserve"><value>言語</value></data>
+  <data name="Settings_Language_Hint" xml:space="preserve"><value>英語以外の翻訳はAI支援によるもので、誤りを含む場合があります。問題はGitHubで報告してください。</value></data>
+
+  <data name="Tooltip_OpenConfigFolder" xml:space="preserve"><value>設定フォルダーを開く</value></data>
+  <data name="Tooltip_OpenLogFolder" xml:space="preserve"><value>ログフォルダーを開く</value></data>
+
+  <data name="Sidebar_Settings_Label" xml:space="preserve"><value>設定</value></data>
+  <data name="Settings_Heading" xml:space="preserve"><value>設定</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>外観、動作、起動に関する設定。</value></data>
+  <data name="Settings_Section_Appearance" xml:space="preserve"><value>外観</value></data>
+  <data name="Settings_Section_Behavior" xml:space="preserve"><value>動作</value></data>
+  <data name="Settings_Section_About" xml:space="preserve"><value>バージョン情報</value></data>
+  <data name="Settings_Theme_Label" xml:space="preserve"><value>テーマ</value></data>
+  <data name="Settings_Theme_Hint" xml:space="preserve"><value>ライト、ダーク、またはWindowsシステム設定に従う。</value></data>
+  <data name="Settings_Theme_System" xml:space="preserve"><value>システム</value></data>
+  <data name="Settings_Theme_Light" xml:space="preserve"><value>ライト</value></data>
+  <data name="Settings_Theme_Dark" xml:space="preserve"><value>ダーク</value></data>
+  <data name="Settings_Theme_OpenWindowsColors" xml:space="preserve"><value>Windowsの色設定</value></data>
+  <data name="Settings_AutoStart_OpenTaskScheduler" xml:space="preserve"><value>タスクスケジューラを開く</value></data>
+  <data name="Settings_Language_ReportIssue" xml:space="preserve"><value>翻訳の問題を報告</value></data>
+  <data name="Settings_MinimizeToTray_Label" xml:space="preserve"><value>閉じたときにトレイに最小化</value></data>
+  <data name="Settings_MinimizeToTray_Hint" xml:space="preserve"><value>ウィンドウを閉じてもバックグラウンドで実行を続けます。</value></data>
+  <data name="Settings_Notifications_Label" xml:space="preserve"><value>通知を表示</value></data>
+  <data name="Settings_Notifications_Hint" xml:space="preserve"><value>アプリの起動や停止時のトースト通知。</value></data>
+  <data name="Settings_AutoStart_Label" xml:space="preserve"><value>サインイン時に起動</value></data>
+  <data name="Settings_AutoStart_Hint" xml:space="preserve"><value>トレイアイコンが自動的に起動するようスケジュールタスクを登録します。</value></data>
+  <data name="Settings_About_VersionFormat" xml:space="preserve"><value>バージョン {0}</value></data>
+  <data name="Settings_About_OpenGitHub" xml:space="preserve"><value>GitHubで開く</value></data>
+
+  <data name="Settings_Section_Updates" xml:space="preserve"><value>バージョンと更新</value></data>
+  <data name="Settings_Version_ReleaseNotes" xml:space="preserve"><value>リリースノート</value></data>
+  <data name="Settings_Version_LastCheckedFormat" xml:space="preserve"><value>最終確認: {0:g}</value></data>
+  <data name="Settings_Version_CheckNow" xml:space="preserve"><value>今すぐ確認</value></data>
+  <data name="Settings_Version_Checking" xml:space="preserve"><value>更新を確認中...</value></data>
+  <data name="Settings_Version_UpToDate" xml:space="preserve"><value>最新版です</value></data>
+  <data name="Settings_Version_UpdateAvailable" xml:space="preserve"><value>インストール可能な更新:</value></data>
+  <data name="Settings_Version_InstallNow" xml:space="preserve"><value>今すぐインストール</value></data>
+  <data name="Settings_Version_SeeWhatsNew" xml:space="preserve"><value>更新内容を見る</value></data>
+
+  <data name="Empty_NoAppsInGroup_Title" xml:space="preserve"><value>まだアプリが追加されていません</value></data>
+  <data name="Empty_NoAppsInGroup_Hint" xml:space="preserve"><value>「アプリを追加」をクリックして、このグループにアプリやサービスを追加します。</value></data>
+  <data name="Empty_NoAppIcons_Title" xml:space="preserve"><value>利用可能なアプリアイコンがありません</value></data>
+  <data name="Empty_NoAppIcons_Hint" xml:space="preserve"><value>このグループにアプリを追加すると、そのアイコンをここで使用できます。</value></data>
+  <data name="Empty_NoStartupItems_Title" xml:space="preserve"><value>スタートアップ項目がありません</value></data>
+  <data name="Empty_NoStartupItems_Hint" xml:space="preserve"><value>Windowsはサインイン時にアプリを起動していません。</value></data>
+</root>

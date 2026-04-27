@@ -1,0 +1,260 @@
+<ui:FluentWindow x:Class="StartupGroups.App.Views.GroupEditorWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:ctrl="clr-namespace:StartupGroups.App.Controls"
+                 xmlns:loc="clr-namespace:StartupGroups.App.Localization"
+                 Title="{loc:Translate Window_Group_Title}"
+                 Width="{StaticResource WindowGroupEditorWidth}"
+                 SizeToContent="Height"
+                 FlowDirection="{loc:FlowDirection}"
+                 WindowStartupLocation="CenterOwner"
+                 ResizeMode="NoResize"
+                 ShowInTaskbar="False"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round">
+    <Window.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibility" xmlns:conv="clr-namespace:StartupGroups.App.Converters" />
+        <conv:BoolToVisibilityConverter x:Key="NotBoolToVisibility" Invert="True" xmlns:conv="clr-namespace:StartupGroups.App.Converters" />
+
+        <Style x:Key="IconTileButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Width" Value="48" />
+            <Setter Property="Height" Value="48" />
+            <Setter Property="Margin" Value="3" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource RadiusMd}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                    <Setter Property="Foreground" Value="White" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <DataTemplate x:Key="IconTileTemplate">
+            <Button Style="{StaticResource IconTileButton}"
+                    Command="{Binding DataContext.SelectIconCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding Value}"
+                    ToolTip="{Binding DisplayName}">
+                <ctrl:GroupIconView Icon="{Binding Value}"
+                                    IconSize="{StaticResource IconSizeMd}"
+                                    IconForeground="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+            </Button>
+        </DataTemplate>
+
+        <!-- A single row of icon tiles. ListBox virtualizes rows so only the visible ones are realized. -->
+        <DataTemplate x:Key="IconRowTemplate">
+            <ItemsControl ItemsSource="{Binding}" ItemTemplate="{StaticResource IconTileTemplate}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </DataTemplate>
+
+        <!-- Strip default ListBoxItem chrome since the inner Button provides its own selection UI. -->
+        <Style x:Key="IconRowContainer" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <ContentPresenter />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FluentTabItem" TargetType="TabItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Grid>
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="0">
+                                <ContentPresenter ContentSource="Header"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Margin="{TemplateBinding Padding}"
+                                                  TextElement.Foreground="{TemplateBinding Foreground}"
+                                                  TextElement.FontWeight="{TemplateBinding FontWeight}" />
+                            </Border>
+                            <Rectangle x:Name="Underline"
+                                       Height="2"
+                                       Fill="{DynamicResource AccentFillColorDefaultBrush}"
+                                       VerticalAlignment="Bottom"
+                                       HorizontalAlignment="Stretch"
+                                       Margin="10,0"
+                                       Opacity="0" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                                <Setter TargetName="Underline" Property="Opacity" Value="1" />
+                                <Setter TargetName="Bd" Property="Background" Value="Transparent" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <ui:TitleBar Grid.Row="0" Title="{loc:Translate Window_Group_Title}" />
+
+        <Border Grid.Row="1" Padding="{StaticResource DialogPadding}">
+            <StackPanel>
+                <TextBlock Text="{loc:Translate GroupEditor_Heading}" Style="{StaticResource AppH2}" Margin="0,0,0,16" />
+
+                <TextBlock Text="{loc:Translate GroupEditor_Name_Label}" Style="{StaticResource AppMuted}" Margin="0,0,0,6" />
+                <ui:TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,18" />
+
+                <TextBlock Text="{loc:Translate GroupEditor_Icon_Label}" Style="{StaticResource AppMuted}" Margin="0,0,0,6" />
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource RadiusMd}"
+                        Margin="0,0,0,22">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <ui:TextBox Grid.Row="0"
+                                    Margin="10,10,10,6"
+                                    PlaceholderText="{loc:Translate GroupEditor_IconSearch_Placeholder}"
+                                    Icon="{ui:SymbolIcon Search24}"
+                                    Text="{Binding IconSearch, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <TabControl Grid.Row="1"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="0"
+                                    ItemContainerStyle="{StaticResource FluentTabItem}">
+                            <TabItem Header="{loc:Translate GroupEditor_IconTab_Apps}">
+                                <Grid>
+                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="360" Margin="16,32"
+                                                Visibility="{Binding HasAppIcons, Converter={StaticResource NotBoolToVisibility}}">
+                                        <Border Width="48" Height="48"
+                                                CornerRadius="{StaticResource RadiusMd}"
+                                                Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                                                HorizontalAlignment="Center"
+                                                Margin="0,0,0,12">
+                                            <ui:SymbolIcon Symbol="AppsAddIn24" FontSize="24"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="{loc:Translate Empty_NoAppIcons_Title}"
+                                                   Style="{StaticResource AppH3}"
+                                                   HorizontalAlignment="Center" />
+                                        <TextBlock Text="{loc:Translate Empty_NoAppIcons_Hint}"
+                                                   Style="{StaticResource AppMuted}"
+                                                   TextWrapping="Wrap"
+                                                   TextAlignment="Center"
+                                                   Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <ListBox MaxHeight="320" Padding="10"
+                                             Background="Transparent" BorderThickness="0"
+                                             ItemsSource="{Binding AppIconRows}"
+                                             ItemTemplate="{StaticResource IconRowTemplate}"
+                                             ItemContainerStyle="{StaticResource IconRowContainer}"
+                                             ScrollViewer.CanContentScroll="True"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                             VirtualizingStackPanel.IsVirtualizing="True"
+                                             VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                             VirtualizingStackPanel.ScrollUnit="Item"
+                                             Visibility="{Binding HasAppIcons, Converter={StaticResource BoolToVisibility}}" />
+                                </Grid>
+                            </TabItem>
+                            <TabItem Header="{loc:Translate GroupEditor_IconTab_Outline}">
+                                <ListBox MaxHeight="320" Padding="10"
+                                         Background="Transparent" BorderThickness="0"
+                                         ItemsSource="{Binding OutlineIconRows}"
+                                         ItemTemplate="{StaticResource IconRowTemplate}"
+                                         ItemContainerStyle="{StaticResource IconRowContainer}"
+                                         ScrollViewer.CanContentScroll="True"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         VirtualizingStackPanel.IsVirtualizing="True"
+                                         VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                         VirtualizingStackPanel.ScrollUnit="Item" />
+                            </TabItem>
+                            <TabItem Header="{loc:Translate GroupEditor_IconTab_Filled}">
+                                <ListBox MaxHeight="320" Padding="10"
+                                         Background="Transparent" BorderThickness="0"
+                                         ItemsSource="{Binding FilledIconRows}"
+                                         ItemTemplate="{StaticResource IconRowTemplate}"
+                                         ItemContainerStyle="{StaticResource IconRowContainer}"
+                                         ScrollViewer.CanContentScroll="True"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         VirtualizingStackPanel.IsVirtualizing="True"
+                                         VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                         VirtualizingStackPanel.ScrollUnit="Item" />
+                            </TabItem>
+                            <TabItem Header="{loc:Translate GroupEditor_IconTab_Windows}">
+                                <ListBox MaxHeight="320" Padding="10"
+                                         Background="Transparent" BorderThickness="0"
+                                         ItemsSource="{Binding StockIconRows}"
+                                         ItemTemplate="{StaticResource IconRowTemplate}"
+                                         ItemContainerStyle="{StaticResource IconRowContainer}"
+                                         ScrollViewer.CanContentScroll="True"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         VirtualizingStackPanel.IsVirtualizing="True"
+                                         VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                         VirtualizingStackPanel.ScrollUnit="Item" />
+                            </TabItem>
+                        </TabControl>
+                    </Grid>
+                </Border>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <ui:Button Content="{loc:Translate Action_Cancel}" Click="Cancel_Click" IsCancel="True" Margin="0,0,8,0" />
+                    <ui:Button Content="{loc:Translate Action_Save}" Appearance="Primary" Click="Save_Click" IsDefault="True" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</ui:FluentWindow>

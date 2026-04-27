@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AI-translated. Pending native-speaker review. -->
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true"><xsd:complexType><xsd:choice maxOccurs="unbounded">
+      <xsd:element name="data"><xsd:complexType><xsd:sequence>
+        <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+        <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+      </xsd:sequence><xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+      <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+      <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+      <xsd:attribute xmlns:xml="http://www.w3.org/XML/1998/namespace" ref="xml:space" /></xsd:complexType></xsd:element>
+      <xsd:element name="resheader"><xsd:complexType><xsd:sequence>
+        <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+      </xsd:sequence><xsd:attribute name="name" type="xsd:string" use="required" /></xsd:complexType></xsd:element>
+    </xsd:choice></xsd:complexType></xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Window_Main_Title" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Window_AddApp_Title" xml:space="preserve"><value>เพิ่มแอป</value></data>
+  <data name="Window_Group_Title" xml:space="preserve"><value>กลุ่ม</value></data>
+  <data name="Window_App_Title" xml:space="preserve"><value>แอป</value></data>
+
+  <data name="Sidebar_Groups_Heading" xml:space="preserve"><value>กลุ่ม</value></data>
+  <data name="Sidebar_System_Heading" xml:space="preserve"><value>ระบบ</value></data>
+  <data name="Sidebar_WindowsStartup_Label" xml:space="preserve"><value>การเริ่มต้นของ Windows</value></data>
+
+  <data name="Action_New" xml:space="preserve"><value>ใหม่</value></data>
+  <data name="Action_Add" xml:space="preserve"><value>เพิ่ม</value></data>
+  <data name="Action_AddApp" xml:space="preserve"><value>เพิ่มแอป</value></data>
+  <data name="Action_AddBlank" xml:space="preserve"><value>เพิ่มเปล่า</value></data>
+  <data name="Action_AddSelected" xml:space="preserve"><value>เพิ่มที่เลือก</value></data>
+  <data name="Action_EditSelected" xml:space="preserve"><value>แก้ไขที่เลือก</value></data>
+  <data name="Action_Save" xml:space="preserve"><value>บันทึก</value></data>
+  <data name="Action_Cancel" xml:space="preserve"><value>ยกเลิก</value></data>
+  <data name="Action_Yes" xml:space="preserve"><value>ใช่</value></data>
+  <data name="Action_No" xml:space="preserve"><value>ไม่</value></data>
+  <data name="Action_Ok" xml:space="preserve"><value>ตกลง</value></data>
+  <data name="Action_Browse" xml:space="preserve"><value>เรียกดู...</value></data>
+  <data name="Action_LaunchAll" xml:space="preserve"><value>เริ่มทั้งหมด</value></data>
+  <data name="Action_StopAll" xml:space="preserve"><value>หยุดทั้งหมด</value></data>
+  <data name="Action_Launch" xml:space="preserve"><value>เริ่ม</value></data>
+  <data name="Action_Stop" xml:space="preserve"><value>หยุด</value></data>
+  <data name="Action_Edit" xml:space="preserve"><value>แก้ไข</value></data>
+  <data name="Action_Remove" xml:space="preserve"><value>ลบ</value></data>
+  <data name="Action_Refresh" xml:space="preserve"><value>รีเฟรช</value></data>
+  <data name="Action_OpenLocation" xml:space="preserve"><value>เปิดตำแหน่ง</value></data>
+  <data name="Action_RenameGroup" xml:space="preserve"><value>เปลี่ยนชื่อกลุ่ม</value></data>
+  <data name="Action_RemoveGroup" xml:space="preserve"><value>ลบกลุ่ม</value></data>
+  <data name="Action_OpenConfigFolder" xml:space="preserve"><value>เปิดโฟลเดอร์การตั้งค่า</value></data>
+  <data name="Action_OpenLogFolder" xml:space="preserve"><value>เปิดโฟลเดอร์บันทึก</value></data>
+  <data name="Action_Logs" xml:space="preserve"><value>บันทึก</value></data>
+
+  <data name="Apps_Heading" xml:space="preserve"><value>แอป</value></data>
+  <data name="Apps_NoGroupSelected" xml:space="preserve"><value>ยังไม่ได้เลือกกลุ่ม</value></data>
+  <data name="Apps_CountFormat" xml:space="preserve"><value>{0} แอป</value></data>
+  <data name="Apps_Column_Actions" xml:space="preserve"><value>การกระทำ</value></data>
+
+  <data name="WinStartup_Description" xml:space="preserve"><value>แอปและบริการที่ Windows เริ่มเมื่อคุณลงชื่อเข้าใช้</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Title" xml:space="preserve"><value>เริ่ม Startup Groups เมื่อลงชื่อเข้าใช้</value></data>
+  <data name="WinStartup_LaunchAtSignIn_Description" xml:space="preserve"><value>ลงทะเบียนงานตามกำหนดเวลาเพื่อให้ไอคอนถาดเริ่มโดยอัตโนมัติ</value></data>
+  <data name="WinStartup_Column_Enabled" xml:space="preserve"><value>เปิดใช้</value></data>
+  <data name="WinStartup_Column_Name" xml:space="preserve"><value>ชื่อ</value></data>
+  <data name="WinStartup_Column_Command" xml:space="preserve"><value>คำสั่ง</value></data>
+  <data name="WinStartup_Column_Source" xml:space="preserve"><value>แหล่งที่มา</value></data>
+  <data name="WinStartup_CountFormat" xml:space="preserve"><value>{0} รายการเริ่มต้น</value></data>
+  <data name="WinStartup_AddedFormat" xml:space="preserve"><value>เพิ่ม {0} แล้ว</value></data>
+  <data name="WinStartup_RemovedFormat" xml:space="preserve"><value>ลบ {0} แล้ว</value></data>
+  <data name="WinStartup_CannotModifyFormat" xml:space="preserve"><value>'{0}' อยู่ใน {1} และต้องการสิทธิ์ผู้ดูแลระบบเพื่อลบ</value></data>
+  <data name="WinStartup_RequiresAdmin" xml:space="preserve"><value>ต้องการสิทธิ์ผู้ดูแลระบบ เริ่มต้นใหม่ในฐานะผู้ดูแลระบบเพื่อแก้ไขรายการนี้</value></data>
+  <data name="WinStartup_ToggleFailedFormat" xml:space="preserve"><value>สลับ '{0}' ไม่สำเร็จ: {1}</value></data>
+  <data name="WinStartup_AddFailedFormat" xml:space="preserve"><value>เพิ่มไม่สำเร็จ: {0}</value></data>
+  <data name="WinStartup_RemoveFailedFormat" xml:space="preserve"><value>ลบไม่สำเร็จ: {0}</value></data>
+
+  <data name="Dialog_DuplicateGroup_Title" xml:space="preserve"><value>กลุ่มซ้ำ</value></data>
+  <data name="Dialog_DuplicateGroup_MessageFormat" xml:space="preserve"><value>มีกลุ่มที่มีรหัส '{0}' อยู่แล้ว</value></data>
+  <data name="Dialog_RemoveGroup_Title" xml:space="preserve"><value>ลบกลุ่ม</value></data>
+  <data name="Dialog_RemoveGroup_MessageFormat" xml:space="preserve"><value>ลบกลุ่ม '{0}' และแอปทั้งหมดหรือไม่?</value></data>
+  <data name="Dialog_RemoveApp_Title" xml:space="preserve"><value>ลบแอป</value></data>
+  <data name="Dialog_RemoveApp_MessageFormat" xml:space="preserve"><value>ลบ '{0}' จาก {1} หรือไม่?</value></data>
+  <data name="Dialog_RemoveStartupItem_Title" xml:space="preserve"><value>ลบรายการเริ่มต้น</value></data>
+  <data name="Dialog_RemoveStartupItem_MessageFormat" xml:space="preserve"><value>ลบ '{0}' ออกจากการเริ่มต้นของ Windows หรือไม่?</value></data>
+  <data name="Dialog_Startup_Title" xml:space="preserve"><value>การเริ่มต้น</value></data>
+  <data name="Dialog_AutoStart_Title" xml:space="preserve"><value>เริ่มอัตโนมัติ</value></data>
+  <data name="Dialog_AdministratorRequired_Title" xml:space="preserve"><value>ต้องมีสิทธิ์ผู้ดูแลระบบ</value></data>
+  <data name="Dialog_AdministratorRequired_StartFormat" xml:space="preserve"><value>บริการต่อไปนี้ต้องมีสิทธิ์ผู้ดูแลระบบเพื่อเริ่ม:
+
+{0}
+
+เรียกใช้ด้วยสิทธิ์ที่ยกระดับตอนนี้หรือไม่?</value></data>
+  <data name="Dialog_AdministratorRequired_StopFormat" xml:space="preserve"><value>บริการต่อไปนี้ต้องมีสิทธิ์ผู้ดูแลระบบเพื่อหยุด:
+
+{0}
+
+เรียกใช้ด้วยสิทธิ์ที่ยกระดับตอนนี้หรือไม่?</value></data>
+  <data name="Dialog_UnexpectedErrorFormat" xml:space="preserve"><value>{0} — ข้อผิดพลาดที่ไม่คาดคิด</value></data>
+
+  <data name="FileDialog_SelectExecutable_Title" xml:space="preserve"><value>เลือกไฟล์ปฏิบัติการ</value></data>
+  <data name="FileDialog_SelectExecutable_Filter" xml:space="preserve"><value>ไฟล์ปฏิบัติการ (*.exe)|*.exe|ไฟล์ทั้งหมด (*.*)|*.*</value></data>
+  <data name="FileDialog_SelectFolder_Title" xml:space="preserve"><value>เลือกโฟลเดอร์</value></data>
+
+  <data name="Status_Ready" xml:space="preserve"><value>พร้อม</value></data>
+  <data name="Status_LaunchingFormat" xml:space="preserve"><value>กำลังเริ่ม {0}...</value></data>
+  <data name="Status_StoppingFormat" xml:space="preserve"><value>กำลังหยุด {0}...</value></data>
+  <data name="Status_AppResultFormat" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Status_AddedAppFormat" xml:space="preserve"><value>เพิ่ม {0} แล้ว</value></data>
+  <data name="Status_AddedAppsFormat" xml:space="preserve"><value>เพิ่ม {0} แอปแล้ว</value></data>
+  <data name="Status_ElevationFailed" xml:space="preserve"><value>การยกระดับล้มเหลวหรือถูกยกเลิก</value></data>
+  <data name="Status_GroupActionFormat" xml:space="preserve"><value>{0} {1}: {2} สำเร็จ</value></data>
+  <data name="Status_GroupActionWithFailureFormat" xml:space="preserve"><value>{0} {1}: {2} สำเร็จ, {3} ล้มเหลว</value></data>
+  <data name="Status_VerbLaunch" xml:space="preserve"><value>เริ่ม</value></data>
+  <data name="Status_VerbStop" xml:space="preserve"><value>หยุด</value></data>
+
+  <data name="AddAppPicker_Heading" xml:space="preserve"><value>เลือกแอปที่ติดตั้งไว้</value></data>
+  <data name="AddAppPicker_Subtitle" xml:space="preserve"><value>ทำเครื่องหมายเลือกรายการที่ต้องการเพิ่ม ใช้ "แก้ไขที่เลือก" เพื่อปรับก่อนบันทึก หรือ "เพิ่มเปล่า" เพื่อสร้างรายการด้วยตนเอง</value></data>
+  <data name="AddAppPicker_SearchPlaceholder" xml:space="preserve"><value>ค้นหาด้วยชื่อหรือเส้นทาง...</value></data>
+  <data name="AddAppPicker_SelectedFormat" xml:space="preserve"><value>เลือกแล้ว {0}</value></data>
+  <data name="AddAppPicker_SourceStore" xml:space="preserve"><value>สโตร์</value></data>
+  <data name="AddAppPicker_SourceDesktop" xml:space="preserve"><value>เดสก์ท็อป</value></data>
+  <data name="AddAppPicker_SourceService" xml:space="preserve"><value>บริการ</value></data>
+  <data name="AddAppPicker_SourceShell" xml:space="preserve"><value>เชลล์</value></data>
+  <data name="AddAppPicker_SourceScoop" xml:space="preserve"><value>Scoop</value></data>
+
+  <data name="GroupEditor_Heading" xml:space="preserve"><value>รายละเอียดกลุ่ม</value></data>
+  <data name="GroupEditor_Id_Label" xml:space="preserve"><value>ID (คงที่ ใช้ในการตั้งค่า)</value></data>
+  <data name="GroupEditor_Name_Label" xml:space="preserve"><value>ชื่อ (แสดงในหน้าต่าง)</value></data>
+  <data name="GroupEditor_Icon_Label" xml:space="preserve"><value>ไอคอน</value></data>
+  <data name="GroupEditor_IconSearch_Placeholder" xml:space="preserve"><value>ค้นหาไอคอน...</value></data>
+  <data name="GroupEditor_IconTab_Apps" xml:space="preserve"><value>แอป</value></data>
+  <data name="GroupEditor_IconTab_Outline" xml:space="preserve"><value>เส้นขอบ</value></data>
+  <data name="GroupEditor_IconTab_Filled" xml:space="preserve"><value>เติม</value></data>
+  <data name="GroupEditor_IconTab_Windows" xml:space="preserve"><value>Windows</value></data>
+
+  <data name="AppEditor_Heading" xml:space="preserve"><value>รายละเอียดแอป</value></data>
+  <data name="AppEditor_Name_Label" xml:space="preserve"><value>ชื่อ</value></data>
+  <data name="AppEditor_Kind_Label" xml:space="preserve"><value>ประเภท</value></data>
+  <data name="AppEditor_Target_Label" xml:space="preserve"><value>เป้าหมาย (ไฟล์ปฏิบัติการ, พาธ %ENV%, * glob หรือ shell:AppsFolder\item)</value></data>
+  <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>อาร์กิวเมนต์ (ทางเลือก)</value></data>
+  <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>อาร์กิวเมนต์ที่แนะนำ</value></data>
+  <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>ไดเรกทอรีทำงาน (ทางเลือก)</value></data>
+  <data name="AppEditor_Service_Label" xml:space="preserve"><value>ชื่อบริการ (ตามที่แสดงใน services.msc)</value></data>
+  <data name="AppEditor_Delay_Label" xml:space="preserve"><value>หน่วงหลังเริ่ม (วินาที)</value></data>
+  <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>เปิดใช้ (รวมในการเริ่มกลุ่ม)</value></data>
+
+  <data name="RunningState_Running" xml:space="preserve"><value>กำลังทำงาน</value></data>
+  <data name="RunningState_Stopped" xml:space="preserve"><value>หยุดแล้ว</value></data>
+
+  <data name="Tray_Tooltip" xml:space="preserve"><value>Startup Groups</value></data>
+  <data name="Tray_OpenMain" xml:space="preserve"><value>เปิด Startup Groups</value></data>
+  <data name="Tray_Exit" xml:space="preserve"><value>ออก</value></data>
+
+  <data name="Settings_Language_Label" xml:space="preserve"><value>ภาษา</value></data>
+  <data name="Settings_Language_Hint" xml:space="preserve"><value>คำแปลนอกเหนือจากภาษาอังกฤษได้รับความช่วยเหลือจาก AI และอาจมีข้อผิดพลาด รายงานปัญหาบน GitHub</value></data>
+
+  <data name="Tooltip_OpenConfigFolder" xml:space="preserve"><value>เปิดโฟลเดอร์การตั้งค่า</value></data>
+  <data name="Tooltip_OpenLogFolder" xml:space="preserve"><value>เปิดโฟลเดอร์บันทึก</value></data>
+
+  <data name="Sidebar_Settings_Label" xml:space="preserve"><value>การตั้งค่า</value></data>
+  <data name="Settings_Heading" xml:space="preserve"><value>การตั้งค่า</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>การตั้งค่ารูปลักษณ์ พฤติกรรม และการเริ่มต้น</value></data>
+  <data name="Settings_Section_Appearance" xml:space="preserve"><value>รูปลักษณ์</value></data>
+  <data name="Settings_Section_Behavior" xml:space="preserve"><value>พฤติกรรม</value></data>
+  <data name="Settings_Section_About" xml:space="preserve"><value>เกี่ยวกับ</value></data>
+  <data name="Settings_Theme_Label" xml:space="preserve"><value>ธีม</value></data>
+  <data name="Settings_Theme_Hint" xml:space="preserve"><value>สว่าง มืด หรือตามการตั้งค่าของระบบ Windows</value></data>
+  <data name="Settings_Theme_System" xml:space="preserve"><value>ระบบ</value></data>
+  <data name="Settings_Theme_Light" xml:space="preserve"><value>สว่าง</value></data>
+  <data name="Settings_Theme_Dark" xml:space="preserve"><value>มืด</value></data>
+  <data name="Settings_Theme_OpenWindowsColors" xml:space="preserve"><value>การตั้งค่าสีของ Windows</value></data>
+  <data name="Settings_AutoStart_OpenTaskScheduler" xml:space="preserve"><value>เปิดตัวกำหนดตารางเวลา</value></data>
+  <data name="Settings_Language_ReportIssue" xml:space="preserve"><value>รายงานปัญหาการแปล</value></data>
+  <data name="Settings_MinimizeToTray_Label" xml:space="preserve"><value>ย่อลงถาดเมื่อปิด</value></data>
+  <data name="Settings_MinimizeToTray_Hint" xml:space="preserve"><value>ทำงานต่อในพื้นหลังเมื่อปิดหน้าต่าง</value></data>
+  <data name="Settings_Notifications_Label" xml:space="preserve"><value>แสดงการแจ้งเตือน</value></data>
+  <data name="Settings_Notifications_Hint" xml:space="preserve"><value>การแจ้งเตือนแบบ toast เมื่อเริ่มหรือหยุดแอป</value></data>
+  <data name="Settings_AutoStart_Label" xml:space="preserve"><value>เริ่มเมื่อลงชื่อเข้าใช้</value></data>
+  <data name="Settings_AutoStart_Hint" xml:space="preserve"><value>ลงทะเบียนงานตามกำหนดเวลาเพื่อให้ไอคอนถาดเริ่มโดยอัตโนมัติ</value></data>
+  <data name="Settings_About_VersionFormat" xml:space="preserve"><value>เวอร์ชัน {0}</value></data>
+  <data name="Settings_About_OpenGitHub" xml:space="preserve"><value>เปิดบน GitHub</value></data>
+
+  <data name="Settings_Section_Updates" xml:space="preserve"><value>เวอร์ชันและการอัปเดต</value></data>
+  <data name="Settings_Version_ReleaseNotes" xml:space="preserve"><value>บันทึกการเผยแพร่</value></data>
+  <data name="Settings_Version_LastCheckedFormat" xml:space="preserve"><value>ตรวจสอบล่าสุด: {0:g}</value></data>
+  <data name="Settings_Version_CheckNow" xml:space="preserve"><value>ตรวจสอบตอนนี้</value></data>
+  <data name="Settings_Version_Checking" xml:space="preserve"><value>กำลังตรวจสอบการอัปเดต...</value></data>
+  <data name="Settings_Version_UpToDate" xml:space="preserve"><value>คุณใช้เวอร์ชันล่าสุดแล้ว</value></data>
+  <data name="Settings_Version_UpdateAvailable" xml:space="preserve"><value>การอัปเดตพร้อมติดตั้ง:</value></data>
+  <data name="Settings_Version_InstallNow" xml:space="preserve"><value>ติดตั้งตอนนี้</value></data>
+  <data name="Settings_Version_SeeWhatsNew" xml:space="preserve"><value>ดูสิ่งที่เปลี่ยนแปลง</value></data>
+
+  <data name="Empty_NoAppsInGroup_Title" xml:space="preserve"><value>ยังไม่ได้เพิ่มแอป</value></data>
+  <data name="Empty_NoAppsInGroup_Hint" xml:space="preserve"><value>คลิก "เพิ่มแอป" เพื่อเพิ่มแอปหรือบริการในกลุ่มนี้</value></data>
+  <data name="Empty_NoAppIcons_Title" xml:space="preserve"><value>ไม่มีไอคอนแอปที่ใช้ได้</value></data>
+  <data name="Empty_NoAppIcons_Hint" xml:space="preserve"><value>เพิ่มแอปในกลุ่มนี้เพื่อใช้ไอคอนของแอปที่นี่</value></data>
+  <data name="Empty_NoStartupItems_Title" xml:space="preserve"><value>ไม่มีรายการเริ่มต้น</value></data>
+  <data name="Empty_NoStartupItems_Hint" xml:space="preserve"><value>Windows ไม่ได้เริ่มแอปใดเมื่อลงชื่อเข้าใช้</value></data>
+</root>

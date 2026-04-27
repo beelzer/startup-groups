@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Semantic brushes layered on top of WPF-UI's Fluent palette.
+        App code should bind to these keys, NOT directly to LimeGreen / Gray etc.
+    -->
+    <SolidColorBrush x:Key="StatusRunningBrush" Color="#FF37C05A" />
+    <SolidColorBrush x:Key="StatusStoppedBrush" Color="#FF8A8A8A" />
+
+</ResourceDictionary>

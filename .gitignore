@@ -1,0 +1,57 @@
+# Build output
+bin/
+obj/
+publish/
+artifacts/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# .NET
+*.dll
+*.exe
+*.pdb
+TestResults/
+[Cc]overage*/
+*.coverage
+*.coveragexml
+.dotnet/
+
+# WiX
+*.wixpdb
+*.wixobj
+
+# Signing / secrets
+*.pfx
+*.snk
+*.p12
+*.key
+appsettings.*.local.json
+secrets.json
+.claude/settings.local.json
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Logs / local DBs accidentally placed at repo root
+*.log
+*.db
+*.db-shm
+*.db-wal
