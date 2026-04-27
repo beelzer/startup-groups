@@ -1,0 +1,62 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+
+change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+change-title-escapes: '\<*_&'
+
+categories:
+  - title: '✨ Features'
+    labels: [feat, feature, enhancement]
+  - title: '🐛 Bug Fixes'
+    labels: [fix, bug]
+  - title: '⚡ Performance'
+    labels: [perf]
+  - title: '🔧 Refactoring'
+    labels: [refactor]
+  - title: '📚 Documentation'
+    labels: [docs]
+  - title: '🧪 Tests'
+    labels: [test]
+  - title: '🛠 Maintenance'
+    labels: [chore, build, ci, deps]
+
+autolabeler:
+  - label: feat
+    title: ['/^feat(\(.+\))?!?:/']
+  - label: fix
+    title: ['/^fix(\(.+\))?!?:/']
+  - label: perf
+    title: ['/^perf(\(.+\))?!?:/']
+  - label: refactor
+    title: ['/^refactor(\(.+\))?!?:/']
+  - label: docs
+    title: ['/^docs(\(.+\))?!?:/']
+  - label: test
+    title: ['/^test(\(.+\))?!?:/']
+  - label: chore
+    title: ['/^chore(\(.+\))?!?:/']
+  - label: build
+    title: ['/^build(\(.+\))?!?:/']
+  - label: ci
+    title: ['/^ci(\(.+\))?!?:/']
+  - label: deps
+    title: ['/^deps(\(.+\))?!?:/']
+
+version-resolver:
+  major:
+    labels: [breaking]
+  minor:
+    labels: [feat, feature, enhancement]
+  patch:
+    labels: [fix, bug, perf, refactor, docs, test, chore, build, ci, deps]
+  default: patch
+
+exclude-labels:
+  - skip-changelog
