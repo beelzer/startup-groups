@@ -10,6 +10,11 @@ updates:
     commit-message:
       prefix: deps
       include: scope
+    ignore:
+      # FluentAssertions 8.x switched to a non-OSI license (Xceed Fair-Source)
+      # that isn't free for commercial use; pin to 7.x.
+      - dependency-name: FluentAssertions
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
     directory: /
