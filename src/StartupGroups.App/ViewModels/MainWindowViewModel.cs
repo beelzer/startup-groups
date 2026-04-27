@@ -43,6 +43,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IDialogService _dialogs;
     private readonly ILanguageService _languageService;
     private readonly IUpdateChecker _updateChecker;
+    private readonly IUpdateInstaller _updateInstaller;
     private readonly ILaunchTelemetryService? _telemetry;
     private readonly ILaunchBenchmarkStore? _benchmarkStore;
     private readonly IServiceProvider _serviceProvider;
@@ -61,6 +62,7 @@ public partial class MainWindowViewModel : ObservableObject
         IDialogService dialogs,
         ILanguageService languageService,
         IUpdateChecker updateChecker,
+        IUpdateInstaller updateInstaller,
         WindowsStartupViewModel windowsStartup,
         IServiceProvider serviceProvider,
         ILogger<MainWindowViewModel> logger,
@@ -76,6 +78,7 @@ public partial class MainWindowViewModel : ObservableObject
         _dialogs = dialogs;
         _languageService = languageService;
         _updateChecker = updateChecker;
+        _updateInstaller = updateInstaller;
         _telemetry = telemetry;
         _benchmarkStore = benchmarkStore;
         _serviceProvider = serviceProvider;
@@ -238,6 +241,8 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty] private string? _installerUrl;
     [ObservableProperty] private DateTimeOffset? _lastChecked;
     [ObservableProperty] private bool _isCheckingForUpdate;
+    [ObservableProperty] private bool _isInstallingUpdate;
+    [ObservableProperty] private double _updateDownloadProgress;
 
     partial void OnLatestVersionChanged(string value) => OnPropertyChanged(nameof(LatestVersionShort));
     partial void OnLastCheckedChanged(DateTimeOffset? value) => OnPropertyChanged(nameof(LastCheckedText));
@@ -532,13 +537,40 @@ public partial class MainWindowViewModel : ObservableObject
     private void OpenReleaseNotes() =>
         LaunchShell(ReleaseUrl ?? $"{AppBranding.SupportUrl}/releases/latest", "release notes");
 
-    [RelayCommand]
-    private void InstallUpdate()
+    [RelayCommand(CanExecute = nameof(CanInstallUpdate))]
+    private async Task InstallUpdateAsync()
     {
-        // TODO: Production — download InstallerUrl to a temp file and exec it with UAC.
-        // For now we open the release page so the user downloads manually.
-        LaunchShell(ReleaseUrl ?? $"{AppBranding.SupportUrl}/releases/latest", "release page");
+        // No MSI attached to the release? Fall back to opening the release page.
+        if (string.IsNullOrWhiteSpace(InstallerUrl))
+        {
+            LaunchShell(ReleaseUrl ?? $"{AppBranding.SupportUrl}/releases/latest", "release page");
+            return;
+        }
+
+        IsInstallingUpdate = true;
+        UpdateDownloadProgress = 0;
+        InstallUpdateCommand.NotifyCanExecuteChanged();
+        CheckForUpdatesCommand.NotifyCanExecuteChanged();
+
+        var progress = new Progress<double>(p => UpdateDownloadProgress = p);
+        try
+        {
+            var msiPath = await _updateInstaller.DownloadAsync(InstallerUrl, progress, default).ConfigureAwait(true);
+            _updateInstaller.LaunchInstallerAndExit(msiPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to download or launch installer.");
+            await _dialogs.ShowErrorAsync(
+                Strings.Settings_Version_UpdateAvailable,
+                ex.Message).ConfigureAwait(true);
+            IsInstallingUpdate = false;
+            InstallUpdateCommand.NotifyCanExecuteChanged();
+            CheckForUpdatesCommand.NotifyCanExecuteChanged();
+        }
     }
+
+    private bool CanInstallUpdate() => !IsInstallingUpdate;
 
     [RelayCommand(CanExecute = nameof(CanCheckForUpdates))]
     private async Task CheckForUpdatesAsync()
@@ -570,7 +602,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    private bool CanCheckForUpdates() => !IsCheckingForUpdate;
+    private bool CanCheckForUpdates() => !IsCheckingForUpdate && !IsInstallingUpdate;
 
     [RelayCommand]
     private void OpenWindowsColorSettings() => LaunchShell("ms-settings:colors", "Windows color settings");

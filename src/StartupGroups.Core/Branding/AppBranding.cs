@@ -24,7 +24,7 @@ public static class AppBranding
         ?? string.Empty;
 
     public const string AppId = "startup-groups";
-    public const string SupportUrl = "https://github.com/startup-groups/startup-groups";
-    public const string AboutUrl = "https://github.com/startup-groups/startup-groups";
-    public const string IssueUrl = "https://github.com/startup-groups/startup-groups/issues";
+    public const string SupportUrl = "https://github.com/beelzer/startup-groups";
+    public const string AboutUrl = "https://github.com/beelzer/startup-groups";
+    public const string IssueUrl = "https://github.com/beelzer/startup-groups/issues";
 }

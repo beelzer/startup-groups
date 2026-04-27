@@ -9,19 +9,6 @@ using Microsoft.Extensions.Logging;
 using StartupGroups.Core.Branding;
 using StartupGroups.Core.Services;
 
-// =======================================================================================
-//  TODO: Production wiring
-//    1. Replace AppBranding.SupportUrl in Core/Branding/AppBranding.cs with the real
-//       GitHub repo URL so BuildReleasesEndpoint() resolves to the actual releases API.
-//    2. Publish releases to GitHub with a .msi asset attached. The asset name convention
-//       detected here is "*.msi" — see FindInstallerAssetUrl() if you change that.
-//    3. InstallUpdate command currently opens the release page in the browser (manual
-//       download). If you want in-app updating, download InstallerAssetUrl into the
-//       user's temp folder and exec it via ProcessStartInfo { UseShellExecute = true }.
-//       Consider verifying signature / SHA256 before launch.
-//    4. Tagged releases must use "vX.Y.Z" or "X.Y.Z" so Version.TryParse can compare.
-// =======================================================================================
-
 namespace StartupGroups.App.Services;
 
 public sealed record UpdateCheckResult(

@@ -4,7 +4,7 @@ A Windows launcher that boots groups of apps in the right order — with adaptiv
 
 > **Stop waiting on Slack to be ready before clicking your IDE.** Define a group, hit launch, and your full work environment comes up in the right order without you babysitting it.
 
-![App icon](branding/app-icon-preview.png)
+![Startup Groups main window](docs/screenshots/main-window.png)
 
 ## Features
 
