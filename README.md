@@ -75,10 +75,12 @@ Tests live in [tests/StartupGroups.Core.Tests](tests/StartupGroups.Core.Tests/) 
 1. Bump `<Version>` in [Directory.Build.props](Directory.Build.props).
 2. Commit and push to `main`.
 3. Tag the commit with a matching `vX.Y.Z` and push the tag:
+
    ```bash
    git tag v0.2.0
    git push origin v0.2.0
    ```
+
 4. The [release workflow](.github/workflows/release.yml) will build the MSI, run the tests, and publish a GitHub release with the installer attached. Auto-update will pick it up on the next check.
 
 ## License
