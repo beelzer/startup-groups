@@ -9,6 +9,10 @@ permissions:
 jobs:
   dependency-review:
     name: Dependency Review
+    # Skip for dependabot — restricted GITHUB_TOKEN on bot PRs makes the
+    # dependency-graph API call fail. We cover dep vulnerabilities through
+    # Dependabot security updates instead.
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

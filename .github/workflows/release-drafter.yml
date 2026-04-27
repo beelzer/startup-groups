@@ -16,5 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: release-drafter/release-drafter@v7
+        with:
+          # On PRs we only want autolabeling — don't try to update the draft
+          # release (target_commitish would be a merge ref, which the API rejects).
+          disable-releaser: ${{ github.event_name == 'pull_request' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
