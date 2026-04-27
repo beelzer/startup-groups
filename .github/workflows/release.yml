@@ -42,6 +42,9 @@ jobs:
           wix extension add -g WixToolset.UI.wixext/5.0.2
           wix extension add -g WixToolset.Util.wixext/5.0.2
 
+      - name: Install Velopack CLI
+        run: dotnet tool install --global vpk --version 0.0.1297
+
       - name: Restore
         run: dotnet restore StartupGroups.slnx
 
@@ -51,7 +54,7 @@ jobs:
       - name: Test
         run: dotnet test StartupGroups.slnx -c Release --no-build --verbosity normal
 
-      - name: Build MSI
+      - name: Build MSI (single-file payload, for enterprise/per-machine track)
         shell: pwsh
         run: ./installer/StartupGroups.Installer/build.ps1
 
@@ -61,7 +64,31 @@ jobs:
           $version = "${{ steps.version.outputs.version }}"
           Copy-Item artifacts/installer/StartupGroups.msi "artifacts/installer/StartupGroups-$version.msi"
 
-      - name: Create GitHub release
+      - name: Publish for Velopack (multi-file, enables per-file deltas)
+        shell: pwsh
+        run: |
+          # Velopack does per-file binary diffs across releases; single-file would
+          # negate that. Publish multi-file alongside the MSI's single-file build.
+          dotnet publish src/StartupGroups.App/StartupGroups.App.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -o artifacts/publish-velopack -nologo -v minimal
+          dotnet publish src/StartupGroups.Elevator/StartupGroups.Elevator.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -o artifacts/publish-velopack -nologo -v minimal
+
+      - name: Pack Velopack release
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          vpk pack `
+            -u StartupGroups `
+            -v $version `
+            -p artifacts/publish-velopack `
+            --mainExe StartupGroups.exe `
+            --packTitle "Startup Groups" `
+            --icon src/StartupGroups.App/Assets/app.ico
+
+      - name: Create GitHub release with MSI attached
         env:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
@@ -71,3 +98,17 @@ jobs:
             "artifacts/installer/StartupGroups-$version.msi" `
             --title "${{ github.ref_name }}" `
             --generate-notes
+
+      - name: Upload Velopack artifacts to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          # --merge appends to the release we just created (Setup.exe, full nupkg,
+          # delta nupkg vs prior release, releases.win.json feed manifest).
+          vpk upload github `
+            --repoUrl "https://github.com/${{ github.repository }}" `
+            --token $env:GH_TOKEN `
+            --tag "${{ github.ref_name }}" `
+            --releaseName "${{ github.ref_name }}" `
+            --merge

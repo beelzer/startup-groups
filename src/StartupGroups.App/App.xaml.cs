@@ -165,8 +165,7 @@ public partial class App : Application
         services.AddSingleton<ISettingsStore, SettingsStore>();
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<ILanguageService, LanguageService>();
-        services.AddSingleton<IUpdateChecker, GitHubUpdateChecker>();
-        services.AddSingleton<IUpdateInstaller, UpdateInstaller>();
+        services.AddSingleton<IUpdateService, VelopackUpdateService>();
         services.AddSingleton<IWindowsStartupService, WindowsStartupService>();
         services.AddSingleton<ShellInstalledAppsProvider>();
         services.AddSingleton<WindowsServicesProvider>();
