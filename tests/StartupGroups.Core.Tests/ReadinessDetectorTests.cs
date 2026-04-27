@@ -72,6 +72,9 @@ public sealed class ReadinessDetectorTests
         var result = await detector.DetectAsync(ctx, TimeSpan.FromSeconds(2));
 
         result.Signal.Should().Be(ReadinessSignal.MainWindowVisible);
+        // Wait for the slow probe to observe its cancellation; on a slow runner the
+        // probe's catch block can lag behind DetectAsync's return.
+        await slow.Completed.WaitAsync(TimeSpan.FromSeconds(2));
         slow.WasCancelled.Should().BeTrue();
     }
 
@@ -83,6 +86,7 @@ public sealed class ReadinessDetectorTests
         private readonly TimeSpan _delay;
         private readonly bool _fires;
         private readonly bool _applies;
+        private readonly TaskCompletionSource _completed = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public FakeProbe(ReadinessSignal signal, TimeSpan delay, bool fires, bool applies = true)
         {
@@ -94,6 +98,7 @@ public sealed class ReadinessDetectorTests
 
         public ReadinessSignal Signal { get; }
         public bool WasCancelled { get; private set; }
+        public Task Completed => _completed.Task;
 
         public bool AppliesTo(ProbeContext context) => _applies;
 
@@ -108,6 +113,10 @@ public sealed class ReadinessDetectorTests
             {
                 WasCancelled = true;
                 return false;
+            }
+            finally
+            {
+                _completed.TrySetResult();
             }
         }
     }
