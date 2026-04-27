@@ -136,11 +136,18 @@ jobs:
 
       # vpk creates the release as a draft. Publish it with auto-generated
       # notes from PRs/commits since the previous tag.
+      # Note: gh release edit doesn't support --generate-notes (only gh release
+      # create does), so we generate via the API and pass via --notes-file.
       - name: Publish release with auto-generated notes
         env:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
+          $notes = gh api -X POST "repos/${{ github.repository }}/releases/generate-notes" `
+            -f tag_name="${{ github.ref_name }}" `
+            --jq '.body'
+          $notesFile = New-TemporaryFile
+          $notes | Set-Content -Path $notesFile -Encoding UTF8
           gh release edit "${{ github.ref_name }}" `
             --draft=false `
-            --generate-notes
+            --notes-file $notesFile
