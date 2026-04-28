@@ -22,4 +22,9 @@
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="WPF-UI" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- For AppBranding constants (AppName, Version, SupportUrl) so the
+         installer chrome stays in sync with the running app. -->
+    <ProjectReference Include="..\StartupGroups.Core\StartupGroups.Core.csproj" />
+  </ItemGroup>
 </Project>

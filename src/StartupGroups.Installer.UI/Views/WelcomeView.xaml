@@ -1,0 +1,53 @@
+<UserControl x:Class="StartupGroups.Installer.UI.Views.WelcomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="32,0">
+            <Border Width="80" Height="80"
+                    CornerRadius="18"
+                    Background="{DynamicResource AccentFillColorDefaultBrush}"
+                    HorizontalAlignment="Center">
+                <ui:SymbolIcon Symbol="Rocket24"
+                               FontSize="44"
+                               Foreground="White"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Text="{Binding AppName}"
+                       FontSize="26"
+                       FontWeight="SemiBold"
+                       Margin="0,18,0,0"
+                       HorizontalAlignment="Center"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+            <TextBlock HorizontalAlignment="Center"
+                       Margin="0,4,0,0"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                <Run Text="Version " /><Run Text="{Binding Version, Mode=OneWay}" />
+            </TextBlock>
+            <TextBlock Text="Launch your work apps and services as a single coordinated group."
+                       FontSize="13"
+                       MaxWidth="420"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       Margin="0,18,0,0"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="24,0,24,24">
+            <ui:Button Content="Cancel"
+                       Command="{Binding CancelCommand}"
+                       Margin="0,0,8,0" />
+            <ui:Button Content="Install"
+                       Appearance="Primary"
+                       Icon="{ui:SymbolIcon ArrowRight24}"
+                       Command="{Binding NextCommand}"
+                       IsDefault="True" />
+        </StackPanel>
+    </Grid>
+</UserControl>
