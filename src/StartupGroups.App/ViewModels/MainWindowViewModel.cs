@@ -98,8 +98,7 @@ public partial class MainWindowViewModel : ObservableObject
         UpdateChannelOptions =
         [
             new UpdateChannelOption(UpdateChannel.Stable),
-            new UpdateChannelOption(UpdateChannel.Beta),
-            new UpdateChannelOption(UpdateChannel.Nightly),
+            new UpdateChannelOption(UpdateChannel.Canary),
         ];
         AvailableLanguages = SupportedLanguages.All;
 

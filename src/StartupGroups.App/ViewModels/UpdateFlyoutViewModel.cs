@@ -72,8 +72,7 @@ public partial class UpdateFlyoutViewModel : ObservableObject
 
     public string ChannelDisplayName => Channel switch
     {
-        UpdateChannel.Beta => Strings.Settings_UpdateChannel_Beta,
-        UpdateChannel.Nightly => Strings.Settings_UpdateChannel_Nightly,
+        UpdateChannel.Canary => Strings.Settings_UpdateChannel_Canary,
         _ => Strings.Settings_UpdateChannel_Stable,
     };
 

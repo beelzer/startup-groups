@@ -275,9 +275,7 @@ public sealed class VelopackUpdateService : IUpdateService
     {
         // Velopack's --channel mechanism produces channel-suffixed manifest
         // assets (releases.win-<channel>.json). Stable rides the default
-        // channel ("win") so existing v0.2.x installs — which shipped
-        // without ExplicitChannel — keep finding stable updates. Beta and
-        // nightly use distinct named channels.
+        // channel ("win"); Canary uses its own named channel.
         var explicitChannel = ToVelopackChannel(channel);
         var prerelease = channel != UpdateChannel.Stable;
 
@@ -291,9 +289,9 @@ public sealed class VelopackUpdateService : IUpdateService
 
         var options = new UpdateOptions
         {
-            // Critical: without this, switching back from beta/nightly to
-            // stable leaves users stranded on the higher beta version.
-            // See ROADMAP "Phase 2 — Channels".
+            // Without this, switching from Canary back to Stable leaves the
+            // user stranded on the higher Canary version (Velopack refuses
+            // to "downgrade" by default).
             AllowVersionDowngrade = true,
             ExplicitChannel = explicitChannel,
         };
@@ -301,16 +299,9 @@ public sealed class VelopackUpdateService : IUpdateService
         return new UpdateManager(source, options);
     }
 
-    /// <summary>
-    /// Maps our enum to Velopack channel names. Stable returns null so
-    /// the UpdateManager uses Velopack's default channel ("win") — that's
-    /// what every shipped v0.2.x installer was built against, and switching
-    /// to a named "stable" channel would orphan those users.
-    /// </summary>
     public static string? ToVelopackChannel(UpdateChannel channel) => channel switch
     {
-        UpdateChannel.Beta => "beta",
-        UpdateChannel.Nightly => "nightly",
+        UpdateChannel.Canary => "canary",
         _ => null,
     };
 }

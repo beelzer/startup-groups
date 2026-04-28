@@ -1,0 +1,120 @@
+name: Canary
+
+# Push-triggered Canary releases. Every commit to main produces a Velopack
+# release on the `canary` channel and a GitHub release marked as prerelease.
+# Replaces the older Nightly cron — feedback loop is now per-commit instead
+# of per-day.
+#
+# Channel mechanics: a Velopack package built with `--channel canary`
+# produces channel-scoped assets (e.g. `StartupGroups-X.Y.Z-win-canary-full.nupkg`)
+# and a `releases.win-canary.json` feed. The runtime UpdateManager picks
+# the channel via `UpdateOptions.ExplicitChannel` (see VelopackUpdateService).
+#
+# GitHub release visibility: the `--pre` flag below marks each Canary
+# release as a prerelease, so the "Latest" badge and the homepage Releases
+# widget keep showing the most recent Stable. Title is prefixed `[canary]`
+# to make them trivially distinguishable in the full release list.
+
+on:
+  push:
+    branches: [main]
+    # Doc-only edits should not cut a Canary build.
+    paths-ignore: ['**.md', 'docs/**', '.gitignore', 'LICENSE']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Newer commits cancel earlier still-running Canary runs. We only ever
+# want the latest commit to produce the artifact for the channel; older
+# in-flight builds would publish stale bits anyway.
+concurrency:
+  group: canary
+  cancel-in-progress: true
+
+jobs:
+  canary:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: '**/*.csproj'
+
+      - name: Compute canary version
+        id: version
+        shell: pwsh
+        run: |
+          [xml]$props = Get-Content Directory.Build.props
+          $base = [string]$props.Project.PropertyGroup.Version
+          # SemVer 2.0 prerelease suffix using short SHA so the version is
+          # tied to the exact commit that produced the build. Lexicographic
+          # ordering across commits isn't strict (SHAs aren't monotonic) but
+          # Velopack uses semver-aware version comparison + AllowVersionDowngrade
+          # so users always pick up the most recent canary regardless of order.
+          $sha = "${{ github.sha }}".Substring(0, 7)
+          $stamp = (Get-Date -AsUTC).ToString('yyyyMMddHHmm')
+          # Stamp first, sha second — keeps lex order roughly chronological.
+          $version = "$base-canary.$stamp.$sha"
+          $tag = "v$version"
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          Write-Host "Canary version=$version tag=$tag"
+
+      - name: Install Velopack CLI
+        run: dotnet tool install --global vpk --version 0.0.1589-ga2c5a97
+
+      - name: Restore
+        run: dotnet restore StartupGroups.slnx
+
+      - name: Build
+        run: dotnet build StartupGroups.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test StartupGroups.slnx -c Release --no-build --verbosity normal
+
+      - name: Publish for Velopack
+        shell: pwsh
+        run: |
+          dotnet publish src/StartupGroups.App/StartupGroups.App.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -o artifacts/publish-velopack -nologo -v minimal
+          dotnet publish src/StartupGroups.Elevator/StartupGroups.Elevator.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -o artifacts/publish-velopack -nologo -v minimal
+
+      - name: Pack Velopack release (canary channel)
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          vpk pack `
+            -u StartupGroups `
+            -v $version `
+            -p artifacts/publish-velopack `
+            --channel canary `
+            --mainExe StartupGroups.exe `
+            --packTitle "Startup Groups" `
+            --icon src/StartupGroups.App/Assets/app.ico
+
+      - name: Upload canary to GitHub releases (prerelease)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          # --pre marks the GitHub release as prerelease so it stays out of
+          # the "Latest" badge and the homepage releases widget — only Stable
+          # tags from release.yml get those. Title prefix `[canary]` keeps
+          # the full release list scannable.
+          vpk upload github `
+            --repoUrl "https://github.com/${{ github.repository }}" `
+            --token $env:GH_TOKEN `
+            --tag "${{ steps.version.outputs.tag }}" `
+            --releaseName "[canary] ${{ steps.version.outputs.tag }}" `
+            --channel canary `
+            --pre

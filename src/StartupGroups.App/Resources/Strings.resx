@@ -260,8 +260,7 @@ Run elevated now?</value></data>
   <data name="Settings_UpdateChannel_Label" xml:space="preserve"><value>Update channel</value></data>
   <data name="Settings_UpdateChannel_Hint" xml:space="preserve"><value>Pick which release track delivers updates.</value></data>
   <data name="Settings_UpdateChannel_Stable" xml:space="preserve"><value>Stable</value></data>
-  <data name="Settings_UpdateChannel_Beta" xml:space="preserve"><value>Beta</value></data>
-  <data name="Settings_UpdateChannel_Nightly" xml:space="preserve"><value>Nightly</value></data>
+  <data name="Settings_UpdateChannel_Canary" xml:space="preserve"><value>Canary</value></data>
 
   <data name="UpdateFlyout_Header_UpdateAvailable" xml:space="preserve"><value>Update available</value></data>
   <data name="UpdateFlyout_Header_VersionFormat" xml:space="preserve"><value>{0} · {1} channel</value></data>

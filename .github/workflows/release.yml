@@ -20,32 +20,29 @@ jobs:
           cache: true
           cache-dependency-path: '**/*.csproj'
 
-      - name: Extract version and channel from tag
+      - name: Extract version from tag
         id: version
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
           $version = $tag -replace '^v', ''
           "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Tag $tag → version=$version"
 
-          # Channel routing: v*-beta.* → beta; everything else → stable.
-          # See ROADMAP "Phase 2 — Channels".
-          if ($version -match '-beta\.') {
-            $channel = 'beta'
-          } else {
-            $channel = 'stable'
+          # Reject prerelease tags here — release.yml is the Stable track.
+          # Canary builds run from canary.yml on every push to main; they
+          # don't go through tag triggers. Refuse anything that looks like
+          # a prerelease so we don't accidentally publish one as Stable.
+          if ($version -match '-') {
+            Write-Error "Tag $tag is a prerelease (contains '-'). release.yml is Stable-only; canaries are produced by canary.yml on every push to main."
+            exit 1
           }
-          "channel=$channel" >> $env:GITHUB_OUTPUT
-          Write-Host "Tag $tag → version=$version channel=$channel"
 
-          # Sanity: tag version must match Directory.Build.props.
-          # Beta tags carry the same base version + a -beta.N suffix, so we
-          # compare against the base portion only.
-          $base = $version -replace '-.*$', ''
+          # Sanity: tag version must match Directory.Build.props exactly.
           [xml]$props = Get-Content Directory.Build.props
           $propsVersion = [string]$props.Project.PropertyGroup.Version
-          if ($propsVersion -ne $base) {
-            Write-Error "Tag $tag (base version $base) does not match Directory.Build.props version $propsVersion"
+          if ($propsVersion -ne $version) {
+            Write-Error "Tag $tag (version $version) does not match Directory.Build.props version $propsVersion"
             exit 1
           }
 
@@ -112,25 +109,17 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.version }}"
-          $channel = "${{ steps.version.outputs.channel }}"
-          # Stable uses Velopack's default channel ("win") so existing v0.2.x
-          # users — who shipped without ExplicitChannel — keep finding stable
-          # updates via releases.win.json. Beta/nightly use distinct channel
-          # feeds so they're invisible to stable users.
-          $packArgs = @(
-            'pack',
-            '-u', 'StartupGroups',
-            '-v', $version,
-            '-p', 'artifacts/publish-velopack',
-            '--mainExe', 'StartupGroups.exe',
-            '--packTitle', 'Startup Groups',
-            '--icon', 'src/StartupGroups.App/Assets/app.ico'
-          )
-          if ($channel -ne 'stable') {
-            $packArgs += '--channel'
-            $packArgs += $channel
-          }
-          vpk @packArgs
+          # Stable uses Velopack's default channel ("win") — existing v0.2.x
+          # users (who shipped without ExplicitChannel) keep finding updates
+          # via releases.win.json. Canary lives on its own channel via
+          # canary.yml and is invisible to Stable users.
+          vpk pack `
+            -u StartupGroups `
+            -v $version `
+            -p artifacts/publish-velopack `
+            --mainExe StartupGroups.exe `
+            --packTitle "Startup Groups" `
+            --icon src/StartupGroups.App/Assets/app.ico
 
       # release-drafter autocreates draft releases on every push to main, which
       # collide with vpk's "create new release for this tag" step (vpk refuses
@@ -162,22 +151,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          $channel = "${{ steps.version.outputs.channel }}"
-          $uploadArgs = @(
-            'upload', 'github',
-            '--repoUrl', 'https://github.com/${{ github.repository }}',
-            '--token', $env:GH_TOKEN,
-            '--tag', '${{ github.ref_name }}',
-            '--releaseName', '${{ github.ref_name }}'
-          )
-          if ($channel -ne 'stable') {
-            # Beta tags surface as GitHub prereleases so they don't appear as
-            # the "latest" download; nightlies follow the same pattern.
-            $uploadArgs += '--channel'
-            $uploadArgs += $channel
-            $uploadArgs += '--pre'
-          }
-          vpk @uploadArgs
+          # Stable release: not a prerelease. The "Latest" badge and the
+          # homepage releases widget pin to whichever Stable tag has the
+          # highest version, ignoring Canary builds entirely.
+          vpk upload github `
+            --repoUrl "https://github.com/${{ github.repository }}" `
+            --token $env:GH_TOKEN `
+            --tag "${{ github.ref_name }}" `
+            --releaseName "${{ github.ref_name }}"
 
       - name: Append MSI to the release (enterprise track)
         env:

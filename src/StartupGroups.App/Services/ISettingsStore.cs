@@ -16,8 +16,7 @@ public enum AppsViewMode
 public enum UpdateChannel
 {
     Stable,
-    Beta,
-    Nightly
+    Canary,
 }
 
 public sealed class AppSettings
@@ -42,8 +41,6 @@ public sealed class AppSettings
     /// <summary>
     /// When true (default), launching StartupGroups.exe opens the main window
     /// in addition to the tray icon. When false, the app starts tray-only.
-    /// Existing v0.2.x installs land here as true; users who preferred the
-    /// old tray-only behaviour can flip this off in Settings.
     /// </summary>
     public bool ShowMainWindowOnLaunch { get; set; } = true;
 }
