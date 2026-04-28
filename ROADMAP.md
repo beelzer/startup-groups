@@ -181,9 +181,33 @@ Built the visible installer flow inside the bundle scaffold from 3a. Deliberatel
 |---|---|---|
 | `ErrorEventArgs` ambiguous between `System.IO` and `WixToolset.BootstrapperApplicationApi` | Same shape as the `StartupEventArgs` clash in 3a — adding `using System.IO` for `Path` / `File` brought back the FSWatcher-flavoured ErrorEventArgs into scope | Per-file `using ErrorEventArgs = WixToolset.BootstrapperApplicationApi.ErrorEventArgs;` alongside the existing aliases |
 
-### Phase 3c — Mica + dark mode + Customize + release flip
+### Phase 3c — Customize, theming, non-Install routing, release flip — ✅ COMPLETE
 
-The polish pass that also flips the release workflow over to ship `Setup.exe` as the primary download.
+Polish pass + the moment the Burn bundle becomes the primary download.
+
+**What's in:**
+
+- **Customize screen** ([`CustomizeView`](src/StartupGroups.Installer.UI/Views/CustomizeView.xaml)) — three setting cards (install path readout, update channel ComboBox, "Run at sign-in" ToggleSwitch). Reachable from Welcome via a "Customize…" hyperlink-style transparent button; default Install path skips it. License → Back routes to Customize or Welcome based on which side the user came from.
+- **Theming follows Windows.** New [App.xaml](src/StartupGroups.Installer.UI/App.xaml) merges `Wpf.Ui.ThemesDictionary` + `ControlsDictionary` so resource brushes resolve. Because the BA uses `Dispatcher.Run()` (not `Application.Run()`) we don't get an `OnStartup` hook — `ApplicationThemeManager.ApplySystemTheme(updateAccent: true)` is called explicitly in the BA after `InitializeComponent`. Mica still comes from `WindowBackdropType="Mica"` on the FluentWindow itself.
+- **Customize choices persist** — on `ApplyComplete` success, the BA seeds `%APPDATA%\StartupGroups\settings.json` with the chosen channel **only if the file doesn't already exist** (preserves config on re-install). The auto-start choice is forwarded to the launched app as `--enable-autostart`; `App.OnStartup` resolves `IAutoStartService` and calls `Enable(runElevated: false)` once on first launch.
+- **Non-Install actions skip pre-install screens.** When Burn invokes the bundle for Modify / Repair / Uninstall (e.g. user re-runs `Setup.exe` or hits Add/Remove Programs), the BA reads `_command.Action`, sets a status string ("Uninstalling…" / "Repairing…" / "Updating…"), jumps straight to the Progress screen, and pre-marks `_installRequested = true` so `Detect → Plan` runs without waiting for an Install button click.
+- **`release.yml` ships Setup.exe as the primary first-install asset.** New step: install `WixToolset.BootstrapperApplications.wixext`, run `installer/StartupGroups.Bundle/build.ps1` after the MSI build, rename the output to `StartupGroups-Setup.exe`, upload via `gh release upload --clobber`. Velopack's own `StartupGroups-win-Setup.exe` and the per-version MSI both still ship — Velopack's is what existing v0.2.x installs use as a Setup.exe replacement when they reinstall, the MSI is the silent-deploy track for IT.
+- **README pivots** — Install section points at `StartupGroups-Setup.exe` and describes the Mica wizard. The MSI still gets a paragraph for IT departments.
+
+**Battle scars added in 3c:**
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `IAutoStartService.Enable` overload not found with `elevated:` parameter name | The interface uses `runElevated`, not `elevated` | Match the actual parameter name |
+| Theme didn't apply on managed BA startup | Application's `OnStartup` only fires from `Application.Run()`; we use `Dispatcher.Run()` directly because Burn calls into our `BootstrapperApplication.Run()` on its own thread | Call `ApplicationThemeManager.ApplySystemTheme(updateAccent: true)` explicitly from the BA after `InitializeComponent` |
+| First-install needs to seed settings.json before the app launches, but elevated MSI can't write to per-user `%APPDATA%` cleanly | Burn engine elevates for `<MsiPackage>` install but the BA stays unelevated and runs in the launching user's context | Have the BA write the seed file from its own (unelevated) process after `ApplyComplete` |
+
+### Migration — what users see
+
+| Step | What ships | What users see |
+|---|---|---|
+| 1 (today) | v0.2.14: Phase 1 Velopack + Phase 2 channels + Phase 3a/b/c installer scaffold (not yet bumped to v0.3.0) | Existing v0.2.x users continue to receive in-app updates via Velopack. The new `Setup.exe` is uploaded to releases but not advertised as primary on the README until v0.3.0 |
+| 2 | v0.3.0 (next minor): Burn bundle becomes the README's primary download | New downloads see the Mica/Fluent wizard. Existing users keep updating via Velopack — they don't see the new Setup.exe unless they reinstall |
 
 The "modern Fluent installer" experience. Visual Studio Installer pattern: Burn handles install correctness, our WPF app draws the UI.
 

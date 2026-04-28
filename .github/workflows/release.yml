@@ -52,10 +52,13 @@ jobs:
       - name: Install WiX
         shell: pwsh
         run: |
-          # Pin all three to the same version — extension and core wix must match.
+          # Pin all four to the same version — extension and core wix must match.
+          # BootstrapperApplications.wixext is the WiX 5 successor to Bal.wixext;
+          # required for the Phase 3 Burn bundle build.
           dotnet tool install --global wix --version 5.0.2
           wix extension add -g WixToolset.UI.wixext/5.0.2
           wix extension add -g WixToolset.Util.wixext/5.0.2
+          wix extension add -g WixToolset.BootstrapperApplications.wixext/5.0.2
 
       - name: Install Velopack CLI
         run: dotnet tool install --global vpk --version 0.0.1589-ga2c5a97
@@ -78,6 +81,20 @@ jobs:
         run: |
           $version = "${{ steps.version.outputs.version }}"
           Copy-Item artifacts/installer/StartupGroups.msi "artifacts/installer/StartupGroups-$version.msi"
+
+      - name: Build Burn bundle (Phase 3 — Setup.exe wrapping the MSI + managed BA)
+        shell: pwsh
+        run: ./installer/StartupGroups.Bundle/build.ps1
+
+      - name: Rename Burn bundle to primary Setup.exe asset
+        shell: pwsh
+        run: |
+          # The bundle becomes the primary download from v0.3.0 onward.
+          # vpk later uploads a "StartupGroups-win-Setup.exe" of its own
+          # (the Velopack-flavoured first-install installer); we keep that
+          # too for now so existing Velopack flows aren't disrupted, but
+          # rename our Burn bundle to the unambiguous "StartupGroups-Setup.exe".
+          Move-Item artifacts/installer/StartupGroups-Bundle-Setup.exe artifacts/installer/StartupGroups-Setup.exe
 
       - name: Publish for Velopack (multi-file, enables per-file deltas)
         shell: pwsh
@@ -170,6 +187,19 @@ jobs:
           $version = "${{ steps.version.outputs.version }}"
           gh release upload "${{ github.ref_name }}" `
             "artifacts/installer/StartupGroups-$version.msi" `
+            --clobber
+
+      - name: Append Burn bundle Setup.exe to the release (primary first-install asset)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          # The Burn bundle is the new primary download from v0.3.0 onward —
+          # Mica + Fluent UI, replaces the old WixUI dialogs. Velopack still
+          # produces its own StartupGroups-win-Setup.exe for the per-user
+          # auto-update install path, which we leave alongside.
+          gh release upload "${{ github.ref_name }}" `
+            "artifacts/installer/StartupGroups-Setup.exe" `
             --clobber
 
       # vpk creates the release as a draft. Publish it with auto-generated

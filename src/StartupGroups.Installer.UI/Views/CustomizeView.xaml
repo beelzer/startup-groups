@@ -1,0 +1,150 @@
+<UserControl x:Class="StartupGroups.Installer.UI.Views.CustomizeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <Grid Margin="24,16,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="Customize installation"
+                       FontSize="20"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+            <TextBlock Text="Pick how Startup Groups updates and whether to launch it at sign-in."
+                       FontSize="13"
+                       Margin="0,4,0,12"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Margin="0,4,0,0">
+
+            <!-- Install location -->
+            <Border CornerRadius="8"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    Padding="14,10"
+                    Margin="0,0,0,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <ui:SymbolIcon Grid.Column="0"
+                                   Symbol="Folder24"
+                                   FontSize="20"
+                                   Margin="0,0,12,0"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Install location"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <TextBlock Text="{Binding InstallPath}"
+                                   FontFamily="Cascadia Mono, Consolas, monospace"
+                                   FontSize="12"
+                                   Margin="0,2,0,0"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Update channel -->
+            <Border CornerRadius="8"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    Padding="14,10"
+                    Margin="0,0,0,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:SymbolIcon Grid.Column="0"
+                                   Symbol="Branch24"
+                                   FontSize="20"
+                                   Margin="0,0,12,0"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Update channel"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <TextBlock Text="Stable is fully released versions only."
+                                   FontSize="12"
+                                   Margin="0,2,0,0"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <ComboBox Grid.Column="2"
+                              MinWidth="140"
+                              VerticalAlignment="Center"
+                              ItemsSource="{Binding AvailableChannels}"
+                              SelectedItem="{Binding SelectedChannel}" />
+                </Grid>
+            </Border>
+
+            <!-- Auto-start -->
+            <Border CornerRadius="8"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    Padding="14,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:SymbolIcon Grid.Column="0"
+                                   Symbol="Power24"
+                                   FontSize="20"
+                                   Margin="0,0,12,0"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Run at sign-in"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <TextBlock Text="Registers a Scheduled Task so the tray icon starts with Windows."
+                                   FontSize="12"
+                                   Margin="0,2,0,0"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <ui:ToggleSwitch Grid.Column="2"
+                                     IsChecked="{Binding EnableAutoStart, Mode=TwoWay}"
+                                     VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+        </StackPanel>
+
+        <Grid Grid.Row="2" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <ui:Button Grid.Column="0"
+                       Content="Back"
+                       Command="{Binding BackCommand}"
+                       Icon="{ui:SymbolIcon ArrowLeft24}" />
+            <ui:Button Grid.Column="2"
+                       Content="Cancel"
+                       Command="{Binding CancelCommand}"
+                       Margin="0,0,8,0" />
+            <ui:Button Grid.Column="3"
+                       Content="Continue"
+                       Appearance="Primary"
+                       Icon="{ui:SymbolIcon ArrowRight24}"
+                       Command="{Binding ContinueCommand}"
+                       IsDefault="True" />
+        </Grid>
+    </Grid>
+</UserControl>

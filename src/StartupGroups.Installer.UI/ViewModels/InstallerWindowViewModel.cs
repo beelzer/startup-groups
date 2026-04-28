@@ -6,6 +6,7 @@ namespace StartupGroups.Installer.UI.ViewModels;
 public enum InstallerStep
 {
     Welcome,
+    Customize,
     License,
     Progress,
     Success,
@@ -24,6 +25,7 @@ public enum InstallerStep
 public sealed partial class InstallerWindowViewModel : ObservableObject
 {
     public WelcomeViewModel Welcome { get; }
+    public CustomizeViewModel Customize { get; }
     public LicenseViewModel License { get; }
     public ProgressViewModel Progress { get; }
     public SuccessViewModel Success { get; }
@@ -38,14 +40,21 @@ public sealed partial class InstallerWindowViewModel : ObservableObject
     public InstallerWindowViewModel()
     {
         Welcome = new WelcomeViewModel();
+        Customize = new CustomizeViewModel();
         License = new LicenseViewModel();
         Progress = new ProgressViewModel();
         Success = new SuccessViewModel();
 
         Welcome.NextRequested += (_, _) => Show(InstallerStep.License);
+        Welcome.CustomizeRequested += (_, _) => Show(InstallerStep.Customize);
         Welcome.CancelRequested += (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty);
 
-        License.BackRequested += (_, _) => Show(InstallerStep.Welcome);
+        Customize.BackRequested += (_, _) => Show(InstallerStep.Welcome);
+        Customize.CancelRequested += (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty);
+        Customize.ContinueRequested += (_, _) => Show(InstallerStep.License);
+
+        License.BackRequested += (_, _) =>
+            Show(_cameViaCustomize ? InstallerStep.Customize : InstallerStep.Welcome);
         License.CancelRequested += (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty);
         License.InstallRequested += (_, _) =>
         {
@@ -63,12 +72,20 @@ public sealed partial class InstallerWindowViewModel : ObservableObject
         Show(InstallerStep.Welcome);
     }
 
+    private bool _cameViaCustomize;
+
     public void Show(InstallerStep step)
     {
+        // Track whether the user routed through Customize so License → Back
+        // returns to the right place.
+        if (step == InstallerStep.Customize) _cameViaCustomize = true;
+        else if (step == InstallerStep.Welcome) _cameViaCustomize = false;
+
         CurrentStep = step;
         CurrentScreen = step switch
         {
             InstallerStep.Welcome => Welcome,
+            InstallerStep.Customize => Customize,
             InstallerStep.License => License,
             InstallerStep.Progress => Progress,
             InstallerStep.Success => Success,
