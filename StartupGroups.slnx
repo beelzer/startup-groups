@@ -6,6 +6,7 @@
     <Project Path="src/StartupGroups.Installer.UI/StartupGroups.Installer.UI.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/StartupGroups.App.Tests/StartupGroups.App.Tests.csproj" />
     <Project Path="tests/StartupGroups.Core.Tests/StartupGroups.Core.Tests.csproj" />
   </Folder>
 </Solution>
