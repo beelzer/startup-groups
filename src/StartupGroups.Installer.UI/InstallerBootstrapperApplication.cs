@@ -564,9 +564,11 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
         }
         if (deleteLogs)
         {
+            // Folder name must stay in sync with AppPaths.LocalDataFolderName.
+            // Distinct from "StartupGroups" (Velopack's install root) by design.
             var local = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "StartupGroups");
+                "StartupGroups.UserData");
             TryDeleteFolder(local, "logs/cache");
         }
     }
