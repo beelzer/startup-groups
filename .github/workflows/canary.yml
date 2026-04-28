@@ -49,21 +49,25 @@ jobs:
 
       - name: Compute canary version
         id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
           [xml]$props = Get-Content Directory.Build.props
           $base = [string]$props.Project.PropertyGroup.Version
-          # SemVer 2.0 prerelease suffix using just the short SHA — uniquely
-          # identifies the build, traces back to the commit, no timestamp
-          # noise. Chronological ordering across canary versions doesn't
-          # matter for update detection: Velopack's UpdateManager reads
-          # releases.canary.json which always points at the latest.
-          $sha = "${{ github.sha }}".Substring(0, 7)
-          $version = "$base-canary.$sha"
+          # Count existing canary releases on the same base version, then
+          # increment. Resets naturally when Directory.Build.props bumps
+          # (e.g. 0.2.14 → 0.3.0 starts a fresh canary.1). Plain numeric
+          # so the prerelease identifier is semver-2.0 compliant (leading
+          # zeros forbidden in numeric prerelease identifiers).
+          $existing = gh api "repos/${{ github.repository }}/releases" --paginate `
+            --jq "[.[] | select(.tag_name | startswith(\"v$base-canary.\"))] | length"
+          $next = [int]$existing + 1
+          $version = "$base-canary.$next"
           $tag = "v$version"
           "version=$version" >> $env:GITHUB_OUTPUT
           "tag=$tag" >> $env:GITHUB_OUTPUT
-          Write-Host "Canary version=$version tag=$tag"
+          Write-Host "Canary version=$version tag=$tag (existing canaries on base $base = $existing)"
 
       - name: Install Velopack CLI
         run: dotnet tool install --global vpk --version 0.0.1589-ga2c5a97
