@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Burn bundle that wraps the existing StartupGroups.msi and replaces the
+    WiX UI dialogs with our managed BA (StartupGroups.Installer.UI). The MSI
+    runs silently under the hood; the BA draws the user-facing UI.
+
+    Phase 3a: minimal wiring — chain the MSI, host the managed BA via the
+              WiX 5 out-of-process model. The BA EXE goes on
+              <BootstrapperApplication SourceFile="..."/> directly; all its
+              support files (runtime DLLs, runtimeconfig, etc.) come in via
+              <Payloads Include="...\**" /> globbing the publish folder.
+    Phase 3b: 5-screen UI inside the BA.
+    Phase 3c: Mica + dark mode + uninstall/repair self-detect.
+
+    Bundle UpgradeCode lives in Directory.Build.props (AppBundleUpgradeCode);
+    distinct from the MSI's UpgradeCode and never changes.
+
+    Note on syntax: WixDotNetCoreBootstrapperApplicationHost (the WiX 4
+    in-process .NET host) is deprecated in WiX 5. The new OOP model treats
+    the BA as a normal subprocess — just point SourceFile at the EXE.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+    <Bundle Name="$(var.ProductName)"
+            Manufacturer="$(var.CompanyName)"
+            Version="$(var.ProductVersion)"
+            UpgradeCode="$(var.BundleUpgradeCode)"
+            HelpUrl="$(var.SupportUrl)"
+            AboutUrl="$(var.AboutUrl)"
+            IconSourceFile="$(var.IconPath)"
+            DisableModify="yes">
+
+        <BootstrapperApplication SourceFile="$(var.MainExePath)">
+            <!-- The <Payloads Include="..." /> globbing element ships in WiX
+                 6+. Our pinned 5.0.2 toolchain doesn't have it, so the build
+                 script enumerates the publish folder and emits an explicit
+                 <PayloadGroup Id="InstallerUiPayloads"> into a side file. -->
+            <PayloadGroupRef Id="InstallerUiPayloads" />
+        </BootstrapperApplication>
+
+        <Chain>
+            <MsiPackage Id="StartupGroupsMsi"
+                        SourceFile="$(var.MsiPath)"
+                        Vital="yes"
+                        Compressed="yes" />
+        </Chain>
+    </Bundle>
+</Wix>

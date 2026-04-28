@@ -3,6 +3,7 @@
     <Project Path="src/StartupGroups.App/StartupGroups.App.csproj" />
     <Project Path="src/StartupGroups.Core/StartupGroups.Core.csproj" />
     <Project Path="src/StartupGroups.Elevator/StartupGroups.Elevator.csproj" />
+    <Project Path="src/StartupGroups.Installer.UI/StartupGroups.Installer.UI.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/StartupGroups.Core.Tests/StartupGroups.Core.Tests.csproj" />
