@@ -74,16 +74,6 @@ jobs:
           "tag=$tag" >> $env:GITHUB_OUTPUT
           Write-Host "Canary version=$version tag=$tag (existing on base $base = $existing)"
 
-      - name: Install WiX (for Burn bundle)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: pwsh
-        run: |
-          # Pin all four to the same version — extension and core wix must match.
-          dotnet tool install --global wix --version 5.0.2
-          wix extension add -g WixToolset.UI.wixext/5.0.2
-          wix extension add -g WixToolset.Util.wixext/5.0.2
-          wix extension add -g WixToolset.BootstrapperApplications.wixext/5.0.2
-
       - name: Install Velopack CLI
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: dotnet tool install --global vpk --version 0.0.1589-ga2c5a97
@@ -131,40 +121,15 @@ jobs:
             --channel canary `
             --pre
 
-      - name: Build MSI (input for Burn bundle)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: pwsh
-        run: ./installer/StartupGroups.Installer/build.ps1
-
-      - name: Build Burn bundle (full BA install UX)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: pwsh
-        run: ./installer/StartupGroups.Bundle/build.ps1
-
-      - name: Upload Burn bundle as the primary canary installer
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: pwsh
-        run: |
-          # Replace vpk's lean "click yes" Setup.exe with the Burn bundle
-          # so canary first-install matches Stable (Welcome → License →
-          # Customize → Progress → Success). The bundle's chained MSI
-          # registers the app the same way Stable does; subsequent canary
-          # updates land via Velopack's auto-update from the .nupkg + the
-          # releases.canary.json manifest, which vpk already uploaded.
-          #
-          # gh release upload uses the file's basename as the asset name —
-          # rename the local bundle FIRST so it overwrites vpk's lean
-          # StartupGroups-canary-Setup.exe via --clobber. (gh's "<path>#<label>"
-          # syntax sets the asset *label*, not its filename.)
-          Move-Item `
-            artifacts/installer/StartupGroups-Bundle-Setup.exe `
-            artifacts/installer/StartupGroups-canary-Setup.exe -Force
-          $tag = "${{ steps.version.outputs.tag }}"
-          gh release upload $tag `
-            "artifacts/installer/StartupGroups-canary-Setup.exe" `
-            --clobber
+      # The Burn bundle is intentionally NOT built for canary. Canary
+      # needs Velopack's auto-update path (Update.exe + current/ +
+      # versioned packages/), and MSI-based bundle installs don't ship
+      # any of that. So canary's only first-install asset is vpk's
+      # lean Setup.exe, which IS the Velopack runtime installer. After
+      # first install, the app auto-updates to subsequent canaries via
+      # the canary feed (releases.canary.json + .nupkg). Stable still
+      # gets the Burn bundle via release.yml because its install
+      # cadence is slow and the BA UX is worth the trade-off.
 
       - name: Publish the draft with auto-generated notes
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
