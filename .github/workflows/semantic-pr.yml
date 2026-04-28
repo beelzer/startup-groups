@@ -25,6 +25,7 @@ jobs:
             fix
             perf
             refactor
+            revert
             docs
             test
             chore
