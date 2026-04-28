@@ -649,17 +649,9 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
         if (e.MessageType != InstallMessage.ActionStart) return;
         var message = e.Message;
         if (string.IsNullOrWhiteSpace(message)) return;
-        if (LooksLikeRawGuid(message)) return;
+        if (MsiMessageFilter.LooksLikeRawGuid(message)) return;
 
         UpdateUi(vm => vm.Progress.CurrentOperation = message);
-    }
-
-    private static bool LooksLikeRawGuid(string s)
-    {
-        var trimmed = s.Trim();
-        // {XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX} or with no braces. 36 or 38 chars.
-        if (trimmed.Length is not (36 or 38)) return false;
-        return Guid.TryParse(trimmed, out _);
     }
 
     private void OnCacheAcquireProgress(object? sender, CacheAcquireProgressEventArgs e)
