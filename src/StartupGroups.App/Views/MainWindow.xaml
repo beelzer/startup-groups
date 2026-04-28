@@ -1660,7 +1660,7 @@
                         </Grid>
                     </Border>
 
-                    <!-- Update available banner (green accent, shown only when IsUpdateAvailable) -->
+                    <!-- Update available banner — clicking "View details" opens the flyout. -->
                     <Border CornerRadius="{StaticResource RadiusMd}"
                             Padding="16,14"
                             Margin="0,4,0,4"
@@ -1678,8 +1678,8 @@
                                            Symbol="CheckmarkCircle24"
                                            Foreground="{DynamicResource SystemFillColorSuccessBrush}"
                                            FontSize="24"
-                                           VerticalAlignment="Top"
-                                           Margin="0,2,14,0" />
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,14,0" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="{loc:Translate Settings_Version_UpdateAvailable}"
@@ -1690,30 +1690,37 @@
                                                FontWeight="SemiBold"
                                                Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                                 </StackPanel>
-                                <ui:Button Content="{loc:Translate Settings_Version_InstallNow}"
-                                           Command="{Binding InstallUpdateCommand}"
-                                           HorizontalAlignment="Left"
-                                           Margin="0,10,0,0"
-                                           Visibility="{Binding IsInstallingUpdate, Converter={StaticResource NotBoolToVisibility}}" />
-                                <StackPanel Orientation="Vertical"
-                                            Margin="0,10,0,0"
-                                            Visibility="{Binding IsInstallingUpdate, Converter={StaticResource BoolToVisibility}}">
-                                    <ProgressBar Value="{Binding UpdateDownloadProgress, Mode=OneWay}"
-                                                 Maximum="1"
-                                                 Height="14"
-                                                 HorizontalAlignment="Stretch"
-                                                 IsIndeterminate="False" />
-                                    <TextBlock Text="{Binding UpdateProgressText}"
-                                               FontSize="{StaticResource FontSizeMuted}"
-                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                               Margin="0,4,0,0" />
-                                </StackPanel>
                             </StackPanel>
-                            <ui:HyperlinkButton Grid.Column="2"
-                                                Content="{loc:Translate Settings_Version_SeeWhatsNew}"
-                                                Command="{Binding OpenReleaseNotesCommand}"
-                                                VerticalAlignment="Top"
-                                                FontSize="{StaticResource FontSizeMuted}" />
+                            <ui:Button Grid.Column="2"
+                                       Appearance="Primary"
+                                       Content="{loc:Translate Settings_Version_ViewDetails}"
+                                       Command="{Binding ShowUpdateDetailsCommand}"
+                                       Icon="{ui:SymbolIcon ArrowDownload24}"
+                                       VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Update channel picker -->
+                    <Border Style="{StaticResource SettingsCard}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource SettingsCardIconHost}">
+                                <ui:SymbolIcon Symbol="Branch24" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource IconSizeSm}" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="14,0,14,0" VerticalAlignment="Center">
+                                <TextBlock Text="{loc:Translate Settings_UpdateChannel_Label}" Style="{StaticResource SettingsCardLabel}" />
+                                <TextBlock Text="{loc:Translate Settings_UpdateChannel_Hint}" Style="{StaticResource SettingsCardHint}" />
+                            </StackPanel>
+                            <ComboBox Grid.Column="2"
+                                      MinWidth="180"
+                                      VerticalAlignment="Center"
+                                      ItemsSource="{Binding UpdateChannelOptions}"
+                                      SelectedItem="{Binding SelectedUpdateChannel}"
+                                      DisplayMemberPath="DisplayName" />
                         </Grid>
                     </Border>
 

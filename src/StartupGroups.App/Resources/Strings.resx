@@ -253,6 +253,20 @@ Run elevated now?</value></data>
   <data name="Settings_Version_InstallNow" xml:space="preserve"><value>Install now</value></data>
   <data name="Settings_Version_Downloading" xml:space="preserve"><value>Downloading update...</value></data>
   <data name="Settings_Version_SeeWhatsNew" xml:space="preserve"><value>See what's new</value></data>
+  <data name="Settings_Version_ViewDetails" xml:space="preserve"><value>View details</value></data>
+
+  <data name="Settings_UpdateChannel_Label" xml:space="preserve"><value>Update channel</value></data>
+  <data name="Settings_UpdateChannel_Hint" xml:space="preserve"><value>Pick which release track delivers updates.</value></data>
+  <data name="Settings_UpdateChannel_Stable" xml:space="preserve"><value>Stable</value></data>
+  <data name="Settings_UpdateChannel_Beta" xml:space="preserve"><value>Beta</value></data>
+  <data name="Settings_UpdateChannel_Nightly" xml:space="preserve"><value>Nightly</value></data>
+
+  <data name="UpdateFlyout_Header_UpdateAvailable" xml:space="preserve"><value>Update available</value></data>
+  <data name="UpdateFlyout_Header_VersionFormat" xml:space="preserve"><value>{0} · {1} channel</value></data>
+  <data name="UpdateFlyout_ReleaseNotes_Heading" xml:space="preserve"><value>What's new</value></data>
+  <data name="UpdateFlyout_Install" xml:space="preserve"><value>Install now</value></data>
+  <data name="UpdateFlyout_Defer" xml:space="preserve"><value>Later</value></data>
+  <data name="UpdateFlyout_SpeedEtaFormat" xml:space="preserve"><value>{0} · {1} remaining</value></data>
 
   <!-- ===== Tooltips ===== -->
   <data name="Tooltip_OpenConfigFolder" xml:space="preserve"><value>Open config folder</value></data>

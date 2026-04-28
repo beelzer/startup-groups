@@ -20,7 +20,7 @@ jobs:
           cache: true
           cache-dependency-path: '**/*.csproj'
 
-      - name: Extract version from tag
+      - name: Extract version and channel from tag
         id: version
         shell: pwsh
         run: |
@@ -28,11 +28,24 @@ jobs:
           $version = $tag -replace '^v', ''
           "version=$version" >> $env:GITHUB_OUTPUT
 
-          # Sanity: tag version must match Directory.Build.props
+          # Channel routing: v*-beta.* → beta; everything else → stable.
+          # See ROADMAP "Phase 2 — Channels".
+          if ($version -match '-beta\.') {
+            $channel = 'beta'
+          } else {
+            $channel = 'stable'
+          }
+          "channel=$channel" >> $env:GITHUB_OUTPUT
+          Write-Host "Tag $tag → version=$version channel=$channel"
+
+          # Sanity: tag version must match Directory.Build.props.
+          # Beta tags carry the same base version + a -beta.N suffix, so we
+          # compare against the base portion only.
+          $base = $version -replace '-.*$', ''
           [xml]$props = Get-Content Directory.Build.props
           $propsVersion = [string]$props.Project.PropertyGroup.Version
-          if ($propsVersion -ne $version) {
-            Write-Error "Tag $tag (version $version) does not match Directory.Build.props version $propsVersion"
+          if ($propsVersion -ne $base) {
+            Write-Error "Tag $tag (base version $base) does not match Directory.Build.props version $propsVersion"
             exit 1
           }
 
@@ -82,13 +95,25 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.version }}"
-          vpk pack `
-            -u StartupGroups `
-            -v $version `
-            -p artifacts/publish-velopack `
-            --mainExe StartupGroups.exe `
-            --packTitle "Startup Groups" `
-            --icon src/StartupGroups.App/Assets/app.ico
+          $channel = "${{ steps.version.outputs.channel }}"
+          # Stable uses Velopack's default channel ("win") so existing v0.2.x
+          # users — who shipped without ExplicitChannel — keep finding stable
+          # updates via releases.win.json. Beta/nightly use distinct channel
+          # feeds so they're invisible to stable users.
+          $packArgs = @(
+            'pack',
+            '-u', 'StartupGroups',
+            '-v', $version,
+            '-p', 'artifacts/publish-velopack',
+            '--mainExe', 'StartupGroups.exe',
+            '--packTitle', 'Startup Groups',
+            '--icon', 'src/StartupGroups.App/Assets/app.ico'
+          )
+          if ($channel -ne 'stable') {
+            $packArgs += '--channel'
+            $packArgs += $channel
+          }
+          vpk @packArgs
 
       # release-drafter autocreates draft releases on every push to main, which
       # collide with vpk's "create new release for this tag" step (vpk refuses
@@ -120,11 +145,22 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          vpk upload github `
-            --repoUrl "https://github.com/${{ github.repository }}" `
-            --token $env:GH_TOKEN `
-            --tag "${{ github.ref_name }}" `
-            --releaseName "${{ github.ref_name }}"
+          $channel = "${{ steps.version.outputs.channel }}"
+          $uploadArgs = @(
+            'upload', 'github',
+            '--repoUrl', 'https://github.com/${{ github.repository }}',
+            '--token', $env:GH_TOKEN,
+            '--tag', '${{ github.ref_name }}',
+            '--releaseName', '${{ github.ref_name }}'
+          )
+          if ($channel -ne 'stable') {
+            # Beta tags surface as GitHub prereleases so they don't appear as
+            # the "latest" download; nightlies follow the same pattern.
+            $uploadArgs += '--channel'
+            $uploadArgs += $channel
+            $uploadArgs += '--pre'
+          }
+          vpk @uploadArgs
 
       - name: Append MSI to the release (enterprise track)
         env:

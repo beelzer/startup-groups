@@ -226,6 +226,22 @@ public static class Strings
     public static string Settings_Version_InstallNow => Get(nameof(Settings_Version_InstallNow));
     public static string Settings_Version_Downloading => Get(nameof(Settings_Version_Downloading));
     public static string Settings_Version_SeeWhatsNew => Get(nameof(Settings_Version_SeeWhatsNew));
+    public static string Settings_Version_ViewDetails => Get(nameof(Settings_Version_ViewDetails));
+
+    // Update channel
+    public static string Settings_UpdateChannel_Label => Get(nameof(Settings_UpdateChannel_Label));
+    public static string Settings_UpdateChannel_Hint => Get(nameof(Settings_UpdateChannel_Hint));
+    public static string Settings_UpdateChannel_Stable => Get(nameof(Settings_UpdateChannel_Stable));
+    public static string Settings_UpdateChannel_Beta => Get(nameof(Settings_UpdateChannel_Beta));
+    public static string Settings_UpdateChannel_Nightly => Get(nameof(Settings_UpdateChannel_Nightly));
+
+    // Update flyout
+    public static string UpdateFlyout_Header_UpdateAvailable => Get(nameof(UpdateFlyout_Header_UpdateAvailable));
+    public static string UpdateFlyout_Header_VersionFormat => Get(nameof(UpdateFlyout_Header_VersionFormat));
+    public static string UpdateFlyout_ReleaseNotes_Heading => Get(nameof(UpdateFlyout_ReleaseNotes_Heading));
+    public static string UpdateFlyout_Install => Get(nameof(UpdateFlyout_Install));
+    public static string UpdateFlyout_Defer => Get(nameof(UpdateFlyout_Defer));
+    public static string UpdateFlyout_SpeedEtaFormat => Get(nameof(UpdateFlyout_SpeedEtaFormat));
 
     // Tooltips
     public static string Tooltip_OpenConfigFolder => Get(nameof(Tooltip_OpenConfigFolder));
