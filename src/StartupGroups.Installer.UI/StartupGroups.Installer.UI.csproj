@@ -8,6 +8,11 @@
     <AssemblyName>StartupGroups.Installer.UI</AssemblyName>
     <ApplicationIcon>..\StartupGroups.App\Assets\app.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- We own Main via Program.cs (Burn's OOP entry); App.xaml is consumed
+         as a Page so its merged ResourceDictionaries (WPF-UI themes) load,
+         but the SDK doesn't generate a startup wrapper around it. -->
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+    <StartupObject>StartupGroups.Installer.UI.Program</StartupObject>
     <!-- Burn's apphost loader expects the standard BA.exe + BA.dll + runtimeconfig.json
          layout. Single-file publish breaks payload extraction. -->
     <PublishSingleFile>false</PublishSingleFile>

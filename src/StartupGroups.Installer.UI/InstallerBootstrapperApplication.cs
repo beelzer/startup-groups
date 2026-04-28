@@ -5,6 +5,7 @@ using System.Windows.Threading;
 using StartupGroups.Installer.UI.ViewModels;
 using StartupGroups.Installer.UI.Views;
 using WixToolset.BootstrapperApplicationApi;
+using Wpf.Ui.Appearance;
 using StartupEventArgs = WixToolset.BootstrapperApplicationApi.StartupEventArgs;
 using ShutdownEventArgs = WixToolset.BootstrapperApplicationApi.ShutdownEventArgs;
 using ErrorEventArgs = WixToolset.BootstrapperApplicationApi.ErrorEventArgs;
@@ -36,6 +37,7 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
 {
     private InstallerWindowViewModel? _viewModel;
     private InstallerWindow? _window;
+    private App? _wpfApp;
     private Dispatcher? _uiDispatcher;
     private IBootstrapperCommand? _command;
     private readonly object _stateGate = new();
@@ -51,6 +53,20 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
     protected override void Run()
     {
         _uiDispatcher = Dispatcher.CurrentDispatcher;
+
+        // Create + initialize a WPF Application so App.xaml's resource
+        // dictionaries (WPF-UI themes, control styles) are merged into the
+        // global resource scope. Without this, Mica + accent brushes resolve
+        // to defaults and dark-mode following doesn't kick in.
+        _wpfApp = new App();
+        _wpfApp.InitializeComponent();
+        // OnStartup never fires (we use Dispatcher.Run, not Application.Run),
+        // so apply the system theme + accent here explicitly. Mica chrome
+        // already comes from FluentWindow's WindowBackdropType="Mica" — this
+        // call updates the resource brushes to match the OS personalization
+        // (light/dark + accent).
+        ApplicationThemeManager.ApplySystemTheme(updateAccent: true);
+
         _viewModel = new InstallerWindowViewModel();
         _window = new InstallerWindow(_viewModel);
 
@@ -66,7 +82,28 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
         ExecuteProgress += OnExecuteProgress;
         CacheAcquireProgress += OnCacheAcquireProgress;
 
-        engine.Log(LogLevel.Standard, $"Phase 3b BA: Run() entered, action={_command?.Action}");
+        var action = _command?.Action ?? LaunchAction.Install;
+        engine.Log(LogLevel.Standard, $"Phase 3c BA: Run() entered, action={action}");
+
+        // For non-Install invocations (Burn re-runs us for Uninstall via
+        // Add/Remove Programs, or Modify/Repair from the bundle), skip
+        // Welcome / Customize / License and go straight to Progress. The
+        // license has already been accepted on the original install; Modify
+        // and Uninstall don't need it again.
+        if (action != LaunchAction.Install)
+        {
+            _viewModel.Progress.Status = action switch
+            {
+                LaunchAction.Uninstall => "Uninstalling…",
+                LaunchAction.Repair => "Repairing…",
+                LaunchAction.Modify => "Updating…",
+                _ => "Working…",
+            };
+            _viewModel.Show(InstallerStep.Progress);
+            // Mark "user has consented" so OnDetectComplete drives Plan
+            // automatically without waiting for an Install button click.
+            lock (_stateGate) { _installRequested = true; }
+        }
 
         // Detect runs in the background while the user reads Welcome/License.
         // It's fast (typically <100ms), so by the time they click Install
@@ -133,14 +170,21 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
             return;
         }
 
+        // Forward the auto-start choice from Customize. The app's
+        // TaskSchedulerAutoStartService picks this up in App.OnStartup
+        // and registers the scheduled task on first launch only.
+        var enableAutoStart = _viewModel?.Customize.EnableAutoStart == true;
+        var args = enableAutoStart ? "--enable-autostart" : string.Empty;
+
         try
         {
             Process.Start(new ProcessStartInfo
             {
                 FileName = appPath,
+                Arguments = args,
                 UseShellExecute = true,
             });
-            engine.Log(LogLevel.Standard, $"Launched {appPath}");
+            engine.Log(LogLevel.Standard, $"Launched {appPath} {args}".TrimEnd());
         }
         catch (Exception ex)
         {
@@ -223,6 +267,16 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
     private void OnApplyComplete(object? sender, ApplyCompleteEventArgs e)
     {
         engine.Log(LogLevel.Standard, $"ApplyComplete status=0x{e.Status:X8}");
+
+        if (e.Status >= 0)
+        {
+            // Write the user's chosen update channel into the per-user
+            // settings.json before the app first launches. We only write if
+            // the file doesn't already exist — preserves any prior config
+            // (re-install / upgrade).
+            TrySeedFirstRunSettings();
+        }
+
         UpdateUi(vm =>
         {
             if (e.Status >= 0)
@@ -238,6 +292,41 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
                 vm.Progress.Status = "Failed.";
             }
         });
+    }
+
+    private void TrySeedFirstRunSettings()
+    {
+        try
+        {
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var dir = Path.Combine(appData, "StartupGroups");
+            var settingsPath = Path.Combine(dir, "settings.json");
+            if (File.Exists(settingsPath))
+            {
+                engine.Log(LogLevel.Standard, "settings.json already present; skipping seed.");
+                return;
+            }
+
+            Directory.CreateDirectory(dir);
+
+            // Mirror the App's AppSettings shape: camelCase, string enum.
+            // Only seed the fields the user explicitly chose; all other
+            // properties fall back to their defaults when the app reads
+            // settings.json on first launch.
+            var channel = _viewModel?.Customize.SelectedChannel switch
+            {
+                InstallerUpdateChannel.Beta => "Beta",
+                InstallerUpdateChannel.Nightly => "Nightly",
+                _ => "Stable",
+            };
+            var json = $"{{\n  \"updateChannel\": \"{channel}\"\n}}\n";
+            File.WriteAllText(settingsPath, json);
+            engine.Log(LogLevel.Standard, $"Seeded settings.json with channel={channel}");
+        }
+        catch (Exception ex)
+        {
+            engine.Log(LogLevel.Error, $"Failed to seed settings.json: {ex.Message}");
+        }
     }
 
     private void OnError(object? sender, ErrorEventArgs e)

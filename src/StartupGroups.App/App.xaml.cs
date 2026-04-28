@@ -105,7 +105,29 @@ public partial class App : Application
         {
             _trayViewModel.ShowMainWindowCommand.Execute(null);
         }
+
+        // First-run hand-off from the Phase 3 installer's Customize screen:
+        // user opted into auto-start. Register the Task Scheduler entry once,
+        // then leave alone — Settings still controls subsequent toggling.
+        if (e.Args.Any(a => string.Equals(a, EnableAutoStartArg, StringComparison.OrdinalIgnoreCase)))
+        {
+            try
+            {
+                var autoStart = _host.Services.GetRequiredService<IAutoStartService>();
+                if (!autoStart.IsEnabled())
+                {
+                    autoStart.Enable(runElevated: false);
+                    Log.Information("Auto-start enabled via {Arg} from installer", EnableAutoStartArg);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to honour --enable-autostart from installer");
+            }
+        }
     }
+
+    private const string EnableAutoStartArg = "--enable-autostart";
 
     private void ApplyConfiguredTheme()
     {

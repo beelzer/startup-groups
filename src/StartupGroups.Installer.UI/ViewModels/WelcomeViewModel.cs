@@ -11,10 +11,14 @@ public sealed partial class WelcomeViewModel : ObservableObject
     public string Version => AppBranding.Version;
 
     public event EventHandler? NextRequested;
+    public event EventHandler? CustomizeRequested;
     public event EventHandler? CancelRequested;
 
     [RelayCommand]
     private void Next() => NextRequested?.Invoke(this, EventArgs.Empty);
+
+    [RelayCommand]
+    private void Customize() => CustomizeRequested?.Invoke(this, EventArgs.Empty);
 
     [RelayCommand]
     private void Cancel() => CancelRequested?.Invoke(this, EventArgs.Empty);

@@ -22,7 +22,11 @@ A Windows launcher that boots groups of apps in the right order — with adaptiv
 
 ## Install
 
-Download the latest MSI from the [releases page](https://github.com/beelzer/startup-groups/releases) and run it.
+Download **`StartupGroups-Setup.exe`** from the [releases page](https://github.com/beelzer/startup-groups/releases/latest) and run it.
+
+The installer is a Mica-themed Fluent setup wizard (Welcome → License → Progress → Success, with optional Customize for picking the update channel + auto-start). Once installed, in-app updates are silent — no UAC, no installer flicker.
+
+For IT departments and silent deployment, a vanilla **`StartupGroups-<version>.msi`** is also published on every release.
 
 > The installer is unsigned, so Windows SmartScreen will show a warning on first install. Click **More info** → **Run anyway**.
 
@@ -31,7 +35,7 @@ Download the latest MSI from the [releases page](https://github.com/beelzer/star
 Requirements:
 - **Windows 10/11**
 - **.NET 10 SDK** (see [global.json](global.json))
-- **WiX 4** (only needed if building the MSI)
+- **WiX 5** (only needed if building the MSI or the Burn bundle)
 
 ```powershell
 # clone
@@ -52,6 +56,13 @@ To build the MSI installer:
 
 ```powershell
 ./installer/StartupGroups.Installer/build.ps1
+```
+
+To build the Burn bundle (`Setup.exe`) — wraps the MSI with the Mica/Fluent installer UI:
+
+```powershell
+# Run after the MSI build above; the bundle chains the produced .msi.
+./installer/StartupGroups.Bundle/build.ps1
 ```
 
 ## Architecture
