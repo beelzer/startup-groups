@@ -95,6 +95,12 @@ public partial class MainWindowViewModel : ObservableObject
             new ThemeOption(AppTheme.Light),
             new ThemeOption(AppTheme.Dark),
         ];
+        UpdateChannelOptions =
+        [
+            new UpdateChannelOption(UpdateChannel.Stable),
+            new UpdateChannelOption(UpdateChannel.Beta),
+            new UpdateChannelOption(UpdateChannel.Nightly),
+        ];
         AvailableLanguages = SupportedLanguages.All;
 
         // Initial load from persisted settings (suppress save loop)
@@ -108,6 +114,7 @@ public partial class MainWindowViewModel : ObservableObject
         _autoStartEnabled = _autoStart.IsEnabled();
         _alwaysRunAsAdmin = current.AlwaysRunAsAdmin;
         _warnWhenElevatedAppsPresent = current.WarnWhenElevatedAppsPresent;
+        _selectedUpdateChannel = UpdateChannelOptions.First(o => o.Value == current.UpdateChannel);
         _isRunningAsAdmin = ElevationDetector.IsElevated;
         _suppressSettingsSave = false;
 
@@ -142,6 +149,7 @@ public partial class MainWindowViewModel : ObservableObject
     public WindowsStartupViewModel WindowsStartup { get; }
     public IReadOnlyList<SupportedLanguage> AvailableLanguages { get; }
     public IReadOnlyList<ThemeOption> ThemeOptions { get; }
+    public IReadOnlyList<UpdateChannelOption> UpdateChannelOptions { get; }
 
     public string AppName => AppBranding.AppName;
     public string AppVersionLabel =>
@@ -167,6 +175,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty] private bool _alwaysRunAsAdmin;
     [ObservableProperty] private bool _warnWhenElevatedAppsPresent;
+    [ObservableProperty] private UpdateChannelOption _selectedUpdateChannel = null!;
     [ObservableProperty] private bool _isRunningAsAdmin;
     [ObservableProperty] private bool _isAdminCardExpanded;
     [ObservableProperty] private bool _isElevationWarningExpanded;
@@ -237,10 +246,10 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty] private string? _releaseUrl;
     [ObservableProperty] private DateTimeOffset? _lastChecked;
     [ObservableProperty] private bool _isCheckingForUpdate;
-    [ObservableProperty] private bool _isInstallingUpdate;
-    [ObservableProperty] private double _updateDownloadProgress;
-    [ObservableProperty] private string _updateProgressText = string.Empty;
-    private long _updateDownloadSizeBytes;
+    private UpdateCheckResult? _lastCheckResult;
+
+    partial void OnIsUpdateAvailableChanged(bool value) =>
+        ShowUpdateDetailsCommand.NotifyCanExecuteChanged();
 
     partial void OnLatestVersionChanged(string value) => OnPropertyChanged(nameof(LatestVersionShort));
     partial void OnLastCheckedChanged(DateTimeOffset? value) => OnPropertyChanged(nameof(LastCheckedText));
@@ -360,7 +369,9 @@ public partial class MainWindowViewModel : ObservableObject
         if (value == ActiveView.Settings && !_updateCheckScheduled)
         {
             _updateCheckScheduled = true;
-            _ = CheckForUpdatesAsync();
+            // Auto-check on first Settings open uses the disk cache (force=false).
+            // Manual "Check now" passes force=true.
+            _ = CheckForUpdatesAsync(force: false);
         }
     }
 
@@ -389,6 +400,19 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
         PersistSettings(s => s.Theme = value.Value);
+    }
+
+    partial void OnSelectedUpdateChannelChanged(UpdateChannelOption value)
+    {
+        if (_suppressSettingsSave || value is null)
+        {
+            return;
+        }
+        PersistSettings(s => s.UpdateChannel = value.Value);
+        // The settings.Changed event prompts UpdateService to rebuild its
+        // UpdateManager on the next CheckAsync — re-check immediately so
+        // the user sees the channel switch reflected without restarting.
+        _ = CheckForUpdatesAsync(force: true);
     }
 
     partial void OnMinimizeToTrayOnCloseChanged(bool value)
@@ -496,6 +520,7 @@ public partial class MainWindowViewModel : ObservableObject
             UiCulture = _settings.Current.UiCulture,
             AlwaysRunAsAdmin = _settings.Current.AlwaysRunAsAdmin,
             WarnWhenElevatedAppsPresent = _settings.Current.WarnWhenElevatedAppsPresent,
+            UpdateChannel = _settings.Current.UpdateChannel,
         };
         mutate(clone);
         _settings.Save(clone);
@@ -535,77 +560,48 @@ public partial class MainWindowViewModel : ObservableObject
     private void OpenReleaseNotes() =>
         LaunchShell(ReleaseUrl ?? $"{AppBranding.SupportUrl}/releases/latest", "release notes");
 
-    [RelayCommand(CanExecute = nameof(CanInstallUpdate))]
-    private async Task InstallUpdateAsync()
+    [RelayCommand(CanExecute = nameof(CanShowUpdateDetails))]
+    private void ShowUpdateDetails()
     {
-        // Not running under a Velopack install (dev / legacy MSI install) — fall back
-        // to opening the release page so the user can grab Setup.exe manually.
+        // Not running under a Velopack install (dev / legacy MSI install) — fall
+        // back to opening the release page so the user can grab Setup.exe manually.
         if (!_updateService.CanUpdate)
         {
             LaunchShell(ReleaseUrl ?? $"{AppBranding.SupportUrl}/releases/latest", "release page");
             return;
         }
 
-        IsInstallingUpdate = true;
-        UpdateDownloadProgress = 0;
-        UpdateProgressText = FormatDownloadProgress(0, _updateDownloadSizeBytes);
-        InstallUpdateCommand.NotifyCanExecuteChanged();
-        CheckForUpdatesCommand.NotifyCanExecuteChanged();
+        if (_lastCheckResult is null) return;
 
-        var progress = new Progress<int>(p =>
-        {
-            UpdateDownloadProgress = p / 100.0;
-            UpdateProgressText = FormatDownloadProgress(p, _updateDownloadSizeBytes);
-        });
-        try
-        {
-            // ApplyUpdatesAndRestart() restarts the process — we don't normally return.
-            await _updateService.DownloadAndApplyAsync(progress).ConfigureAwait(true);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Update download/apply failed.");
-            await _dialogs.ShowErrorAsync(
-                Strings.Settings_Version_UpdateAvailable,
-                ex.Message).ConfigureAwait(true);
-            IsInstallingUpdate = false;
-            InstallUpdateCommand.NotifyCanExecuteChanged();
-            CheckForUpdatesCommand.NotifyCanExecuteChanged();
-        }
+        var flyoutVm = _serviceProvider.GetRequiredService<UpdateFlyoutViewModel>();
+        flyoutVm.Initialize(_lastCheckResult);
+        var window = new UpdateFlyoutWindow(flyoutVm);
+        window.ShowDialog();
     }
 
-    private bool CanInstallUpdate() => !IsInstallingUpdate;
-
-    private static string FormatDownloadProgress(int percent, long totalBytes)
-    {
-        if (totalBytes <= 0)
-        {
-            return $"{percent}%";
-        }
-        const double Mib = 1024d * 1024d;
-        var totalMib = totalBytes / Mib;
-        var doneMib = totalMib * percent / 100d;
-        return $"{doneMib:F1} / {totalMib:F1} MB ({percent}%)";
-    }
+    private bool CanShowUpdateDetails() => IsUpdateAvailable;
 
     [RelayCommand(CanExecute = nameof(CanCheckForUpdates))]
-    private async Task CheckForUpdatesAsync()
+    private Task CheckForUpdatesAsync() => CheckForUpdatesAsync(force: true);
+
+    private async Task CheckForUpdatesAsync(bool force)
     {
         IsCheckingForUpdate = true;
         CheckForUpdatesCommand.NotifyCanExecuteChanged();
         try
         {
-            var result = await _updateService.CheckAsync().ConfigureAwait(true);
+            var result = await _updateService.CheckAsync(force).ConfigureAwait(true);
             if (result is null)
             {
                 return;
             }
 
+            _lastCheckResult = result;
             LatestVersion = result.LatestVersion ?? string.Empty;
             ReleaseUrl = result.ReleaseUrl;
             IsUpdateAvailable = result.IsUpdateAvailable;
             LastChecked = result.CheckedAt;
-            _updateDownloadSizeBytes = result.DownloadSizeBytes ?? 0;
+            ShowUpdateDetailsCommand.NotifyCanExecuteChanged();
         }
         catch (Exception ex)
         {
@@ -618,7 +614,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    private bool CanCheckForUpdates() => !IsCheckingForUpdate && !IsInstallingUpdate;
+    private bool CanCheckForUpdates() => !IsCheckingForUpdate;
 
     [RelayCommand]
     private void OpenWindowsColorSettings() => LaunchShell("ms-settings:colors", "Windows color settings");

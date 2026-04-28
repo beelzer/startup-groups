@@ -1,0 +1,132 @@
+name: Nightly
+
+# Daily nightly cuts on the nightly Velopack channel. The cron runs at 04:00
+# UTC; workflow_dispatch lets a maintainer trigger an out-of-band cut.
+#
+# Why a separate workflow: stable/beta releases are tag-driven and human-
+# initiated; nightlies are scheduled and synthesise their own version
+# (`<base>-nightly.<YYYYMMDDHHmm>`). They publish into the `nightly` Velopack
+# channel, which is fed by `releases.win-nightly.json`. Users on the stable
+# or beta channel never see them.
+#
+# Channel mechanics: a Velopack package built with `--channel nightly`
+# produces channel-scoped assets (e.g. `StartupGroups-X.Y.Z-win-nightly-full.nupkg`)
+# and a `releases.win-nightly.json` feed. The runtime UpdateManager picks
+# the channel via `UpdateOptions.ExplicitChannel` (see VelopackUpdateService).
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Skip the run if no commits since the last successful nightly. This
+# concurrency group + the `if:` guard below combine to avoid wasting CI
+# minutes when the repo is quiet.
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  nightly:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Skip if no new commits since last nightly
+        id: should_run
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $head = git rev-parse HEAD
+          $last = gh api "repos/${{ github.repository }}/releases" `
+            --jq '[.[] | select(.tag_name | startswith("v") and contains("-nightly."))][0].target_commitish' 2>$null
+          if (-not [string]::IsNullOrWhiteSpace($last) -and $head -eq $last) {
+            Write-Host "No new commits since last nightly ($head); skipping."
+            "should_run=false" >> $env:GITHUB_OUTPUT
+          } else {
+            "should_run=true" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Setup .NET
+        if: steps.should_run.outputs.should_run == 'true'
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: '**/*.csproj'
+
+      - name: Compute nightly version
+        if: steps.should_run.outputs.should_run == 'true'
+        id: version
+        shell: pwsh
+        run: |
+          [xml]$props = Get-Content Directory.Build.props
+          $base = [string]$props.Project.PropertyGroup.Version
+          # SemVer 2.0 prerelease suffix; lexicographic ordering across runs.
+          $stamp = (Get-Date -AsUTC).ToString('yyyyMMddHHmm')
+          $version = "$base-nightly.$stamp"
+          $tag = "v$version"
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          Write-Host "Nightly version=$version tag=$tag"
+
+      - name: Install Velopack CLI
+        if: steps.should_run.outputs.should_run == 'true'
+        run: dotnet tool install --global vpk --version 0.0.1589-ga2c5a97
+
+      - name: Restore
+        if: steps.should_run.outputs.should_run == 'true'
+        run: dotnet restore StartupGroups.slnx
+
+      - name: Build
+        if: steps.should_run.outputs.should_run == 'true'
+        run: dotnet build StartupGroups.slnx -c Release --no-restore
+
+      - name: Test
+        if: steps.should_run.outputs.should_run == 'true'
+        run: dotnet test StartupGroups.slnx -c Release --no-build --verbosity normal
+
+      - name: Publish for Velopack
+        if: steps.should_run.outputs.should_run == 'true'
+        shell: pwsh
+        run: |
+          dotnet publish src/StartupGroups.App/StartupGroups.App.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -o artifacts/publish-velopack -nologo -v minimal
+          dotnet publish src/StartupGroups.Elevator/StartupGroups.Elevator.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -o artifacts/publish-velopack -nologo -v minimal
+
+      - name: Pack Velopack release (nightly channel)
+        if: steps.should_run.outputs.should_run == 'true'
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          vpk pack `
+            -u StartupGroups `
+            -v $version `
+            -p artifacts/publish-velopack `
+            --channel nightly `
+            --mainExe StartupGroups.exe `
+            --packTitle "Startup Groups" `
+            --icon src/StartupGroups.App/Assets/app.ico
+
+      - name: Upload nightly to GitHub releases (prerelease)
+        if: steps.should_run.outputs.should_run == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          vpk upload github `
+            --repoUrl "https://github.com/${{ github.repository }}" `
+            --token $env:GH_TOKEN `
+            --tag "${{ steps.version.outputs.tag }}" `
+            --releaseName "${{ steps.version.outputs.tag }}" `
+            --channel nightly `
+            --pre

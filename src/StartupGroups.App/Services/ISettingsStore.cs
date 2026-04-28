@@ -13,6 +13,13 @@ public enum AppsViewMode
     Detailed
 }
 
+public enum UpdateChannel
+{
+    Stable,
+    Beta,
+    Nightly
+}
+
 public sealed class AppSettings
 {
     public AppTheme Theme { get; set; } = AppTheme.System;
@@ -29,6 +36,8 @@ public sealed class AppSettings
     public bool AlwaysRunAsAdmin { get; set; }
 
     public bool WarnWhenElevatedAppsPresent { get; set; } = true;
+
+    public UpdateChannel UpdateChannel { get; set; } = UpdateChannel.Stable;
 }
 
 public interface ISettingsStore

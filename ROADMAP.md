@@ -116,31 +116,27 @@ Replace the custom updater with Velopack while keeping the existing MSI build al
 
 **Migration risk: existing MSI users won't auto-migrate to Velopack.** They need to uninstall the MSI and run the new `Setup.exe` once. Plan a transition release that displays an in-app banner pointing to the new installer. Cheap to do now while the user base is small.
 
-### Phase 2 — Channels + branded in-app update flyout (~1 day)
+### Phase 2 — Channels + branded in-app update flyout — ✅ COMPLETE
 
-This is where the polish ROI is highest — every update goes through this UI.
+**What's in:**
 
-**Deliverables:**
-- CI workflow matrix:
-  - Tag `v*` (no prerelease suffix) → `vpk pack --channel stable`
-  - Tag `v*-beta.*` → `vpk pack --channel beta`
-  - Daily cron / push-to-main → `vpk pack --channel nightly`
-- Add **Channel** picker to Settings (Stable / Beta / Nightly)
-- On change: `new UpdateManager(feed, new UpdateOptions { ExplicitChannel = chosen, AllowVersionDowngrade = true })`. **The `AllowVersionDowngrade` flag is critical** — without it, beta-to-stable users get stuck on a higher beta version.
-- Replace the current update toast with a proper WPF flyout:
-  - Hero header — "Update available · v0.X.Y"
-  - Markdown-rendered release notes pulled from the GitHub release body
-  - Progress bar driven by `IProgress<int>` from `DownloadUpdatesAsync`
-  - Speed and ETA text below the bar
-  - Defer / Update Now buttons
-  - Dark/light following Windows
+- **CI matrix routes by tag suffix.** [release.yml](.github/workflows/release.yml) parses `${{ github.ref_name }}`: a tag containing `-beta.` packs with `--channel beta` and uploads as a GitHub prerelease, anything else packs onto Velopack's default channel. **Stable deliberately does not pass `--channel stable`** — that would produce `releases.win-stable.json` and orphan every existing v0.2.x install (those shipped without `ExplicitChannel`, so they look for the default `releases.win.json`). Beta and nightly use named channels because no shipped client yet looks for them, so we can pick the names.
+- **Nightly is its own workflow.** [nightly.yml](.github/workflows/nightly.yml) runs at 04:00 UTC daily plus on-demand via `workflow_dispatch`. It synthesises a SemVer-2.0 prerelease version (`<base>-nightly.<YYYYMMDDHHmm>`), packs with `--channel nightly`, and skips the run if no commits have landed since the last nightly (cheap: one `gh api` call against the releases listing).
+- **Channel picker in Settings.** Three-option ComboBox (Stable / Beta / Nightly) wired through `ISettingsStore.UpdateChannel`. Changing it triggers `CheckForUpdatesAsync(force: true)` so the user sees the channel switch reflected without restarting.
+- **`UpdateOptions { ExplicitChannel, AllowVersionDowngrade = true }`** wired in `VelopackUpdateService.BuildManager`. `ToVelopackChannel(Stable)` returns null on purpose — see the backward-compatibility note above. The manager is rebuilt lazily inside `AcquireManager` when the active channel diverges from the persisted setting; this avoids races with an in-flight check on the old manager.
+- **Branded WPF update flyout.** [`UpdateFlyoutWindow.xaml`](src/StartupGroups.App/Views/UpdateFlyoutWindow.xaml) is a Mica `FluentWindow` opened modally from the Settings update banner. Hero header shows version + active channel. Release notes render via [`MarkdownView`](src/StartupGroups.App/Controls/MarkdownView.cs) — a hand-rolled markdown→FlowDocument renderer that handles headings, bullet/numbered lists, **bold**, _italic_, `inline code`, fenced code blocks, and `[text](url)` links. Chose hand-rolled over Markdig.Wpf (~150 lines vs. a NuGet dep that would also need its own theming pass for Mica).
+- **Speed + ETA below the progress bar.** `DownloadSpeedTracker` keeps a 5-sample sliding window over a 750ms minimum span; below that threshold the speed text stays empty so the UI doesn't twitch on the first few millisecond-resolution callbacks.
+- **1-hour disk cache for the GitHub feed.** `CachelessGithubSource` writes the parsed `GithubRelease[]` to `<LocalAppData>\StartupGroups\cache\releases.<channel>.json`, keyed by channel name. TTL is `DateTime.UtcNow - File.GetLastWriteTimeUtc(path)`. **Manual "Check now" passes `bypassCache: true`** through `CheckAsync(force: true)` to skip the cache; the auto-check on first Settings open uses the cache.
 
-**Validation:**
-- Switching stable → nightly downloads the latest nightly even when SemVer is lower
-- Switching back to stable downgrades cleanly with `AllowVersionDowngrade`
-- Release notes render correctly with code blocks, lists, links
+**Battle scars added in Phase 2:**
 
-**Risk: GitHub anonymous API rate limit dropped to 60 req/hour in May 2025.** Cache `releases.<channel>.json` locally for 1 hour and add a manual "Check now" button. Asset downloads aren't rate-limited.
+| Symptom | Cause | Fix |
+|---|---|---|
+| Existing v0.2.x stable users stop receiving updates after Phase 2 ships | We renamed stable to a named `--channel stable`, which produces `releases.win-stable.json` instead of the default `releases.win.json` that all shipped clients look for | Don't pass `--channel` for stable. `ToVelopackChannel(UpdateChannel.Stable)` returns null. Beta/nightly use named channels. |
+| `vpk upload --pre` on stable accidentally marks the release as a prerelease | `--pre` was added unconditionally in early drafts of the workflow | Gate `--pre` and `--channel` on `$channel -ne 'stable'` |
+| `Branch24` not found at runtime | I assumed it didn't exist after a grep into `Wpf.Ui.xml` returned nothing — but the XML doc file doesn't carry enum constants. The dll itself defines `Branch24`, `BranchFork24`, etc. | Inspect `[enum]::GetNames` on the actual dll, not the doc file |
+
+**Migration risk: none.** Stable users see no change. Existing v0.2.11 installs default `UpdateChannel = Stable` (the enum's default), which maps to `ExplicitChannel = null`, which preserves Velopack's default-channel behavior. Beta/nightly are opt-in.
 
 ### Phase 3 — Burn bundle wrapper with custom WPF managed BA (~3–5 days)
 

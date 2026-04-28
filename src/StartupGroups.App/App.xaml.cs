@@ -194,6 +194,7 @@ public partial class App : Application
         services.AddTransient<AppEntryEditorViewModel>();
         services.AddTransient<AddAppPickerViewModel>();
         services.AddTransient<RegistryRunValueEditorViewModel>();
+        services.AddTransient<UpdateFlyoutViewModel>();
 
         services.AddSingleton<MainWindow>();
     }
