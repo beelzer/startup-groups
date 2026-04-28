@@ -239,6 +239,8 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty] private bool _isCheckingForUpdate;
     [ObservableProperty] private bool _isInstallingUpdate;
     [ObservableProperty] private double _updateDownloadProgress;
+    [ObservableProperty] private string _updateProgressText = string.Empty;
+    private long _updateDownloadSizeBytes;
 
     partial void OnLatestVersionChanged(string value) => OnPropertyChanged(nameof(LatestVersionShort));
     partial void OnLastCheckedChanged(DateTimeOffset? value) => OnPropertyChanged(nameof(LastCheckedText));
@@ -546,10 +548,15 @@ public partial class MainWindowViewModel : ObservableObject
 
         IsInstallingUpdate = true;
         UpdateDownloadProgress = 0;
+        UpdateProgressText = FormatDownloadProgress(0, _updateDownloadSizeBytes);
         InstallUpdateCommand.NotifyCanExecuteChanged();
         CheckForUpdatesCommand.NotifyCanExecuteChanged();
 
-        var progress = new Progress<int>(p => UpdateDownloadProgress = p / 100.0);
+        var progress = new Progress<int>(p =>
+        {
+            UpdateDownloadProgress = p / 100.0;
+            UpdateProgressText = FormatDownloadProgress(p, _updateDownloadSizeBytes);
+        });
         try
         {
             // ApplyUpdatesAndRestart() restarts the process — we don't normally return.
@@ -569,6 +576,18 @@ public partial class MainWindowViewModel : ObservableObject
 
     private bool CanInstallUpdate() => !IsInstallingUpdate;
 
+    private static string FormatDownloadProgress(int percent, long totalBytes)
+    {
+        if (totalBytes <= 0)
+        {
+            return $"{percent}%";
+        }
+        const double Mib = 1024d * 1024d;
+        var totalMib = totalBytes / Mib;
+        var doneMib = totalMib * percent / 100d;
+        return $"{doneMib:F1} / {totalMib:F1} MB ({percent}%)";
+    }
+
     [RelayCommand(CanExecute = nameof(CanCheckForUpdates))]
     private async Task CheckForUpdatesAsync()
     {
@@ -586,6 +605,7 @@ public partial class MainWindowViewModel : ObservableObject
             ReleaseUrl = result.ReleaseUrl;
             IsUpdateAvailable = result.IsUpdateAvailable;
             LastChecked = result.CheckedAt;
+            _updateDownloadSizeBytes = result.DownloadSizeBytes ?? 0;
         }
         catch (Exception ex)
         {

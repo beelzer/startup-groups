@@ -10,7 +10,7 @@
     <Product>Startup Groups</Product>
     <Company>Startup Groups</Company>
     <Copyright>Copyright (c) $([System.DateTime]::UtcNow.Year)</Copyright>
-    <Version>0.2.9</Version>
+    <Version>0.2.10</Version>
     <InformationalVersion>$(Version)</InformationalVersion>
     <AppId>startup-groups</AppId>
     <AppUpgradeCode>B2F3A4E5-1C6D-4B9A-9F8E-0D6A2B1C3E4F</AppUpgradeCode>

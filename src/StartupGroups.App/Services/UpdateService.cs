@@ -37,7 +37,8 @@ public sealed record UpdateCheckResult(
     string? ReleaseUrl,
     string? ReleaseNotesMarkdown,
     bool IsUpdateAvailable,
-    DateTimeOffset CheckedAt);
+    DateTimeOffset CheckedAt,
+    long? DownloadSizeBytes = null);
 
 public interface IUpdateService
 {
@@ -114,7 +115,8 @@ public sealed class VelopackUpdateService : IUpdateService
                 ReleaseUrl: $"{AppBranding.SupportUrl}/releases/tag/v{latest}",
                 ReleaseNotesMarkdown: info.TargetFullRelease.NotesMarkdown,
                 IsUpdateAvailable: true,
-                CheckedAt: DateTimeOffset.Now);
+                CheckedAt: DateTimeOffset.Now,
+                DownloadSizeBytes: info.TargetFullRelease.Size);
         }
         catch (OperationCanceledException)
         {
