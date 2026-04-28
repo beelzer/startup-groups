@@ -35,17 +35,13 @@
             <Directory Id="AppStartMenuFolder" Name="$(var.ProductName)" />
         </StandardDirectory>
 
-        <!-- Post-install: launch the app so user sees the tray icon immediately -->
-        <CustomAction
-            Id="LaunchApp"
-            FileRef="AppExe"
-            ExeCommand=""
-            Return="asyncNoWait"
-            Impersonate="yes" />
-
-        <InstallExecuteSequence>
-            <Custom Action="LaunchApp" After="InstallFinalize" Condition="NOT Installed" />
-        </InstallExecuteSequence>
+        <!-- The MSI no longer auto-launches the app on install. The bundle BA
+             (StartupGroups.Installer.UI) owns the Launch button on its Success
+             screen, and that's the only path users hit in production — they
+             always run the bundle, never the bare MSI. Leaving an MSI-side
+             CustomAction here previously caused two app instances to spawn
+             and the second (from the BA's Launch click) appeared to do
+             nothing because the first was already running. -->
     </Package>
 
     <Fragment>

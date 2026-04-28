@@ -32,6 +32,21 @@ if ($ProductVer -notmatch '^\d+\.\d+\.\d+\.\d+$') {
     $ProductVer = "$ProductVer.0"
 }
 
+# Dev iteration only: rewrite the build component (3rd part) to a
+# minute-based monotonic counter so every local rebuild is a strictly
+# greater version than the last. MajorUpgrade then fires on re-install,
+# replaces files, and removes the previous ARP entry. CI builds keep the
+# semver from Directory.Build.props untouched (CI/GITHUB_ACTIONS env vars
+# are set by the runner). Component cap is 65535 — minutes since 2026-04-01
+# stays under that for ~45 days, plenty for a dev cycle.
+if (-not ($env:CI -or $env:GITHUB_ACTIONS)) {
+    $epoch = [datetime]'2026-04-01'
+    $buildNum = [int](([datetime]::UtcNow - $epoch).TotalMinutes) % 65535
+    $vparts = $ProductVer.Split('.')
+    $ProductVer = "$($vparts[0]).$($vparts[1]).$buildNum.0"
+    Write-Host "Dev build version override: $ProductVer" -ForegroundColor DarkYellow
+}
+
 $MainExeName     = 'StartupGroups.exe'
 $ElevatorExeName = 'StartupGroups.Elevator.exe'
 $RegistryKey     = "Software\$ProductName"

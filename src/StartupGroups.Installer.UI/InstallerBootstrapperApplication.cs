@@ -47,6 +47,10 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
     private readonly object _stateGate = new();
     private bool _detectComplete;
     private bool _installRequested;
+    // _isUpgrade is true when we found ANY trace of a prior install — either a
+    // related MSI sharing UpgradeCode (DetectRelatedMsiPackage) or our chained
+    // MSI itself reporting State=Present (DetectPackageComplete). Either way
+    // the UI text flips from "Install" to "Update".
     private bool _isUpgrade;
 
     protected override void OnCreate(CreateEventArgs args)
@@ -60,19 +64,49 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
         // Burn calls our Run() on the BA's main thread, which mbanative has
         // initialised as MTA (it can't be STA — see Program.Main comment).
         // WPF requires STA, so spawn a dedicated UI thread for the dispatcher
-        // loop. Run() blocks on _uiThread.Join() until the user closes the
-        // window, then returns to mbanative which finalises the engine.
-        StartUiThread();
-        _uiReady.Wait();
+        // loop (only when we're going to actually show UI). Run() blocks on
+        // _uiThread.Join() until the user closes the window, then returns to
+        // mbanative which finalises the engine.
+        //
+        // Display modes:
+        //   Full      - normal interactive run; show our 5-screen UI.
+        //   Passive   - run automatically with progress only; we show our UI
+        //               but auto-advance.
+        //   None      - silent. No UI. Just drive Detect → Plan → Apply.
+        //   Embedded  - parent is another bundle (Burn protocol); silent.
+        //
+        // Without this gate, Burn re-invoking us for related-bundle self-
+        // uninstall during an upgrade pops a second installer window. That's
+        // the "two windows" symptom on re-install.
+        var display = _command?.Display ?? Display.Full;
+        engine.Log(LogLevel.Standard, $"BA Run() display={display}");
+        var showUi = display == Display.Full || display == Display.Passive;
+        if (showUi)
+        {
+            StartUiThread();
+            _uiReady.Wait();
+        }
 
         DetectComplete += OnDetectComplete;
         // Existing-install detection: when Burn finds a related MSI by
-        // UpgradeCode, flag this as an upgrade so the UI text reflects
-        // "Updating" instead of "Installing".
+        // UpgradeCode (different ProductCode, e.g. an older version on
+        // disk), flag this as an upgrade.
         DetectRelatedMsiPackage += (_, e) =>
         {
             _isUpgrade = true;
             engine.Log(LogLevel.Standard, $"Related MSI detected: ProductCode={e.ProductCode}, version={e.Version}");
+        };
+        // Same-version detection: the chained MSI itself reports State=Present
+        // when re-running the bundle on a machine that already has it. Without
+        // this, re-running the installer reads "Install" rather than "Update"
+        // and the user has no idea we noticed.
+        DetectPackageComplete += (_, e) =>
+        {
+            if (e.State == PackageState.Present)
+            {
+                _isUpgrade = true;
+                engine.Log(LogLevel.Standard, $"Package {e.PackageId} already present.");
+            }
         };
         PlanComplete += OnPlanComplete;
         ApplyComplete += OnApplyComplete;
@@ -102,26 +136,39 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
         };
 
         var action = _command?.Action ?? LaunchAction.Install;
-        engine.Log(LogLevel.Standard, $"Phase 3c BA: Run() entered, action={action}");
+        engine.Log(LogLevel.Standard, $"Phase 3c BA: Run() entered, action={action}, display={display}");
 
-        // For non-Install invocations (Burn re-runs us for Uninstall via
-        // Add/Remove Programs, or Modify/Repair from the bundle), skip
-        // Welcome / Customize / License and go straight to Progress. The
-        // license has already been accepted on the original install; Modify
-        // and Uninstall don't need it again.
-        if (action != LaunchAction.Install)
+        // Action-specific routing:
+        //   Install      → Welcome → License → Progress (the default path).
+        //   Uninstall    → UninstallOptions screen first (lets the user opt
+        //                  into wiping user-data folders), then Progress.
+        //   Repair/Modify→ Skip Welcome, go straight to Progress.
+        //   non-UI       → Drive Detect→Plan→Apply silently.
+        if (action == LaunchAction.Uninstall && showUi)
         {
             UpdateUi(vm =>
             {
-                vm.Progress.Status = action switch
-                {
-                    LaunchAction.Uninstall => "Uninstalling…",
-                    LaunchAction.Repair => "Repairing…",
-                    LaunchAction.Modify => "Updating…",
-                    _ => "Working…",
-                };
-                vm.Show(InstallerStep.Progress);
+                vm.Progress.Status = "Uninstalling…";
+                vm.Show(InstallerStep.UninstallOptions);
             });
+            // Don't set _installRequested yet — we wait for the user to click
+            // the Uninstall button on the options screen (OnUninstallConfirmed).
+        }
+        else if (action != LaunchAction.Install || !showUi)
+        {
+            if (showUi)
+            {
+                UpdateUi(vm =>
+                {
+                    vm.Progress.Status = action switch
+                    {
+                        LaunchAction.Repair => "Repairing…",
+                        LaunchAction.Modify => "Updating…",
+                        _ => "Working…",
+                    };
+                    vm.Show(InstallerStep.Progress);
+                });
+            }
             // Mark "user has consented" so OnDetectComplete drives Plan
             // automatically without waiting for an Install button click.
             lock (_stateGate) { _installRequested = true; }
@@ -132,11 +179,21 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
         // on the License screen, we already know the install state.
         engine.Detect();
 
-        // Block until the WPF dispatcher loop exits (window closed).
-        _uiThread?.Join();
+        if (showUi)
+        {
+            // Block until the WPF dispatcher loop exits (window closed).
+            _uiThread?.Join();
+        }
+        else
+        {
+            // Silent / Embedded: wait for ApplyComplete before quitting.
+            _silentDone.Wait();
+        }
 
         engine.Quit(0);
     }
+
+    private readonly ManualResetEventSlim _silentDone = new();
 
     private void StartUiThread()
     {
@@ -157,6 +214,7 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
             _uiDispatcher = _window.Dispatcher;
 
             _viewModel.InstallRequested += OnInstallRequested;
+            _viewModel.UninstallConfirmed += OnUninstallConfirmed;
             _viewModel.CloseRequested += OnCloseRequested;
             _viewModel.LaunchAppRequested += OnLaunchAppRequested;
             _window.Closed += (_, _) => _uiDispatcher.InvokeShutdown();
@@ -218,6 +276,20 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
         _uiDispatcher?.BeginInvoke(() => _window?.Close());
     }
 
+    private void OnUninstallConfirmed(object? sender, EventArgs e)
+    {
+        // Same shape as OnInstallRequested but for the Uninstall flow: the
+        // user just clicked Uninstall on the options screen, gating Plan on
+        // their explicit confirmation.
+        bool startNow;
+        lock (_stateGate)
+        {
+            _installRequested = true;
+            startNow = _detectComplete;
+        }
+        if (startNow) BeginPlan();
+    }
+
     private void OnLaunchAppRequested(object? sender, EventArgs e)
     {
         var appPath = ResolveInstalledAppPath();
@@ -227,41 +299,56 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
             return;
         }
 
-        // Forward the auto-start choice from Customize. The app's
-        // TaskSchedulerAutoStartService picks this up in App.OnStartup
-        // and registers the scheduled task on first launch only.
+        // Always pass --show-main-window so the user actually sees the app
+        // after clicking Launch, regardless of any pre-existing settings.json
+        // that may have ShowMainWindowOnLaunch=false carried forward from an
+        // earlier install. Forward the auto-start choice too — App.OnStartup
+        // picks it up to register the Task Scheduler entry on first launch.
         var enableAutoStart = _viewModel?.Customize.EnableAutoStart == true;
-        var args = enableAutoStart ? "--enable-autostart" : string.Empty;
+        var args = enableAutoStart
+            ? "--show-main-window --enable-autostart"
+            : "--show-main-window";
+
+        // UseShellExecute=false gives us a deterministic CreateProcess. The BA
+        // runs unelevated; child inherits that. WorkingDirectory ensures the
+        // app's relative paths (Assets\, etc.) resolve.
+        var psi = new ProcessStartInfo
+        {
+            FileName = appPath,
+            Arguments = args,
+            UseShellExecute = false,
+            WorkingDirectory = Path.GetDirectoryName(appPath) ?? string.Empty,
+        };
 
         try
         {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = appPath,
-                Arguments = args,
-                UseShellExecute = true,
-            });
-            engine.Log(LogLevel.Standard, $"Launched {appPath} {args}".TrimEnd());
+            using var proc = Process.Start(psi);
+            engine.Log(LogLevel.Standard, $"Launched {appPath} {args} (PID {proc?.Id})");
         }
         catch (Exception ex)
         {
-            engine.Log(LogLevel.Error, $"Failed to launch {appPath}: {ex.Message}");
+            engine.Log(LogLevel.Error, $"Failed to launch {appPath}: {ex}");
         }
     }
 
     private static string? ResolveInstalledAppPath()
     {
-        // The MSI installs to %ProgramFiles%\Startup Groups\StartupGroups.exe
-        // (per the Package.wxs ProductName attribute). Burn's per-machine
-        // install honours x64; check that first, fall back to per-user.
-        var pf64 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-        var candidate = Path.Combine(pf64, "Startup Groups", "StartupGroups.exe");
-        if (File.Exists(candidate)) return candidate;
-
-        var pfX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
-        candidate = Path.Combine(pfX86, "Startup Groups", "StartupGroups.exe");
-        if (File.Exists(candidate)) return candidate;
-
+        // The MSI uses Scope="perUserOrMachine" so INSTALLFOLDER lands in one
+        // of three places depending on elevation: per-user under
+        // %LocalAppData%\Programs (no UAC) or per-machine under either
+        // ProgramFiles64 / ProgramFilesX86. Check per-user first because that
+        // is what we get on an unelevated bundle run, which is the default.
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var candidates = new[]
+        {
+            Path.Combine(localAppData, "Programs", "Startup Groups", "StartupGroups.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Startup Groups", "StartupGroups.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Startup Groups", "StartupGroups.exe"),
+        };
+        foreach (var c in candidates)
+        {
+            if (File.Exists(c)) return c;
+        }
         return null;
     }
 
@@ -281,9 +368,27 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
             return;
         }
 
-        // If we found a related MSI, retitle the buttons + screens so the
-        // UX reflects "Update" instead of "Install". The screens themselves
-        // already exist; we just swap the text strings.
+        // Bundle-level detection: WixBundleInstalled is set to 1 by Burn when
+        // the bundle's own ARP key is present. This is the canonical "we are
+        // already on this machine" signal — independent of chained-MSI
+        // ProductCode/version churn between dev builds (which can otherwise
+        // leave DetectPackageComplete reporting State=Absent).
+        try
+        {
+            if (engine.GetVariableNumeric("WixBundleInstalled") == 1)
+            {
+                _isUpgrade = true;
+                engine.Log(LogLevel.Standard, "WixBundleInstalled=1 → flagging as upgrade.");
+            }
+        }
+        catch (Exception ex)
+        {
+            engine.Log(LogLevel.Verbose, $"WixBundleInstalled lookup failed: {ex.Message}");
+        }
+
+        // If anything flagged us as an upgrade (related MSI, package present,
+        // bundle already installed), retitle the buttons + screens so the UX
+        // reflects "Update" instead of "Install".
         if (_isUpgrade)
         {
             UpdateUi(vm =>
@@ -329,6 +434,12 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
             return;
         }
 
+        // Kill any running StartupGroups.exe so MSI can actually replace the
+        // binaries instead of queuing the replace for next reboot. Without
+        // this, FilesInUse=Ignore (our handler) means new files never land —
+        // Launch and Start-menu searches keep finding the old binaries.
+        StopRunningInstances();
+
         UpdateUi(vm => vm.Progress.Status = "Installing…");
 
         // Burn needs a non-null hwnd so it can parent UAC and Windows
@@ -345,34 +456,138 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
         engine.Apply(hwnd);
     }
 
+    private void StopRunningInstances()
+    {
+        // GetProcessesByName takes the image name without ".exe". Matches by
+        // process executable, not module — so this finds the user's running
+        // StartupGroups.exe regardless of where it was launched from.
+        var processes = Process.GetProcessesByName("StartupGroups");
+        if (processes.Length == 0) return;
+
+        UpdateUi(vm => vm.Progress.CurrentOperation = "Closing existing instance…");
+        var ourPid = Environment.ProcessId;
+
+        foreach (var p in processes)
+        {
+            try
+            {
+                if (p.Id == ourPid) continue; // belt-and-braces; can't match anyway
+
+                engine.Log(LogLevel.Standard, $"Closing running StartupGroups pid={p.Id}");
+                // Try graceful close (sends WM_CLOSE to the main window).
+                // If the app is in tray with no visible main window,
+                // CloseMainWindow returns false — fall straight to Kill.
+                if (!p.CloseMainWindow())
+                {
+                    p.Kill();
+                }
+                if (!p.WaitForExit(3000))
+                {
+                    p.Kill();
+                    p.WaitForExit(2000);
+                }
+            }
+            catch (Exception ex)
+            {
+                engine.Log(LogLevel.Error, $"Failed to close pid={p.Id}: {ex.Message}");
+            }
+            finally
+            {
+                p.Dispose();
+            }
+        }
+    }
+
     private void OnApplyComplete(object? sender, ApplyCompleteEventArgs e)
     {
         engine.Log(LogLevel.Standard, $"ApplyComplete status=0x{e.Status:X8}");
 
-        if (e.Status >= 0)
+        var action = _command?.Action ?? LaunchAction.Install;
+
+        if (e.Status >= 0 && action != LaunchAction.Uninstall)
         {
             // Write the user's chosen update channel into the per-user
             // settings.json before the app first launches. We only write if
             // the file doesn't already exist — preserves any prior config
-            // (re-install / upgrade).
+            // (re-install / upgrade). Skipped on uninstall: there's no app
+            // left to read it.
             TrySeedFirstRunSettings();
+        }
+        else if (e.Status >= 0 && action == LaunchAction.Uninstall)
+        {
+            // Honour the checkboxes from the UninstallOptions screen. MSI only
+            // owns Program Files / per-user install dir; user-data folders are
+            // ours to clean up if the user opts in.
+            TryDeleteUserDataFolders();
         }
 
         UpdateUi(vm =>
         {
             if (e.Status >= 0)
             {
-                vm.Progress.Status = "Done.";
+                // Final-screen UX depends on what we just did. Uninstall has no
+                // app left to launch, so we hide the Launch button and retitle
+                // accordingly. Install / Update / Repair / Modify all keep the
+                // launch CTA — there's a working app on disk.
+                vm.Success.IsUninstall = action == LaunchAction.Uninstall;
+                vm.Success.IsUpgrade = _isUpgrade && action != LaunchAction.Uninstall;
+                vm.Progress.Status = action == LaunchAction.Uninstall ? "Uninstalled." : "Done.";
                 vm.Progress.Progress = 1.0;
                 vm.Show(InstallerStep.Success);
             }
             else
             {
                 vm.Progress.HasFailed = true;
-                vm.Progress.FailureMessage = $"Install failed (0x{e.Status:X8}). Check the log for details.";
+                vm.Progress.FailureMessage = action == LaunchAction.Uninstall
+                    ? $"Uninstall failed (0x{e.Status:X8}). Check the log for details."
+                    : $"Install failed (0x{e.Status:X8}). Check the log for details.";
                 vm.Progress.Status = "Failed.";
             }
         });
+
+        // Silent / Embedded path: no UI to wait on. Release Run() so the BA
+        // can engine.Quit() and let Burn finalise.
+        _silentDone.Set();
+    }
+
+    private void TryDeleteUserDataFolders()
+    {
+        var deleteConfig = _viewModel?.UninstallOptions.DeleteUserConfig == true;
+        var deleteLogs = _viewModel?.UninstallOptions.DeleteLogsAndCache == true;
+        if (!deleteConfig && !deleteLogs) return;
+
+        if (deleteConfig)
+        {
+            var roaming = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "StartupGroups");
+            TryDeleteFolder(roaming, "user config");
+        }
+        if (deleteLogs)
+        {
+            var local = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "StartupGroups");
+            TryDeleteFolder(local, "logs/cache");
+        }
+    }
+
+    private void TryDeleteFolder(string path, string label)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, recursive: true);
+                engine.Log(LogLevel.Standard, $"Deleted {label} folder: {path}");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Best-effort cleanup. A locked log file (Serilog from a still-shutting-
+            // down app process) shouldn't fail the uninstall.
+            engine.Log(LogLevel.Error, $"Failed to delete {label} at {path}: {ex.Message}");
+        }
     }
 
     private void TrySeedFirstRunSettings()

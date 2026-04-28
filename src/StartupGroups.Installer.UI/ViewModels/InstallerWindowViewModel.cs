@@ -8,6 +8,7 @@ public enum InstallerStep
     Welcome,
     Customize,
     License,
+    UninstallOptions,
     Progress,
     Success,
 }
@@ -27,6 +28,7 @@ public sealed partial class InstallerWindowViewModel : ObservableObject
     public WelcomeViewModel Welcome { get; }
     public CustomizeViewModel Customize { get; }
     public LicenseViewModel License { get; }
+    public UninstallOptionsViewModel UninstallOptions { get; }
     public ProgressViewModel Progress { get; }
     public SuccessViewModel Success { get; }
 
@@ -34,6 +36,7 @@ public sealed partial class InstallerWindowViewModel : ObservableObject
     [ObservableProperty] private ObservableObject _currentScreen = null!;
 
     public event EventHandler? InstallRequested;
+    public event EventHandler? UninstallConfirmed;
     public event EventHandler? CloseRequested;
     public event EventHandler? LaunchAppRequested;
 
@@ -42,6 +45,7 @@ public sealed partial class InstallerWindowViewModel : ObservableObject
         Welcome = new WelcomeViewModel();
         Customize = new CustomizeViewModel();
         License = new LicenseViewModel();
+        UninstallOptions = new UninstallOptionsViewModel();
         Progress = new ProgressViewModel();
         Success = new SuccessViewModel();
 
@@ -61,6 +65,13 @@ public sealed partial class InstallerWindowViewModel : ObservableObject
             Show(InstallerStep.Progress);
             InstallRequested?.Invoke(this, EventArgs.Empty);
         };
+
+        UninstallOptions.ContinueRequested += (_, _) =>
+        {
+            Show(InstallerStep.Progress);
+            UninstallConfirmed?.Invoke(this, EventArgs.Empty);
+        };
+        UninstallOptions.CancelRequested += (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty);
 
         Success.LaunchRequested += (_, _) =>
         {
@@ -87,6 +98,7 @@ public sealed partial class InstallerWindowViewModel : ObservableObject
             InstallerStep.Welcome => Welcome,
             InstallerStep.Customize => Customize,
             InstallerStep.License => License,
+            InstallerStep.UninstallOptions => UninstallOptions,
             InstallerStep.Progress => Progress,
             InstallerStep.Success => Success,
             _ => throw new ArgumentOutOfRangeException(nameof(step), step, null),

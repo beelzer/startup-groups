@@ -22,6 +22,9 @@
         <DataTemplate DataType="{x:Type vm:CustomizeViewModel}">
             <v:CustomizeView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:UninstallOptionsViewModel}">
+            <v:UninstallOptionsView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:LicenseViewModel}">
             <v:LicenseView />
         </DataTemplate>
