@@ -119,13 +119,22 @@ jobs:
             --channel canary `
             --pre
 
-      - name: Publish the draft (vpk leaves it as draft by default)
+      - name: Publish the draft with auto-generated notes
         env:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          # vpk's `upload github` creates the release as a draft regardless
-          # of --pre. Flip it to published so users on the Canary channel
-          # actually see it (and so the prerelease entry shows up in the
-          # public releases list).
-          gh release edit "${{ steps.version.outputs.tag }}" --draft=false
+          # vpk's `upload github` creates the release as a draft with no body.
+          # GitHub's UI then falls back to rendering the squash-commit message
+          # — fine in theory, ugly in practice if the commit message has odd
+          # markdown escaping. Generate proper release notes from PRs/commits
+          # since the previous tag (same approach release.yml uses for Stable)
+          # and flip the draft flag so it actually publishes.
+          $notes = gh api -X POST "repos/${{ github.repository }}/releases/generate-notes" `
+            -f tag_name="${{ steps.version.outputs.tag }}" `
+            --jq '.body'
+          $notesFile = New-TemporaryFile
+          $notes | Set-Content -Path $notesFile -Encoding UTF8
+          gh release edit "${{ steps.version.outputs.tag }}" `
+            --draft=false `
+            --notes-file $notesFile
