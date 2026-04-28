@@ -98,10 +98,18 @@ public partial class App : Application
         _trayViewModel = _host.Services.GetRequiredService<TrayViewModel>();
         _trayViewModel.Initialize();
 
-        // If launched by Velopack after applying an update, surface the main
-        // window so the user lands back in the app showing the new version
-        // instead of just a tray icon.
-        if (e.Args.Any(a => string.Equals(a, VelopackUpdateService.RestartedAfterUpdateArg, StringComparison.OrdinalIgnoreCase)))
+        // Surface the main window unless the user has explicitly opted into
+        // tray-only startup. Always surface after an update restart even if
+        // they've opted out — they need to see the new version. The bundle
+        // BA's Launch button forces the issue with --show-main-window so the
+        // user sees the app regardless of any older settings.json that may
+        // have been left over from a prior tray-only install.
+        var restartedAfterUpdate = e.Args.Any(a =>
+            string.Equals(a, VelopackUpdateService.RestartedAfterUpdateArg, StringComparison.OrdinalIgnoreCase));
+        var forceShowMainWindow = e.Args.Any(a =>
+            string.Equals(a, ShowMainWindowArg, StringComparison.OrdinalIgnoreCase));
+        var shouldShowOnLaunch = settings.Current.ShowMainWindowOnLaunch || restartedAfterUpdate || forceShowMainWindow;
+        if (shouldShowOnLaunch)
         {
             _trayViewModel.ShowMainWindowCommand.Execute(null);
         }
@@ -128,6 +136,7 @@ public partial class App : Application
     }
 
     private const string EnableAutoStartArg = "--enable-autostart";
+    private const string ShowMainWindowArg = "--show-main-window";
 
     private void ApplyConfiguredTheme()
     {

@@ -50,11 +50,17 @@
             </TextBlock>
         </StackPanel>
 
-        <ProgressBar Grid.Row="1"
-                     Value="{Binding Progress, Mode=OneWay}"
-                     Maximum="1"
-                     Height="8"
-                     IsIndeterminate="False"
-                     HorizontalAlignment="Stretch" />
+        <StackPanel Grid.Row="1">
+            <ProgressBar Value="{Binding Progress, Mode=OneWay}"
+                         Maximum="1"
+                         Height="8"
+                         IsIndeterminate="False"
+                         HorizontalAlignment="Stretch" />
+            <TextBlock Text="{Binding CurrentOperation}"
+                       FontSize="12"
+                       Margin="0,8,0,0"
+                       TextTrimming="CharacterEllipsis"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        </StackPanel>
     </Grid>
 </UserControl>

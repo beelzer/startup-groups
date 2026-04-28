@@ -212,6 +212,8 @@ public static class Strings
     public static string Settings_Notifications_Hint => Get(nameof(Settings_Notifications_Hint));
     public static string Settings_AutoStart_Label => Get(nameof(Settings_AutoStart_Label));
     public static string Settings_AutoStart_Hint => Get(nameof(Settings_AutoStart_Hint));
+    public static string Settings_OpenWindowOnLaunch_Label => Get(nameof(Settings_OpenWindowOnLaunch_Label));
+    public static string Settings_OpenWindowOnLaunch_Hint => Get(nameof(Settings_OpenWindowOnLaunch_Hint));
     public static string Settings_About_VersionFormat => Get(nameof(Settings_About_VersionFormat));
     public static string Settings_About_OpenGitHub => Get(nameof(Settings_About_OpenGitHub));
 

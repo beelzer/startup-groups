@@ -44,6 +44,21 @@ if ($ProductVer -notmatch '^\d+\.\d+\.\d+\.\d+$') {
     $ProductVer = "$ProductVer.0"
 }
 
+# Dev iteration only: bump the build component per minute so each dev rebuild
+# is a strictly higher bundle version than the last. This makes Burn treat
+# successive dev builds as a MajorUpgrade of each other (rather than letting
+# the new build silently overwrite the old build's package cache, which
+# orphans the chained MSI). MUST stay in sync with the same logic in
+# installer/StartupGroups.Installer/build.ps1 — see comment there. CI builds
+# fall back to the stable semver from Directory.Build.props.
+if (-not ($env:CI -or $env:GITHUB_ACTIONS)) {
+    $epoch = [datetime]'2026-04-01'
+    $buildNum = [int](([datetime]::UtcNow - $epoch).TotalMinutes) % 65535
+    $vparts = $ProductVer.Split('.')
+    $ProductVer = "$($vparts[0]).$($vparts[1]).$buildNum.0"
+    Write-Host "Dev bundle version override: $ProductVer" -ForegroundColor DarkYellow
+}
+
 if (-not (Test-Path $MsiPath)) {
     throw "MSI not found at $MsiPath. Run installer\StartupGroups.Installer\build.ps1 first."
 }
