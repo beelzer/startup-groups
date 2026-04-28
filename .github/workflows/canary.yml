@@ -118,3 +118,14 @@ jobs:
             --releaseName "[canary] ${{ steps.version.outputs.tag }}" `
             --channel canary `
             --pre
+
+      - name: Publish the draft (vpk leaves it as draft by default)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          # vpk's `upload github` creates the release as a draft regardless
+          # of --pre. Flip it to published so users on the Canary channel
+          # actually see it (and so the prerelease entry shows up in the
+          # public releases list).
+          gh release edit "${{ steps.version.outputs.tag }}" --draft=false
