@@ -1920,6 +1920,26 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Border Grid.Column="0" Style="{StaticResource SettingsCardIconHost}">
+                                <ui:SymbolIcon Symbol="WindowApps24" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource IconSizeSm}" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="14,0,14,0" VerticalAlignment="Center">
+                                <TextBlock Text="{loc:Translate Settings_OpenWindowOnLaunch_Label}" Style="{StaticResource SettingsCardLabel}" />
+                                <TextBlock Text="{loc:Translate Settings_OpenWindowOnLaunch_Hint}" Style="{StaticResource SettingsCardHint}" />
+                            </StackPanel>
+                            <ui:ToggleSwitch Grid.Column="2"
+                                             VerticalAlignment="Center"
+                                             IsChecked="{Binding ShowMainWindowOnLaunch}" />
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource SettingsCard}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource SettingsCardIconHost}">
                                 <ui:SymbolIcon Symbol="Alert24" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource IconSizeSm}" />
                             </Border>
                             <StackPanel Grid.Column="1" Margin="14,0,14,0" VerticalAlignment="Center">

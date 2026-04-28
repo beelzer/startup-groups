@@ -19,7 +19,7 @@
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center" />
             </Border>
-            <TextBlock Text="Install complete"
+            <TextBlock Text="{Binding Title}"
                        FontSize="22"
                        FontWeight="SemiBold"
                        Margin="0,18,0,0"

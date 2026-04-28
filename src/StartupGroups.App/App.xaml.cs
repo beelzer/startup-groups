@@ -98,10 +98,13 @@ public partial class App : Application
         _trayViewModel = _host.Services.GetRequiredService<TrayViewModel>();
         _trayViewModel.Initialize();
 
-        // If launched by Velopack after applying an update, surface the main
-        // window so the user lands back in the app showing the new version
-        // instead of just a tray icon.
-        if (e.Args.Any(a => string.Equals(a, VelopackUpdateService.RestartedAfterUpdateArg, StringComparison.OrdinalIgnoreCase)))
+        // Surface the main window unless the user has explicitly opted into
+        // tray-only startup. Always surface after an update restart even if
+        // they've opted out — they need to see the new version.
+        var restartedAfterUpdate = e.Args.Any(a =>
+            string.Equals(a, VelopackUpdateService.RestartedAfterUpdateArg, StringComparison.OrdinalIgnoreCase));
+        var shouldShowOnLaunch = settings.Current.ShowMainWindowOnLaunch || restartedAfterUpdate;
+        if (shouldShowOnLaunch)
         {
             _trayViewModel.ShowMainWindowCommand.Execute(null);
         }

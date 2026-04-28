@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using StartupGroups.Installer.UI.ViewModels;
 using StartupGroups.Installer.UI.Views;
@@ -39,10 +41,13 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
     private InstallerWindow? _window;
     private App? _wpfApp;
     private Dispatcher? _uiDispatcher;
+    private Thread? _uiThread;
+    private readonly ManualResetEventSlim _uiReady = new();
     private IBootstrapperCommand? _command;
     private readonly object _stateGate = new();
     private bool _detectComplete;
     private bool _installRequested;
+    private bool _isUpgrade;
 
     protected override void OnCreate(CreateEventArgs args)
     {
@@ -52,35 +57,49 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
 
     protected override void Run()
     {
-        _uiDispatcher = Dispatcher.CurrentDispatcher;
-
-        // Create + initialize a WPF Application so App.xaml's resource
-        // dictionaries (WPF-UI themes, control styles) are merged into the
-        // global resource scope. Without this, Mica + accent brushes resolve
-        // to defaults and dark-mode following doesn't kick in.
-        _wpfApp = new App();
-        _wpfApp.InitializeComponent();
-        // OnStartup never fires (we use Dispatcher.Run, not Application.Run),
-        // so apply the system theme + accent here explicitly. Mica chrome
-        // already comes from FluentWindow's WindowBackdropType="Mica" — this
-        // call updates the resource brushes to match the OS personalization
-        // (light/dark + accent).
-        ApplicationThemeManager.ApplySystemTheme(updateAccent: true);
-
-        _viewModel = new InstallerWindowViewModel();
-        _window = new InstallerWindow(_viewModel);
-
-        _viewModel.InstallRequested += OnInstallRequested;
-        _viewModel.CloseRequested += OnCloseRequested;
-        _viewModel.LaunchAppRequested += OnLaunchAppRequested;
-        _window.Closed += (_, _) => _uiDispatcher.InvokeShutdown();
+        // Burn calls our Run() on the BA's main thread, which mbanative has
+        // initialised as MTA (it can't be STA — see Program.Main comment).
+        // WPF requires STA, so spawn a dedicated UI thread for the dispatcher
+        // loop. Run() blocks on _uiThread.Join() until the user closes the
+        // window, then returns to mbanative which finalises the engine.
+        StartUiThread();
+        _uiReady.Wait();
 
         DetectComplete += OnDetectComplete;
+        // Existing-install detection: when Burn finds a related MSI by
+        // UpgradeCode, flag this as an upgrade so the UI text reflects
+        // "Updating" instead of "Installing".
+        DetectRelatedMsiPackage += (_, e) =>
+        {
+            _isUpgrade = true;
+            engine.Log(LogLevel.Standard, $"Related MSI detected: ProductCode={e.ProductCode}, version={e.Version}");
+        };
         PlanComplete += OnPlanComplete;
         ApplyComplete += OnApplyComplete;
         Error += OnError;
         ExecuteProgress += OnExecuteProgress;
         CacheAcquireProgress += OnCacheAcquireProgress;
+        // Granular status: surface what the engine is doing under the bar.
+        CacheBegin += (_, _) => UpdateUi(vm => vm.Progress.Status = _isUpgrade ? "Preparing update…" : "Preparing files…");
+        CachePackageBegin += (_, _) => UpdateUi(vm => vm.Progress.CurrentOperation = "Extracting payload…");
+        CacheComplete += (_, _) => UpdateUi(vm => vm.Progress.CurrentOperation = string.Empty);
+        ExecuteBegin += (_, _) => UpdateUi(vm =>
+        {
+            vm.Progress.Status = _isUpgrade ? "Updating…" : "Installing…";
+            vm.Progress.CurrentOperation = "Starting Windows Installer…";
+        });
+        ExecutePackageBegin += (_, _) => UpdateUi(vm =>
+            vm.Progress.CurrentOperation = _isUpgrade ? "Updating Startup Groups…" : "Installing Startup Groups…");
+        ExecuteMsiMessage += OnExecuteMsiMessage;
+        // Files-in-use: the running app holds locks on Program Files\Startup
+        // Groups\StartupGroups.exe. Tell MSI to ignore — it'll queue the
+        // replace for next reboot rather than stalling waiting for input.
+        // Phase 3.1 should kill the running instance instead.
+        ExecuteFilesInUse += (_, e) =>
+        {
+            engine.Log(LogLevel.Standard, $"FilesInUse for {e.Files?.Count ?? 0} files; replying Ignore");
+            e.Result = Result.Ignore;
+        };
 
         var action = _command?.Action ?? LaunchAction.Install;
         engine.Log(LogLevel.Standard, $"Phase 3c BA: Run() entered, action={action}");
@@ -92,14 +111,17 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
         // and Uninstall don't need it again.
         if (action != LaunchAction.Install)
         {
-            _viewModel.Progress.Status = action switch
+            UpdateUi(vm =>
             {
-                LaunchAction.Uninstall => "Uninstalling…",
-                LaunchAction.Repair => "Repairing…",
-                LaunchAction.Modify => "Updating…",
-                _ => "Working…",
-            };
-            _viewModel.Show(InstallerStep.Progress);
+                vm.Progress.Status = action switch
+                {
+                    LaunchAction.Uninstall => "Uninstalling…",
+                    LaunchAction.Repair => "Repairing…",
+                    LaunchAction.Modify => "Updating…",
+                    _ => "Working…",
+                };
+                vm.Show(InstallerStep.Progress);
+            });
             // Mark "user has consented" so OnDetectComplete drives Plan
             // automatically without waiting for an Install button click.
             lock (_stateGate) { _installRequested = true; }
@@ -110,10 +132,45 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
         // on the License screen, we already know the install state.
         engine.Detect();
 
-        _window.Show();
-        Dispatcher.Run();
+        // Block until the WPF dispatcher loop exits (window closed).
+        _uiThread?.Join();
 
         engine.Quit(0);
+    }
+
+    private void StartUiThread()
+    {
+        _uiThread = new Thread(() =>
+        {
+            // Apartment is set on the thread before Start; verified STA here
+            // for WPF. Application.Run drives the dispatcher loop until
+            // window-Closed marshals an InvokeShutdown.
+            _wpfApp = new App();
+            _wpfApp.InitializeComponent();
+            // OnStartup doesn't fire when we drive the dispatcher manually;
+            // apply the theme explicitly. Mica chrome itself comes from
+            // FluentWindow's WindowBackdropType="Mica".
+            ApplicationThemeManager.ApplySystemTheme(updateAccent: true);
+
+            _viewModel = new InstallerWindowViewModel();
+            _window = new InstallerWindow(_viewModel);
+            _uiDispatcher = _window.Dispatcher;
+
+            _viewModel.InstallRequested += OnInstallRequested;
+            _viewModel.CloseRequested += OnCloseRequested;
+            _viewModel.LaunchAppRequested += OnLaunchAppRequested;
+            _window.Closed += (_, _) => _uiDispatcher.InvokeShutdown();
+
+            _window.Show();
+            _uiReady.Set();
+            Dispatcher.Run();
+        })
+        {
+            Name = "InstallerUiThread",
+            IsBackground = false,
+        };
+        _uiThread.SetApartmentState(ApartmentState.STA);
+        _uiThread.Start();
     }
 
     protected override void OnStartup(StartupEventArgs args)
@@ -224,6 +281,18 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
             return;
         }
 
+        // If we found a related MSI, retitle the buttons + screens so the
+        // UX reflects "Update" instead of "Install". The screens themselves
+        // already exist; we just swap the text strings.
+        if (_isUpgrade)
+        {
+            UpdateUi(vm =>
+            {
+                vm.Welcome.IsUpgrade = true;
+                vm.Success.IsUpgrade = true;
+            });
+        }
+
         // Detect finished. If the user has already clicked Install on the
         // License screen, drive Plan now. Otherwise mark detect-done and
         // OnInstallRequested will start Plan once it arrives.
@@ -261,7 +330,19 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
         }
 
         UpdateUi(vm => vm.Progress.Status = "Installing…");
-        engine.Apply(IntPtr.Zero);
+
+        // Burn needs a non-null hwnd so it can parent UAC and Windows
+        // Installer prompts to our window. WindowInteropHelper.Handle has to
+        // be read on the UI thread (it touches the WPF window).
+        var hwnd = IntPtr.Zero;
+        if (_uiDispatcher is not null && _window is not null)
+        {
+            _uiDispatcher.Invoke(() =>
+            {
+                hwnd = new WindowInteropHelper(_window).EnsureHandle();
+            });
+        }
+        engine.Apply(hwnd);
     }
 
     private void OnApplyComplete(object? sender, ApplyCompleteEventArgs e)
@@ -343,6 +424,29 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
     private void OnExecuteProgress(object? sender, ExecuteProgressEventArgs e)
     {
         UpdateUi(vm => vm.Progress.Progress = e.OverallPercentage / 100.0);
+    }
+
+    private void OnExecuteMsiMessage(object? sender, ExecuteMsiMessageEventArgs e)
+    {
+        // Windows Installer fires a lot of message types; we only want the
+        // human-readable per-action descriptions ("Copying new files",
+        // "Updating component registration", etc.). MSI also fires
+        // ActionStart for component-level actions whose payload is the bare
+        // Component GUID — visually meaningless to a user. Filter those out.
+        if (e.MessageType != InstallMessage.ActionStart) return;
+        var message = e.Message;
+        if (string.IsNullOrWhiteSpace(message)) return;
+        if (LooksLikeRawGuid(message)) return;
+
+        UpdateUi(vm => vm.Progress.CurrentOperation = message);
+    }
+
+    private static bool LooksLikeRawGuid(string s)
+    {
+        var trimmed = s.Trim();
+        // {XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX} or with no braces. 36 or 38 chars.
+        if (trimmed.Length is not (36 or 38)) return false;
+        return Guid.TryParse(trimmed, out _);
     }
 
     private void OnCacheAcquireProgress(object? sender, CacheAcquireProgressEventArgs e)

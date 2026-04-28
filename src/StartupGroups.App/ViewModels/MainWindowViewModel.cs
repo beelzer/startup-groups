@@ -110,6 +110,7 @@ public partial class MainWindowViewModel : ObservableObject
         _selectedLanguage = _languageService.Current;
         _minimizeToTrayOnClose = current.MinimizeToTrayOnClose;
         _showNotifications = current.ShowNotifications;
+        _showMainWindowOnLaunch = current.ShowMainWindowOnLaunch;
         _appsViewMode = current.AppsViewMode;
         _autoStartEnabled = _autoStart.IsEnabled();
         _alwaysRunAsAdmin = current.AlwaysRunAsAdmin;
@@ -171,6 +172,7 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty] private ThemeOption _selectedTheme;
     [ObservableProperty] private bool _minimizeToTrayOnClose;
     [ObservableProperty] private bool _showNotifications;
+    [ObservableProperty] private bool _showMainWindowOnLaunch;
     [ObservableProperty] private AppsViewMode _appsViewMode;
 
     [ObservableProperty] private bool _alwaysRunAsAdmin;
@@ -427,6 +429,12 @@ public partial class MainWindowViewModel : ObservableObject
         PersistSettings(s => s.ShowNotifications = value);
     }
 
+    partial void OnShowMainWindowOnLaunchChanged(bool value)
+    {
+        if (_suppressSettingsSave) return;
+        PersistSettings(s => s.ShowMainWindowOnLaunch = value);
+    }
+
     partial void OnAppsViewModeChanged(AppsViewMode value)
     {
         if (_suppressSettingsSave) return;
@@ -521,6 +529,7 @@ public partial class MainWindowViewModel : ObservableObject
             AlwaysRunAsAdmin = _settings.Current.AlwaysRunAsAdmin,
             WarnWhenElevatedAppsPresent = _settings.Current.WarnWhenElevatedAppsPresent,
             UpdateChannel = _settings.Current.UpdateChannel,
+            ShowMainWindowOnLaunch = _settings.Current.ShowMainWindowOnLaunch,
         };
         mutate(clone);
         _settings.Save(clone);

@@ -12,6 +12,7 @@ namespace StartupGroups.Installer.UI.ViewModels;
 public sealed partial class ProgressViewModel : ObservableObject
 {
     [ObservableProperty] private string _status = "Preparing…";
+    [ObservableProperty] private string _currentOperation = string.Empty;
     [ObservableProperty] private double _progress;
     [ObservableProperty] private bool _hasFailed;
     [ObservableProperty] private string _failureMessage = string.Empty;

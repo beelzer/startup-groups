@@ -11,7 +11,11 @@ namespace StartupGroups.Installer.UI;
 /// </summary>
 public static class Program
 {
-    [System.STAThread]
+    // No [STAThread] here. mbanative initialises COM as MTA inside
+    // BootstrapperApplicationRun; an STA Main throws RPC_E_CHANGED_MODE
+    // (0x80010106 — "Cannot change thread mode after it is set"). WPF
+    // still needs STA, so the BA spawns a dedicated STA UI thread inside
+    // its Run() override.
     public static int Main()
     {
         var ba = new InstallerBootstrapperApplication();

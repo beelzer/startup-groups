@@ -238,6 +238,8 @@ Run elevated now?</value></data>
   <data name="Settings_Notifications_Hint" xml:space="preserve"><value>Toast notifications when launching or stopping apps.</value></data>
   <data name="Settings_AutoStart_Label" xml:space="preserve"><value>Launch at sign-in</value></data>
   <data name="Settings_AutoStart_Hint" xml:space="preserve"><value>Registers a scheduled task so the tray icon starts automatically.</value></data>
+  <data name="Settings_OpenWindowOnLaunch_Label" xml:space="preserve"><value>Open the main window when launching</value></data>
+  <data name="Settings_OpenWindowOnLaunch_Hint" xml:space="preserve"><value>When off, launching the app puts only the tray icon on screen.</value></data>
 
   <data name="Settings_About_VersionFormat" xml:space="preserve"><value>Version {0}</value></data>
   <data name="Settings_About_OpenGitHub" xml:space="preserve"><value>Open on GitHub</value></data>
