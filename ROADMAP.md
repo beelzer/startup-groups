@@ -161,9 +161,29 @@ Scope of 3a was deliberately tight: prove the WiX 5 out-of-process managed-BA wi
 | `WixToolset.Mba.Core` package present but the new API was on a different namespace | WiX 5 folded `Mba.Core` into `WixToolset.BootstrapperApplicationApi`; that's the package to reference, not the legacy one. | Replace the `Mba.Core` PackageVersion with `WixToolset.BootstrapperApplicationApi 5.0.2` in `Directory.Packages.props`. |
 | `StartupEventArgs` ambiguous between `System.Windows` and `WixToolset.BootstrapperApplicationApi` | The BA inherits both contexts; WPF's StartupEventArgs (used by `App.OnStartup`) collides with the engine's. | Per-file `using` aliases (`using StartupEventArgs = WixToolset.BootstrapperApplicationApi.StartupEventArgs;`) in the BA implementation. The other classes don't have the conflict. |
 
-### Phase 3b — Five-screen installer UI (deferred from 3a)
+### Phase 3b — Four-screen installer UI — ✅ COMPLETE
 
-Build out the visible installer flow inside the now-validated bundle scaffold from 3a.
+Built the visible installer flow inside the bundle scaffold from 3a. Deliberately scoped to **four** screens (Welcome / License / Progress / Success), deferring the optional Customize screen to 3c — that screen also pulls in the channel picker + auto-start checkbox, and those interactions are easier to reason about against a validated baseline flow.
+
+**What's in:**
+
+- **Step orchestrator** — [`InstallerWindowViewModel`](src/StartupGroups.Installer.UI/ViewModels/InstallerWindowViewModel.cs) holds child VMs (`Welcome` / `License` / `Progress` / `Success`) and a `CurrentScreen` ObservableProperty. The window is just `<ContentControl Content="{Binding CurrentScreen}"/>` plus a DataTemplate per VM type — no Frame, no NavigationService. UI events bubble up via three orchestrator events (`InstallRequested`, `CloseRequested`, `LaunchAppRequested`) which the BA subscribes to.
+- **Welcome** ([`WelcomeView`](src/StartupGroups.Installer.UI/Views/WelcomeView.xaml)) — accent rocket icon + app name + version + tagline + Cancel/Install. Uses `AppBranding` from the Core project so version stays in lockstep with the running app.
+- **License** ([`LicenseView`](src/StartupGroups.Installer.UI/Views/LicenseView.xaml)) — MIT text in a `ScrollViewer`, "I accept" checkbox, Back / Cancel / Install. The Install button's `CanExecute` is gated on `IsAccepted` via `[NotifyCanExecuteChangedFor]`. License text embedded directly in the VM (it's short; resx-based localization can come in 3c if needed).
+- **Progress** ([`ProgressView`](src/StartupGroups.Installer.UI/Views/ProgressView.xaml)) — animated download icon, progress bar, status text, error text shown only when `HasFailed`. No Cancel button yet — the engine's mid-Apply cancellation surface is finicky and we'll wire it in 3c.
+- **Success** ([`SuccessView`](src/StartupGroups.Installer.UI/Views/SuccessView.xaml)) — green checkmark in a circular accent badge, "Install complete", Close / Launch.
+- **Launch handoff** — when the user clicks Launch on Success, the BA spawns `StartupGroups.exe` from `%ProgramFiles%\Startup Groups\` (with x86 fallback). Resolved via `Environment.GetFolderPath`; works whether Burn installed per-machine or per-user.
+- **Detect ↔ Install race** — Detect kicks off in the background as soon as `Run()` enters, so it's typically done before the user finishes reading the license. A small lock-protected state machine in the BA (`_detectComplete` + `_installRequested`) ensures `BeginPlan()` is called exactly once regardless of which event arrives first.
+
+**Battle scars added in 3b:**
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `ErrorEventArgs` ambiguous between `System.IO` and `WixToolset.BootstrapperApplicationApi` | Same shape as the `StartupEventArgs` clash in 3a — adding `using System.IO` for `Path` / `File` brought back the FSWatcher-flavoured ErrorEventArgs into scope | Per-file `using ErrorEventArgs = WixToolset.BootstrapperApplicationApi.ErrorEventArgs;` alongside the existing aliases |
+
+### Phase 3c — Mica + dark mode + Customize + release flip
+
+The polish pass that also flips the release workflow over to ship `Setup.exe` as the primary download.
 
 The "modern Fluent installer" experience. Visual Studio Installer pattern: Burn handles install correctness, our WPF app draws the UI.
 
