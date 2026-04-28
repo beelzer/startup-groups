@@ -1,6 +1,9 @@
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -62,12 +65,31 @@ public interface IUpdateService
 
 public sealed class VelopackUpdateService : IUpdateService
 {
+    private static readonly HttpClient ReleaseBodyClient = CreateReleaseBodyClient();
     private readonly ILogger<VelopackUpdateService> _logger;
     private readonly ISettingsStore _settings;
     private readonly object _gate = new();
     private UpdateManager _manager;
     private UpdateChannel _activeChannel;
     private UpdateInfo? _pending;
+
+    private static HttpClient CreateReleaseBodyClient()
+    {
+        // Same proxy-bypass posture as CleanHttpClientFileDownloader so a
+        // misconfigured WinHTTP / WPAD doesn't intercept the call.
+        var handler = new HttpClientHandler
+        {
+            UseProxy = false,
+            UseDefaultCredentials = false,
+            UseCookies = false,
+            Credentials = null,
+        };
+        var client = new HttpClient(handler);
+        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("StartupGroups", AppBranding.Version));
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
+        client.Timeout = TimeSpan.FromSeconds(15);
+        return client;
+    }
 
     public VelopackUpdateService(ILogger<VelopackUpdateService> logger, ISettingsStore settings)
     {
@@ -120,11 +142,18 @@ public sealed class VelopackUpdateService : IUpdateService
 
             _pending = info;
             var latest = info.TargetFullRelease.Version.ToString();
+
+            // .nuspec NotesMarkdown is empty unless we pass --releaseNotes
+            // to vpk pack (we don't). Fetch the GitHub release body instead;
+            // /releases/tags/<tag> is fresh (no Fastly cache lag).
+            var notes = await TryFetchGithubReleaseBodyAsync(latest, cancellationToken).ConfigureAwait(false)
+                        ?? info.TargetFullRelease.NotesMarkdown;
+
             return new UpdateCheckResult(
                 CurrentVersion: current,
                 LatestVersion: latest,
                 ReleaseUrl: $"{AppBranding.SupportUrl}/releases/tag/v{latest}",
-                ReleaseNotesMarkdown: info.TargetFullRelease.NotesMarkdown,
+                ReleaseNotesMarkdown: notes,
                 IsUpdateAvailable: true,
                 CheckedAt: DateTimeOffset.Now,
                 DownloadSizeBytes: info.TargetFullRelease.Size,
@@ -183,6 +212,37 @@ public sealed class VelopackUpdateService : IUpdateService
     }
 
     public const string RestartedAfterUpdateArg = "--restarted-after-update";
+
+    private async Task<string?> TryFetchGithubReleaseBodyAsync(string version, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var repoUri = new Uri(AppBranding.SupportUrl);
+            var repoPath = repoUri.AbsolutePath.Trim('/');
+            var url = $"https://api.github.com/repos/{repoPath}/releases/tags/v{version}";
+
+            using var response = await ReleaseBodyClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogDebug("Release body fetch returned {Status} for v{Version}", response.StatusCode, version);
+                return null;
+            }
+            var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            var parsed = JsonSerializer.Deserialize<GithubReleaseBody>(json);
+            return string.IsNullOrWhiteSpace(parsed?.Body) ? null : parsed!.Body;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogDebug(ex, "Release body fetch threw for v{Version}", version);
+            return null;
+        }
+    }
+
+    private sealed class GithubReleaseBody
+    {
+        [JsonPropertyName("body")]
+        public string? Body { get; set; }
+    }
 
     private UpdateManager AcquireManager(bool force)
     {
