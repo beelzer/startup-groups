@@ -78,7 +78,7 @@
                         <TextBlock Text="Also delete logs and benchmarks"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                        <TextBlock Text="%LocalAppData%\StartupGroups (logs, feed cache, launch DB)"
+                        <TextBlock Text="%LocalAppData%\StartupGroups.UserData (logs, feed cache, launch DB)"
                                    FontFamily="Cascadia Mono, Consolas, monospace"
                                    FontSize="12"
                                    Margin="0,2,0,0"

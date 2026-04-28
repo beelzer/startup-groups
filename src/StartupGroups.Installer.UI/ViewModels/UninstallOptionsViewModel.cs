@@ -10,8 +10,9 @@ namespace StartupGroups.Installer.UI.ViewModels;
 /// user-data folders the MSI doesn't manage:
 /// <list type="bullet">
 ///   <item>Roaming config (<c>%AppData%\StartupGroups</c>): groups, settings.</item>
-///   <item>Local data (<c>%LocalAppData%\StartupGroups</c>): logs, feed cache,
-///         launch-benchmarks DB.</item>
+///   <item>Local data (<c>%LocalAppData%\StartupGroups.UserData</c>): logs,
+///         feed cache, launch-benchmarks DB. Distinct from Velopack's
+///         install root (<c>%LocalAppData%\StartupGroups</c>) by design.</item>
 /// </list>
 /// Both default off so a casual uninstall preserves user state across reinstalls;
 /// the BA reads these flags after a successful uninstall and deletes the folders.
