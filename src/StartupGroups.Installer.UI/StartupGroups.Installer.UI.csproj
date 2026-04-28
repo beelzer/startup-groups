@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>StartupGroups.Installer.UI</RootNamespace>
+    <AssemblyName>StartupGroups.Installer.UI</AssemblyName>
+    <ApplicationIcon>..\StartupGroups.App\Assets\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Burn's apphost loader expects the standard BA.exe + BA.dll + runtimeconfig.json
+         layout. Single-file publish breaks payload extraction. -->
+    <PublishSingleFile>false</PublishSingleFile>
+    <!-- Self-contained because the .NET 10 desktop runtime won't be on most target
+         machines. Adds ~70 MB to Setup.exe payload — acceptable for first install,
+         Velopack deltas take over from there. -->
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.BootstrapperApplicationApi" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="WPF-UI" />
+  </ItemGroup>
+</Project>

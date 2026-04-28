@@ -139,7 +139,31 @@ Replace the custom updater with Velopack while keeping the existing MSI build al
 
 **Migration risk: none.** Stable users see no change. Existing v0.2.11 installs default `UpdateChannel = Stable` (the enum's default), which maps to `ExplicitChannel = null`, which preserves Velopack's default-channel behavior. Beta/nightly are opt-in.
 
-### Phase 3 — Burn bundle wrapper with custom WPF managed BA (~3–5 days)
+### Phase 3a — Burn bundle scaffolding (foundation) — ✅ COMPLETE
+
+Scope of 3a was deliberately tight: prove the WiX 5 out-of-process managed-BA wiring end-to-end with a placeholder UI, leaving the five-screen flow to Phase 3b and the polish to Phase 3c.
+
+**What's in:**
+
+- New project [src/StartupGroups.Installer.UI/](src/StartupGroups.Installer.UI/) — self-contained WPF app on `net10.0-windows`. Subclasses [`BootstrapperApplication`](src/StartupGroups.Installer.UI/InstallerBootstrapperApplication.cs) from `WixToolset.BootstrapperApplicationApi` 5.0.2. Drives `engine.Detect()` → `engine.Plan(action)` → `engine.Apply()` from a chain of `*Complete` event handlers; runs the WPF dispatcher on the BA's STA main thread; closes the window when `ApplyComplete` fires.
+- New [`Bundle.wxs`](installer/StartupGroups.Bundle/Bundle.wxs) — minimal Burn bundle that chains the existing MSI as `<MsiPackage>` and points `<BootstrapperApplication SourceFile="..."/>` at our BA EXE. The bundle UpgradeCode lives in [Directory.Build.props](Directory.Build.props) as `AppBundleUpgradeCode` (deliberately distinct from the MSI's `AppUpgradeCode`).
+- Build script [installer/StartupGroups.Bundle/build.ps1](installer/StartupGroups.Bundle/build.ps1) — `dotnet publish -c Release --self-contained true` of the BA, generates `Generated.PayloadGroup.wxs` from the publish folder (one `<Payload>` per file, ~400+ runtime DLLs), and runs `wix build` with `WixToolset.BootstrapperApplications.wixext`. Produces `artifacts/installer/StartupGroups-Bundle-Setup.exe` at ~208 MB.
+- Released bundle is **not yet wired into the release workflow.** The Velopack `Setup.exe` is still the primary install path; the new bundle is opt-in until Phase 3c flips the README and release upload.
+
+**Battle scars from 3a:**
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `wix extension add -g WixToolset.Bal.wixext/5.0.2` reports the package as "damaged" | WiX 5 renamed the extension package: it's now `WixToolset.BootstrapperApplications.wixext`. Installing under the old name leaves the wrong DLL inside `~/.wix/extensions/.../wixext5/`, which is what wix detects as damaged. | Use the new package id. The schema namespace stayed `xmlns:bal=...` for backward compat with .wxs sources, but the extension name flipped. |
+| Initial Bundle.wxs failed with `WIX0044: BootstrapperApplication element's Name or SourceFile attribute was not found` | WiX 4's `bal:WixDotNetCoreBootstrapperApplicationHost` element wraps the BA payload as a child; WiX 5's out-of-process model puts the BA EXE directly on `<BootstrapperApplication SourceFile="...">`. The 4.x element is deprecated. | Drop the `bal:` host wrapper. SourceFile on the BA element itself is the correct WiX 5 syntax. |
+| `MsiPackage` rejected `DisplayInternalUI="no"` with `WIX0004: unexpected attribute` | Removed in WiX 5. The default behaviour is now what we want anyway (no MSI UI; everything routes to the BA). | Just delete the attribute. |
+| `<Payloads Include="!(bindpath.ba.payloads)\**" />` glob rejected with `WIX0005: unexpected child element 'Payloads'` | The `<Payloads>` glob element was added after WiX 5.0.2 (lives at HEAD, not in the 5.0.2 tag). The samples in the WiX repo's `test/examples/` use it, but our pinned 5.0.2 toolchain doesn't include it yet. | Hand-roll a `<PayloadGroup>` in `Generated.PayloadGroup.wxs` from the publish folder via PowerShell. ~30 lines, runs once per build, idempotent. |
+| `WixToolset.Mba.Core` package present but the new API was on a different namespace | WiX 5 folded `Mba.Core` into `WixToolset.BootstrapperApplicationApi`; that's the package to reference, not the legacy one. | Replace the `Mba.Core` PackageVersion with `WixToolset.BootstrapperApplicationApi 5.0.2` in `Directory.Packages.props`. |
+| `StartupEventArgs` ambiguous between `System.Windows` and `WixToolset.BootstrapperApplicationApi` | The BA inherits both contexts; WPF's StartupEventArgs (used by `App.OnStartup`) collides with the engine's. | Per-file `using` aliases (`using StartupEventArgs = WixToolset.BootstrapperApplicationApi.StartupEventArgs;`) in the BA implementation. The other classes don't have the conflict. |
+
+### Phase 3b — Five-screen installer UI (deferred from 3a)
+
+Build out the visible installer flow inside the now-validated bundle scaffold from 3a.
 
 The "modern Fluent installer" experience. Visual Studio Installer pattern: Burn handles install correctness, our WPF app draws the UI.
 

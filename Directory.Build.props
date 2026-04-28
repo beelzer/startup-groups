@@ -14,6 +14,8 @@
     <InformationalVersion>$(Version)</InformationalVersion>
     <AppId>startup-groups</AppId>
     <AppUpgradeCode>B2F3A4E5-1C6D-4B9A-9F8E-0D6A2B1C3E4F</AppUpgradeCode>
+    <!-- Burn bundle UpgradeCode. Distinct from the MSI UpgradeCode above; never change. -->
+    <AppBundleUpgradeCode>656877FE-59A4-48B4-9EF2-402CA405280A</AppBundleUpgradeCode>
     <AppSupportUrl>https://github.com/beelzer/startup-groups</AppSupportUrl>
     <AppAboutUrl>https://github.com/beelzer/startup-groups</AppAboutUrl>
   </PropertyGroup>
