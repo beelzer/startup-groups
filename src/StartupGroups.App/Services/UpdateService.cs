@@ -55,6 +55,15 @@ public interface IUpdateService
     bool CanUpdate { get; }
 
     /// <summary>
+    /// The version of the running app as Velopack sees it — includes any
+    /// prerelease suffix (e.g. <c>0.2.14-canary.5</c>). Falls back to the
+    /// compile-time <see cref="AppBranding.Version"/> in dev / non-Velopack
+    /// installs. UI bindings should prefer this over <c>AppBranding.Version</c>
+    /// so canary builds display their canary number rather than just the base.
+    /// </summary>
+    string CurrentVersion { get; }
+
+    /// <summary>
     /// Checks the current channel for an update. <paramref name="force"/> skips
     /// the on-disk feed cache so manual "Check now" clicks always hit the network.
     /// </summary>
@@ -102,6 +111,8 @@ public sealed class VelopackUpdateService : IUpdateService
     }
 
     public bool CanUpdate => _manager.IsInstalled;
+
+    public string CurrentVersion => _manager.CurrentVersion?.ToString() ?? AppBranding.Version;
 
     public async Task<UpdateCheckResult?> CheckAsync(bool force = false, CancellationToken cancellationToken = default)
     {

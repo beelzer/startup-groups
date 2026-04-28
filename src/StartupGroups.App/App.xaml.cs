@@ -91,6 +91,15 @@ public partial class App : Application
         var settings = _host.Services.GetRequiredService<ISettingsStore>();
         settings.Changed += (_, _) => Dispatcher.Invoke(ApplyConfiguredTheme);
 
+        // First-run channel inference: if we're running a canary Velopack
+        // package (version contains "-canary.") and there's no persisted
+        // channel preference yet, default to Canary so future updates pick
+        // up new canaries. Without this, users who install via the Velopack
+        // Setup.exe (rather than the Burn bundle's Customize screen) end up
+        // on Stable despite running a canary build, and never see another
+        // canary update until they manually flip the dropdown.
+        TrySeedChannelFromRunningVersion(settings);
+
         var configStore = _host.Services.GetRequiredService<IConfigStore>();
         configStore.Load();
         configStore.BeginWatching();
@@ -136,6 +145,30 @@ public partial class App : Application
 
     private const string EnableAutoStartArg = "--enable-autostart";
     private const string ShowMainWindowArg = "--show-main-window";
+
+    private void TrySeedChannelFromRunningVersion(ISettingsStore settings)
+    {
+        // Only act when there's no settings.json yet — a returning user with
+        // an explicit Stable preference must not be silently flipped to
+        // Canary just because they're temporarily running a canary build.
+        var settingsPath = Path.Combine(AppPaths.UserDataFolder, "settings.json");
+        if (File.Exists(settingsPath)) return;
+
+        try
+        {
+            var update = _host!.Services.GetRequiredService<IUpdateService>();
+            if (!update.CurrentVersion.Contains("-canary.", StringComparison.Ordinal)) return;
+
+            var current = settings.Current;
+            current.UpdateChannel = UpdateChannel.Canary;
+            settings.Save(current);
+            Log.Information("First-run canary detected; defaulted update channel to Canary.");
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Failed to seed canary channel on first run");
+        }
+    }
 
     private void ApplyConfiguredTheme()
     {

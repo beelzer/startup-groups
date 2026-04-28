@@ -153,11 +153,17 @@ jobs:
           # registers the app the same way Stable does; subsequent canary
           # updates land via Velopack's auto-update from the .nupkg + the
           # releases.canary.json manifest, which vpk already uploaded.
+          #
+          # gh release upload uses the file's basename as the asset name —
+          # rename the local bundle FIRST so it overwrites vpk's lean
+          # StartupGroups-canary-Setup.exe via --clobber. (gh's "<path>#<label>"
+          # syntax sets the asset *label*, not its filename.)
+          Move-Item `
+            artifacts/installer/StartupGroups-Bundle-Setup.exe `
+            artifacts/installer/StartupGroups-canary-Setup.exe -Force
           $tag = "${{ steps.version.outputs.tag }}"
-          # Upload our Burn bundle under the canonical Setup.exe name; --clobber
-          # overwrites the lean vpk-flavoured Setup.exe asset of the same name.
           gh release upload $tag `
-            "artifacts/installer/StartupGroups-Bundle-Setup.exe#StartupGroups-canary-Setup.exe" `
+            "artifacts/installer/StartupGroups-canary-Setup.exe" `
             --clobber
 
       - name: Publish the draft with auto-generated notes

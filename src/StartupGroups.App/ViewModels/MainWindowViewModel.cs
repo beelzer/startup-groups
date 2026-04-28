@@ -152,9 +152,13 @@ public partial class MainWindowViewModel : ObservableObject
     public IReadOnlyList<UpdateChannelOption> UpdateChannelOptions { get; }
 
     public string AppName => AppBranding.AppName;
+    // Pull the running version from Velopack so canary builds display
+    // "0.2.14-canary.6" rather than just the AppBranding.Version constant
+    // ("0.2.14"). Falls back to AppBranding.Version in dev / non-Velopack
+    // installs (see VelopackUpdateService.CurrentVersion).
     public string AppVersionLabel =>
-        string.Format(CultureInfo.CurrentUICulture, Strings.Settings_About_VersionFormat, AppBranding.Version);
-    public string CurrentVersionShort => $"v{AppBranding.Version}";
+        string.Format(CultureInfo.CurrentUICulture, Strings.Settings_About_VersionFormat, _updateService.CurrentVersion);
+    public string CurrentVersionShort => $"v{_updateService.CurrentVersion}";
     public string LatestVersionShort => string.IsNullOrEmpty(LatestVersion) ? "" : $"v{LatestVersion}";
     public string AppSupportUrl => AppBranding.SupportUrl;
     public string LastCheckedText =>
