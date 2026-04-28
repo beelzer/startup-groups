@@ -101,9 +101,8 @@ public partial class App : Application
         // Surface the main window unless the user has explicitly opted into
         // tray-only startup. Always surface after an update restart even if
         // they've opted out — they need to see the new version. The bundle
-        // BA's Launch button forces the issue with --show-main-window so the
-        // user sees the app regardless of any older settings.json that may
-        // have been left over from a prior tray-only install.
+        // BA's Launch button passes --show-main-window to force the issue
+        // when the user explicitly clicks Launch.
         var restartedAfterUpdate = e.Args.Any(a =>
             string.Equals(a, VelopackUpdateService.RestartedAfterUpdateArg, StringComparison.OrdinalIgnoreCase));
         var forceShowMainWindow = e.Args.Any(a =>

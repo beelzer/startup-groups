@@ -18,8 +18,7 @@ public sealed class UpdateChannelOption : INotifyPropertyChanged
     public string DisplayName => Value switch
     {
         UpdateChannel.Stable => Strings.Settings_UpdateChannel_Stable,
-        UpdateChannel.Beta => Strings.Settings_UpdateChannel_Beta,
-        UpdateChannel.Nightly => Strings.Settings_UpdateChannel_Nightly,
+        UpdateChannel.Canary => Strings.Settings_UpdateChannel_Canary,
         _ => Value.ToString(),
     };
 

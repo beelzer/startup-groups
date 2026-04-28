@@ -299,11 +299,10 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
             return;
         }
 
-        // Always pass --show-main-window so the user actually sees the app
-        // after clicking Launch, regardless of any pre-existing settings.json
-        // that may have ShowMainWindowOnLaunch=false carried forward from an
-        // earlier install. Forward the auto-start choice too — App.OnStartup
-        // picks it up to register the Task Scheduler entry on first launch.
+        // Always pass --show-main-window so the app surfaces after Launch
+        // regardless of the user's tray-only preference. Forward the
+        // auto-start choice too — App.OnStartup picks it up to register
+        // the Task Scheduler entry on first launch.
         var enableAutoStart = _viewModel?.Customize.EnableAutoStart == true;
         var args = enableAutoStart
             ? "--show-main-window --enable-autostart"
@@ -611,8 +610,7 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
             // settings.json on first launch.
             var channel = _viewModel?.Customize.SelectedChannel switch
             {
-                InstallerUpdateChannel.Beta => "Beta",
-                InstallerUpdateChannel.Nightly => "Nightly",
+                InstallerUpdateChannel.Canary => "Canary",
                 _ => "Stable",
             };
             var json = $"{{\n  \"updateChannel\": \"{channel}\"\n}}\n";

@@ -234,8 +234,7 @@ public static class Strings
     public static string Settings_UpdateChannel_Label => Get(nameof(Settings_UpdateChannel_Label));
     public static string Settings_UpdateChannel_Hint => Get(nameof(Settings_UpdateChannel_Hint));
     public static string Settings_UpdateChannel_Stable => Get(nameof(Settings_UpdateChannel_Stable));
-    public static string Settings_UpdateChannel_Beta => Get(nameof(Settings_UpdateChannel_Beta));
-    public static string Settings_UpdateChannel_Nightly => Get(nameof(Settings_UpdateChannel_Nightly));
+    public static string Settings_UpdateChannel_Canary => Get(nameof(Settings_UpdateChannel_Canary));
 
     // Update flyout
     public static string UpdateFlyout_Header_UpdateAvailable => Get(nameof(UpdateFlyout_Header_UpdateAvailable));

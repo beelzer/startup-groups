@@ -9,8 +9,7 @@ namespace StartupGroups.Installer.UI.ViewModels;
 public enum InstallerUpdateChannel
 {
     Stable,
-    Beta,
-    Nightly,
+    Canary,
 }
 
 /// <summary>
@@ -33,8 +32,7 @@ public sealed partial class CustomizeViewModel : ObservableObject
     public IReadOnlyList<InstallerUpdateChannel> AvailableChannels { get; } =
     [
         InstallerUpdateChannel.Stable,
-        InstallerUpdateChannel.Beta,
-        InstallerUpdateChannel.Nightly,
+        InstallerUpdateChannel.Canary,
     ];
 
     [ObservableProperty] private InstallerUpdateChannel _selectedChannel = InstallerUpdateChannel.Stable;
