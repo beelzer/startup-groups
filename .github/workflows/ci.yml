@@ -1,5 +1,14 @@
 name: CI
 
+# Single source of truth for "did this change pass validation?". On PRs we
+# build and test. On push-to-main we additionally publish a canary release
+# (replaces the old separate canary.yml). The publish-canary steps are
+# gated on `github.event_name == 'push'` so PR runs stay read-only.
+#
+# Why combined: canary.yml previously raced ci.yml on every main push —
+# duplicating build/test work and risking publishing a release before CI
+# (or CodeQL) had agreed the code was healthy.
+
 on:
   push:
     branches: [main]
@@ -7,13 +16,14 @@ on:
   pull_request:
     branches: [main]
     paths-ignore: ['**.md', 'docs/**', '.gitignore', 'LICENSE']
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write  # required for the canary publish steps on main
 
 jobs:
   build:
@@ -36,3 +46,96 @@ jobs:
 
       - name: Test
         run: dotnet test StartupGroups.slnx -c Release --no-build --verbosity normal
+
+      # ---- Canary publish steps (push-to-main only; skipped on PR runs) ----
+
+      - name: Compute canary version
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          [xml]$props = Get-Content Directory.Build.props
+          $base = [string]$props.Project.PropertyGroup.Version
+          # Count existing canary releases on the same base version, then
+          # increment. Resets when Directory.Build.props bumps the base
+          # (e.g. 0.2.14 → 0.3.0 starts a fresh canary.1). Plain numeric
+          # so the prerelease identifier is semver-2.0 compliant.
+          # Filter in PowerShell rather than via gh's --jq flag — the
+          # latter needs nested-quote escaping that pwsh's parser mangles.
+          $releases = gh api "repos/${{ github.repository }}/releases" --paginate | ConvertFrom-Json
+          $prefix = "v$base-canary."
+          $existing = @($releases | Where-Object { $_.tag_name.StartsWith($prefix) }).Count
+          $next = $existing + 1
+          $version = "$base-canary.$next"
+          $tag = "v$version"
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          Write-Host "Canary version=$version tag=$tag (existing on base $base = $existing)"
+
+      - name: Install Velopack CLI
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: dotnet tool install --global vpk --version 0.0.1589-ga2c5a97
+
+      - name: Publish for Velopack
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        run: |
+          dotnet publish src/StartupGroups.App/StartupGroups.App.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -o artifacts/publish-velopack -nologo -v minimal
+          dotnet publish src/StartupGroups.Elevator/StartupGroups.Elevator.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -o artifacts/publish-velopack -nologo -v minimal
+
+      - name: Pack Velopack release (canary channel)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          vpk pack `
+            -u StartupGroups `
+            -v $version `
+            -p artifacts/publish-velopack `
+            --channel canary `
+            --mainExe StartupGroups.exe `
+            --packTitle "Startup Groups" `
+            --icon src/StartupGroups.App/Assets/app.ico
+
+      - name: Upload canary to GitHub releases (prerelease)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          # --pre marks the GitHub release as prerelease so it stays out of
+          # the "Latest" badge and the homepage releases widget — only Stable
+          # tags from release.yml get those. No title prefix: the tag itself
+          # already contains -canary.<n>, no need to repeat it.
+          vpk upload github `
+            --repoUrl "https://github.com/${{ github.repository }}" `
+            --token $env:GH_TOKEN `
+            --tag "${{ steps.version.outputs.tag }}" `
+            --releaseName "${{ steps.version.outputs.tag }}" `
+            --channel canary `
+            --pre
+
+      - name: Publish the draft with auto-generated notes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          # vpk's `upload github` creates the release as a draft with no body.
+          # Generate proper release notes from PRs since the previous tag
+          # (same approach release.yml uses for Stable) and flip the draft
+          # flag so it actually publishes.
+          $notes = gh api -X POST "repos/${{ github.repository }}/releases/generate-notes" `
+            -f tag_name="${{ steps.version.outputs.tag }}" `
+            --jq '.body'
+          $notesFile = New-TemporaryFile
+          $notes | Set-Content -Path $notesFile -Encoding UTF8
+          gh release edit "${{ steps.version.outputs.tag }}" `
+            --draft=false `
+            --notes-file $notesFile
