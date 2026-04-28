@@ -53,15 +53,13 @@ jobs:
         run: |
           [xml]$props = Get-Content Directory.Build.props
           $base = [string]$props.Project.PropertyGroup.Version
-          # SemVer 2.0 prerelease suffix using short SHA so the version is
-          # tied to the exact commit that produced the build. Lexicographic
-          # ordering across commits isn't strict (SHAs aren't monotonic) but
-          # Velopack uses semver-aware version comparison + AllowVersionDowngrade
-          # so users always pick up the most recent canary regardless of order.
+          # SemVer 2.0 prerelease suffix using just the short SHA — uniquely
+          # identifies the build, traces back to the commit, no timestamp
+          # noise. Chronological ordering across canary versions doesn't
+          # matter for update detection: Velopack's UpdateManager reads
+          # releases.canary.json which always points at the latest.
           $sha = "${{ github.sha }}".Substring(0, 7)
-          $stamp = (Get-Date -AsUTC).ToString('yyyyMMddHHmm')
-          # Stamp first, sha second — keeps lex order roughly chronological.
-          $version = "$base-canary.$stamp.$sha"
+          $version = "$base-canary.$sha"
           $tag = "v$version"
           "version=$version" >> $env:GITHUB_OUTPUT
           "tag=$tag" >> $env:GITHUB_OUTPUT
@@ -109,12 +107,32 @@ jobs:
         run: |
           # --pre marks the GitHub release as prerelease so it stays out of
           # the "Latest" badge and the homepage releases widget — only Stable
-          # tags from release.yml get those. Title prefix `[canary]` keeps
-          # the full release list scannable.
+          # tags from release.yml get those. No title prefix: the tag itself
+          # already contains -canary.<sha>, no need to repeat it.
           vpk upload github `
             --repoUrl "https://github.com/${{ github.repository }}" `
             --token $env:GH_TOKEN `
             --tag "${{ steps.version.outputs.tag }}" `
-            --releaseName "[canary] ${{ steps.version.outputs.tag }}" `
+            --releaseName "${{ steps.version.outputs.tag }}" `
             --channel canary `
             --pre
+
+      - name: Publish the draft with auto-generated notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          # vpk's `upload github` creates the release as a draft with no body.
+          # GitHub's UI then falls back to rendering the squash-commit message
+          # — fine in theory, ugly in practice if the commit message has odd
+          # markdown escaping. Generate proper release notes from PRs/commits
+          # since the previous tag (same approach release.yml uses for Stable)
+          # and flip the draft flag so it actually publishes.
+          $notes = gh api -X POST "repos/${{ github.repository }}/releases/generate-notes" `
+            -f tag_name="${{ steps.version.outputs.tag }}" `
+            --jq '.body'
+          $notesFile = New-TemporaryFile
+          $notes | Set-Content -Path $notesFile -Encoding UTF8
+          gh release edit "${{ steps.version.outputs.tag }}" `
+            --draft=false `
+            --notes-file $notesFile
