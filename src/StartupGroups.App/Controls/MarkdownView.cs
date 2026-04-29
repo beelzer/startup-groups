@@ -67,26 +67,6 @@ internal static class MarkdownToFlowDocument
     private static readonly Regex Bullet = new(@"^\s*[-*+]\s+(.*)$", RegexOptions.Compiled);
     private static readonly Regex Numbered = new(@"^\s*(\d+)\.\s+(.*)$", RegexOptions.Compiled);
 
-    // GitHub-style reference pre-processors. All four use a `(?<!\()` negative
-    // lookbehind so we never re-wrap a URL that is already inside a markdown
-    // link's `(url)` segment. Order matters: the URL-shape patterns run first
-    // so bare-URL autolink can't beat them to it.
-    private static readonly Regex GhPrIssueUrl = new(
-        @"(?<!\()https://github\.com/[^/\s)]+/[^/\s)]+/(?:pull|issues)/(\d+)",
-        RegexOptions.Compiled);
-    private static readonly Regex GhCompareUrl = new(
-        @"(?<!\()https://github\.com/[^/\s)]+/[^/\s)]+/compare/([^\s)\]]+)",
-        RegexOptions.Compiled);
-    // GitHub usernames: alphanumeric, hyphens allowed but not at the ends and
-    // not consecutive. The negative lookbehind keeps email addresses and
-    // existing markdown link text from triggering.
-    private static readonly Regex AtMention = new(
-        @"(?<![\w/\[])@([a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38})",
-        RegexOptions.Compiled);
-    private static readonly Regex BareUrl = new(
-        @"(?<![\(\]])https?://[^\s\)\]]+",
-        RegexOptions.Compiled);
-
     public static FlowDocument Convert(string markdown)
     {
         var document = new FlowDocument();
@@ -95,7 +75,7 @@ internal static class MarkdownToFlowDocument
             return document;
         }
 
-        markdown = PreprocessGitHubRefs(markdown);
+        markdown = GitHubMarkdownPreprocessor.Rewrite(markdown);
 
         var lines = markdown.Replace("\r\n", "\n").Split('\n');
         var i = 0;
@@ -168,15 +148,6 @@ internal static class MarkdownToFlowDocument
         }
 
         return document;
-    }
-
-    private static string PreprocessGitHubRefs(string markdown)
-    {
-        markdown = GhPrIssueUrl.Replace(markdown, m => $"[#{m.Groups[1].Value}]({m.Value})");
-        markdown = GhCompareUrl.Replace(markdown, m => $"[{m.Groups[1].Value}]({m.Value})");
-        markdown = AtMention.Replace(markdown, m => $"[@{m.Groups[1].Value}](https://github.com/{m.Groups[1].Value})");
-        markdown = BareUrl.Replace(markdown, m => $"[{m.Value}]({m.Value})");
-        return markdown;
     }
 
     private static Paragraph BuildHeading(string text, double fontSize, FontWeight weight)
