@@ -1,16 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Burn bundle that wraps the existing StartupGroups.msi and replaces the
-    WiX UI dialogs with our managed BA (StartupGroups.Installer.UI). The MSI
-    runs silently under the hood; the BA draws the user-facing UI.
+    Burn bundle that wraps Velopack's Setup.exe and replaces vpk's lean
+    progress-bar UX with our 5-screen managed BA (StartupGroups.Installer.UI).
+    The chained ExePackage runs Setup.exe silently under the hood; the BA
+    draws the user-facing UI.
 
-    Phase 3a: minimal wiring — chain the MSI, host the managed BA via the
-              WiX 5 out-of-process model. The BA EXE goes on
-              <BootstrapperApplication SourceFile="..."/> directly; all its
-              support files (runtime DLLs, runtimeconfig, etc.) come in via
-              <Payloads Include="...\**" /> globbing the publish folder.
-    Phase 3b: 5-screen UI inside the BA.
-    Phase 3c: Mica + dark mode + uninstall/repair self-detect.
+    Architectural note: the chained package is Velopack's Setup.exe, NOT the
+    raw MSI. An MSI-based bundle install lands at %LocalAppData%\Programs\
+    Startup Groups\ with no Velopack runtime files (Update.exe, current\,
+    packages\), which means UpdateManager.IsInstalled returns false and
+    auto-update silently breaks. Wrapping Setup.exe lays down the full
+    Velopack runtime AND gives us the Mica BA UX.
+
+    Velopack Setup.exe CLI (verified against velopack/velopack setup.rs):
+    -  `silent`    : suppress all dialogs, suppress post-install launch
+    -  `installto` : override install dir
+    -  no uninstall flag exists. Uninstall happens via Update.exe
+       (`%LocalAppData%\StartupGroups\Update.exe` with the silent +
+       uninstall flags) driven by Velopack's own ARP entry. We mark
+       the chained package Permanent="yes" so Burn never tries to call
+       Setup.exe with uninstall args (which would fail). The BA's
+       Uninstall flow invokes Update.exe directly before engine.Apply
+       runs.
 
     Bundle UpgradeCode lives in Directory.Build.props (AppBundleUpgradeCode);
     distinct from the MSI's UpgradeCode and never changes.
@@ -39,10 +50,13 @@
         </BootstrapperApplication>
 
         <Chain>
-            <MsiPackage Id="StartupGroupsMsi"
-                        SourceFile="$(var.MsiPath)"
+            <ExePackage Id="StartupGroupsVelopack"
+                        SourceFile="$(var.VelopackSetupPath)"
+                        PerMachine="no"
+                        Permanent="yes"
                         Vital="yes"
-                        Compressed="yes" />
+                        Compressed="yes"
+                        InstallArguments="--silent" />
         </Chain>
     </Bundle>
 </Wix>

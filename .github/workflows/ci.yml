@@ -74,6 +74,18 @@ jobs:
           "tag=$tag" >> $env:GITHUB_OUTPUT
           Write-Host "Canary version=$version tag=$tag (existing on base $base = $existing)"
 
+      - name: Install WiX
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        run: |
+          # Pin all four to the same version — extension and core wix must match.
+          # BootstrapperApplications.wixext is the WiX 5 successor to Bal.wixext;
+          # required for the Burn bundle that wraps Velopack Setup.exe.
+          dotnet tool install --global wix --version 5.0.2
+          wix extension add -g WixToolset.UI.wixext/5.0.2
+          wix extension add -g WixToolset.Util.wixext/5.0.2
+          wix extension add -g WixToolset.BootstrapperApplications.wixext/5.0.2
+
       - name: Install Velopack CLI
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: dotnet tool install --global vpk --version 0.0.1589-ga2c5a97
@@ -94,6 +106,8 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.version }}"
+          # Output goes to ./Releases/ by default — Burn bundle build below
+          # picks up Releases/StartupGroups-canary-Setup.exe from there.
           vpk pack `
             -u StartupGroups `
             -v $version `
@@ -102,6 +116,34 @@ jobs:
             --mainExe StartupGroups.exe `
             --packTitle "Startup Groups" `
             --icon src/StartupGroups.App/Assets/app.ico
+
+      - name: Build Burn bundle (Setup.exe wrapping Velopack Setup + managed BA)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        run: |
+          # Wraps vpk's lean Setup.exe with the styled Mica BA UX. The
+          # chained ExePackage runs Setup.exe --silent under the hood, so
+          # the Velopack runtime (Update.exe + current\ + packages\) ends
+          # up at %LocalAppData%\StartupGroups\ — same destination as a
+          # direct Setup.exe install. Auto-update keeps working because
+          # the runtime files are present.
+          ./installer/StartupGroups.Bundle/build.ps1 `
+            -VelopackSetupPath Releases/StartupGroups-canary-Setup.exe
+
+      - name: Replace lean Setup.exe with Burn bundle in Releases/
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        run: |
+          # vpk upload uploads everything in Releases/ under each file's
+          # current name. By overwriting Releases/StartupGroups-canary-Setup.exe
+          # with our Burn bundle, canary releases get exactly ONE first-install
+          # asset — the styled bundle — under the canonical name. The lean vpk
+          # Setup.exe is dropped (would have been redundant on canary anyway:
+          # both end up at %LocalAppData%\StartupGroups\, just with different
+          # first-install UX).
+          Move-Item -Force `
+            artifacts/installer/StartupGroups-Bundle-Setup.exe `
+            Releases/StartupGroups-canary-Setup.exe
 
       - name: Upload canary to GitHub releases (prerelease)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -120,16 +162,6 @@ jobs:
             --releaseName "${{ steps.version.outputs.tag }}" `
             --channel canary `
             --pre
-
-      # The Burn bundle is intentionally NOT built for canary. Canary
-      # needs Velopack's auto-update path (Update.exe + current/ +
-      # versioned packages/), and MSI-based bundle installs don't ship
-      # any of that. So canary's only first-install asset is vpk's
-      # lean Setup.exe, which IS the Velopack runtime installer. After
-      # first install, the app auto-updates to subsequent canaries via
-      # the canary feed (releases.canary.json + .nupkg). Stable still
-      # gets the Burn bundle via release.yml because its install
-      # cadence is slow and the BA UX is worth the trade-off.
 
       - name: Publish the draft with auto-generated notes
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
