@@ -148,25 +148,46 @@ public partial class App : Application
 
     private void TrySeedChannelFromRunningVersion(ISettingsStore settings)
     {
-        // Only act when there's no settings.json yet — a returning user with
-        // an explicit Stable preference must not be silently flipped to
-        // Canary just because they're temporarily running a canary build.
-        var settingsPath = Path.Combine(AppPaths.UserDataFolder, "settings.json");
-        if (File.Exists(settingsPath)) return;
-
+        // Once per install version, align the update channel to whatever
+        // build is actually running — i.e. flip Stable → Canary the first
+        // time a canary build launches. Without this, anyone who installs
+        // via the lean vpk Setup.exe (or whose existing settings.json
+        // predates this build) sits on Stable despite running canary, and
+        // never sees another canary update until they manually flip the
+        // dropdown.
+        //
+        // Marker keyed by the running version so:
+        //   - manual Canary → Stable flips by the user are NOT undone
+        //     (marker matches version, no re-seed),
+        //   - Velopack's next update bumps the version, marker mismatches,
+        //     re-seed runs and tracks whatever channel the new build is on.
+        // Only seeds in one direction (→ Canary). Stable builds never
+        // overwrite a manually-set Canary preference.
         try
         {
             var update = _host!.Services.GetRequiredService<IUpdateService>();
-            if (!update.CurrentVersion.Contains("-canary.", StringComparison.Ordinal)) return;
+            var version = update.CurrentVersion;
 
-            var current = settings.Current;
-            current.UpdateChannel = UpdateChannel.Canary;
-            settings.Save(current);
-            Log.Information("First-run canary detected; defaulted update channel to Canary.");
+            var marker = Path.Combine(AppPaths.LocalDataFolder, ".channel-seeded");
+            if (File.Exists(marker) && File.ReadAllText(marker).Trim() == version) return;
+
+            if (version.Contains("-canary.", StringComparison.Ordinal))
+            {
+                var current = settings.Current;
+                if (current.UpdateChannel != UpdateChannel.Canary)
+                {
+                    current.UpdateChannel = UpdateChannel.Canary;
+                    settings.Save(current);
+                    Log.Information("Running canary build {Version}; channel aligned to Canary.", version);
+                }
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(marker)!);
+            File.WriteAllText(marker, version);
         }
         catch (Exception ex)
         {
-            Log.Warning(ex, "Failed to seed canary channel on first run");
+            Log.Warning(ex, "Failed to align channel to running version");
         }
     }
 
