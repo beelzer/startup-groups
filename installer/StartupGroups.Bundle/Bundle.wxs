@@ -41,6 +41,13 @@
             IconSourceFile="$(var.IconPath)"
             DisableModify="yes">
 
+        <!-- Default channel for the Customize screen's channel-picker. Read
+             by the managed BA via engine.GetVariableString("DefaultChannel"),
+             so the canary bundle pre-selects Canary instead of forcing the
+             user to remember to flip it. Stable is the conservative default
+             when the build script doesn't override. -->
+        <Variable Name="DefaultChannel" Type="string" Value="$(var.DefaultChannel)" />
+
         <BootstrapperApplication SourceFile="$(var.MainExePath)">
             <!-- The <Payloads Include="..." /> globbing element ships in WiX
                  6+. Our pinned 5.0.2 toolchain doesn't have it, so the build

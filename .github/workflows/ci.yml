@@ -136,7 +136,8 @@ jobs:
           # direct Setup.exe install. Auto-update keeps working because
           # the runtime files are present.
           ./installer/StartupGroups.Bundle/build.ps1 `
-            -VelopackSetupPath Releases/StartupGroups-canary-Setup.exe
+            -VelopackSetupPath Releases/StartupGroups-canary-Setup.exe `
+            -DefaultChannel canary
 
       - name: Replace lean Setup.exe with Burn bundle in Releases/
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
