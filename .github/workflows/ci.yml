@@ -80,7 +80,7 @@ jobs:
           $tag = "v$version"
           "version=$version" >> $env:GITHUB_OUTPUT
           "tag=$tag" >> $env:GITHUB_OUTPUT
-          Write-Host "Canary version=$version tag=$tag (existing on base $base: count=$($numbers.Count) max=$max)"
+          Write-Host "Canary version=$version tag=$tag (existing on base ${base}: count=$($numbers.Count) max=$max)"
 
       - name: Install WiX
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
