@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Build the Startup Groups Burn bundle (Setup.exe wrapping the MSI + managed BA).
+    Build the Startup Groups Burn bundle (Setup.exe wrapping Velopack's Setup + managed BA).
 .DESCRIPTION
     1. Publishes StartupGroups.Installer.UI as a self-contained net10.0-windows
        multi-file WPF app. Single-file is forbidden — Burn's apphost loader expects
@@ -13,9 +13,16 @@
     3. Runs wix build against Bundle.wxs + the generated payload group, producing
        StartupGroups-Bundle-Setup.exe.
 
-    Assumes the MSI has already been built at artifacts/installer/StartupGroups.msi
-    (run installer/StartupGroups.Installer/build.ps1 first).
+    Assumes Velopack's Setup.exe has already been built (run vpk pack first).
+    Defaults to looking in ./Releases/ next to the repo root, where vpk's
+    default output lands. Override via -VelopackSetupPath.
+.PARAMETER VelopackSetupPath
+    Path to the Velopack Setup.exe to wrap (e.g. Releases/StartupGroups-win-Setup.exe
+    for Stable or Releases/StartupGroups-canary-Setup.exe for Canary).
 #>
+param(
+    [string]$VelopackSetupPath = ''
+)
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -24,7 +31,6 @@ $BaProj      = Join-Path $RepoRoot 'src\StartupGroups.Installer.UI\StartupGroups
 $BaPublish   = Join-Path $RepoRoot 'artifacts\publish-installer-ui'
 $OutputDir   = Join-Path $RepoRoot 'artifacts\installer'
 $BundlePath  = Join-Path $OutputDir 'StartupGroups-Bundle-Setup.exe'
-$MsiPath     = Join-Path $OutputDir 'StartupGroups.msi'
 $IconPath    = Join-Path $RepoRoot 'src\StartupGroups.App\Assets\app.ico'
 
 # --- Read source-of-truth values from Directory.Build.props ---
@@ -48,7 +54,7 @@ if ($ProductVer -notmatch '^\d+\.\d+\.\d+\.\d+$') {
 # is a strictly higher bundle version than the last. This makes Burn treat
 # successive dev builds as a MajorUpgrade of each other (rather than letting
 # the new build silently overwrite the old build's package cache, which
-# orphans the chained MSI). MUST stay in sync with the same logic in
+# orphans the chained package). MUST stay in sync with the same logic in
 # installer/StartupGroups.Installer/build.ps1 — see comment there. CI builds
 # fall back to the stable semver from Directory.Build.props.
 if (-not ($env:CI -or $env:GITHUB_ACTIONS)) {
@@ -59,9 +65,24 @@ if (-not ($env:CI -or $env:GITHUB_ACTIONS)) {
     Write-Host "Dev bundle version override: $ProductVer" -ForegroundColor DarkYellow
 }
 
-if (-not (Test-Path $MsiPath)) {
-    throw "MSI not found at $MsiPath. Run installer\StartupGroups.Installer\build.ps1 first."
+# --- Resolve VelopackSetupPath ---
+# vpk's default output dir is ./Releases relative to whatever cwd it ran in.
+# CI passes -VelopackSetupPath explicitly. Local dev: probe the conventional
+# locations in priority order (caller-supplied > default Releases > artifacts).
+if (-not $VelopackSetupPath) {
+    $candidates = @(
+        (Join-Path $RepoRoot 'Releases\StartupGroups-win-Setup.exe'),
+        (Join-Path $RepoRoot 'Releases\StartupGroups-canary-Setup.exe'),
+        (Join-Path $OutputDir 'StartupGroups-win-Setup.exe'),
+        (Join-Path $OutputDir 'StartupGroups-canary-Setup.exe')
+    )
+    $VelopackSetupPath = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
 }
+if (-not $VelopackSetupPath -or -not (Test-Path $VelopackSetupPath)) {
+    throw "Velopack Setup.exe not found. Run 'vpk pack ...' first, or pass -VelopackSetupPath. Tried: $($candidates -join '; ')"
+}
+$VelopackSetupPath = (Resolve-Path $VelopackSetupPath).Path
+Write-Host "Wrapping Velopack Setup: $VelopackSetupPath" -ForegroundColor Cyan
 
 # Wipe any prior publish so stale runtime DLLs don't bloat the bundle.
 if (Test-Path $BaPublish) { Remove-Item -Recurse -Force $BaPublish }
@@ -118,7 +139,7 @@ $wixArgs = @(
     '-define', "BundleUpgradeCode=$BundleUpgradeCode",
     '-define', "SupportUrl=$SupportUrl",
     '-define', "AboutUrl=$AboutUrl",
-    '-define', "MsiPath=$MsiPath",
+    '-define', "VelopackSetupPath=$VelopackSetupPath",
     '-define', "IconPath=$IconPath",
     '-define', "MainExePath=$mainExePath",
     '-ext', 'WixToolset.BootstrapperApplications.wixext',

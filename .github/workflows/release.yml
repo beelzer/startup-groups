@@ -30,11 +30,11 @@ jobs:
           Write-Host "Tag $tag → version=$version"
 
           # Reject prerelease tags here — release.yml is the Stable track.
-          # Canary builds run from canary.yml on every push to main; they
+          # Canary builds run from ci.yml on every push to main; they
           # don't go through tag triggers. Refuse anything that looks like
           # a prerelease so we don't accidentally publish one as Stable.
           if ($version -match '-') {
-            Write-Error "Tag $tag is a prerelease (contains '-'). release.yml is Stable-only; canaries are produced by canary.yml on every push to main."
+            Write-Error "Tag $tag is a prerelease (contains '-'). release.yml is Stable-only; canaries are produced by ci.yml on every push to main."
             exit 1
           }
 
@@ -79,20 +79,6 @@ jobs:
           $version = "${{ steps.version.outputs.version }}"
           Copy-Item artifacts/installer/StartupGroups.msi "artifacts/installer/StartupGroups-$version.msi"
 
-      - name: Build Burn bundle (Phase 3 — Setup.exe wrapping the MSI + managed BA)
-        shell: pwsh
-        run: ./installer/StartupGroups.Bundle/build.ps1
-
-      - name: Rename Burn bundle to primary Setup.exe asset
-        shell: pwsh
-        run: |
-          # The bundle becomes the primary download from v0.3.0 onward.
-          # vpk later uploads a "StartupGroups-win-Setup.exe" of its own
-          # (the Velopack-flavoured first-install installer); we keep that
-          # too for now so existing Velopack flows aren't disrupted, but
-          # rename our Burn bundle to the unambiguous "StartupGroups-Setup.exe".
-          Move-Item artifacts/installer/StartupGroups-Bundle-Setup.exe artifacts/installer/StartupGroups-Setup.exe
-
       - name: Publish for Velopack (multi-file, enables per-file deltas)
         shell: pwsh
         run: |
@@ -112,7 +98,9 @@ jobs:
           # Stable uses Velopack's default channel ("win") — existing v0.2.x
           # users (who shipped without ExplicitChannel) keep finding updates
           # via releases.win.json. Canary lives on its own channel via
-          # canary.yml and is invisible to Stable users.
+          # ci.yml and is invisible to Stable users.
+          # Output goes to ./Releases/ by default — Burn bundle build below
+          # picks up Releases/StartupGroups-win-Setup.exe from there.
           vpk pack `
             -u StartupGroups `
             -v $version `
@@ -120,6 +108,29 @@ jobs:
             --mainExe StartupGroups.exe `
             --packTitle "Startup Groups" `
             --icon src/StartupGroups.App/Assets/app.ico
+
+      - name: Build Burn bundle (Setup.exe wrapping Velopack Setup + managed BA)
+        shell: pwsh
+        run: |
+          # Wraps vpk's lean Setup.exe with the styled Mica BA UX. The
+          # chained ExePackage runs Setup.exe --silent under the hood, so
+          # the Velopack runtime (Update.exe + current\ + packages\) ends
+          # up at %LocalAppData%\StartupGroups\ — same destination as a
+          # direct Setup.exe install. Auto-update keeps working because
+          # the runtime files are present.
+          ./installer/StartupGroups.Bundle/build.ps1 `
+            -VelopackSetupPath Releases/StartupGroups-win-Setup.exe
+
+      - name: Rename Burn bundle to primary Setup.exe asset
+        shell: pwsh
+        run: |
+          # The bundle is the primary user-facing download (Mica + Fluent UI).
+          # vpk also uploads its own lean StartupGroups-win-Setup.exe; we keep
+          # both — the lean one is the canonical Velopack first-install path,
+          # and any user who picks it gets the same end state, just without
+          # the styled BA. Renaming our bundle to the unambiguous
+          # "StartupGroups-Setup.exe" makes it the obvious primary download.
+          Move-Item artifacts/installer/StartupGroups-Bundle-Setup.exe artifacts/installer/StartupGroups-Setup.exe
 
       # release-drafter autocreates draft releases on every push to main, which
       # collide with vpk's "create new release for this tag" step (vpk refuses
@@ -175,10 +186,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          # The Burn bundle is the new primary download from v0.3.0 onward —
-          # Mica + Fluent UI, replaces the old WixUI dialogs. Velopack still
-          # produces its own StartupGroups-win-Setup.exe for the per-user
-          # auto-update install path, which we leave alongside.
+          # The Burn bundle is the primary user-facing download — Mica + Fluent
+          # UI wrapping Velopack's silent Setup. Velopack still produces its own
+          # StartupGroups-win-Setup.exe for the lean first-install path, which
+          # we leave alongside as a fallback.
           gh release upload "${{ github.ref_name }}" `
             "artifacts/installer/StartupGroups-Setup.exe" `
             --clobber

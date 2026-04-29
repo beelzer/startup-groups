@@ -332,14 +332,16 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
 
     private static string? ResolveInstalledAppPath()
     {
-        // The MSI uses Scope="perUserOrMachine" so INSTALLFOLDER lands in one
-        // of three places depending on elevation: per-user under
-        // %LocalAppData%\Programs (no UAC) or per-machine under either
-        // ProgramFiles64 / ProgramFilesX86. Check per-user first because that
-        // is what we get on an unelevated bundle run, which is the default.
+        // Velopack first: the bundle now chains Velopack's Setup.exe, which
+        // installs to %LocalAppData%\StartupGroups\current\. That's the path
+        // the running user actually launches.
+        // MSI fallbacks kept for the rare case someone installed via the raw
+        // .msi (enterprise per-machine track or per-user via msiexec); both
+        // INSTALLFOLDER variants are still valid lookup targets.
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var candidates = new[]
         {
+            Path.Combine(localAppData, "StartupGroups", "current", "StartupGroups.exe"),
             Path.Combine(localAppData, "Programs", "Startup Groups", "StartupGroups.exe"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Startup Groups", "StartupGroups.exe"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Startup Groups", "StartupGroups.exe"),
@@ -349,6 +351,16 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
             if (File.Exists(c)) return c;
         }
         return null;
+    }
+
+    private static string? ResolveVelopackUpdateExe()
+    {
+        // Velopack lays down Update.exe at %LocalAppData%\StartupGroups\Update.exe
+        // alongside the current\ junction. This is the canonical uninstaller stub —
+        // the same path Velopack registers in its own ARP entry as UninstallString.
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var path = Path.Combine(localAppData, "StartupGroups", "Update.exe");
+        return File.Exists(path) ? path : null;
     }
 
     // === Engine event handlers (engine worker thread) ===
@@ -433,13 +445,32 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
             return;
         }
 
-        // Kill any running StartupGroups.exe so MSI can actually replace the
-        // binaries instead of queuing the replace for next reboot. Without
-        // this, FilesInUse=Ignore (our handler) means new files never land —
-        // Launch and Start-menu searches keep finding the old binaries.
+        // Kill any running StartupGroups.exe so the install/uninstall can
+        // actually touch the binaries instead of queuing the replace for next
+        // reboot. Velopack also wants exclusive access to %LocalAppData%\
+        // StartupGroups\ during its own uninstall, so this matters in both
+        // directions.
         StopRunningInstances();
 
-        UpdateUi(vm => vm.Progress.Status = "Installing…");
+        // Uninstall path: the chained Velopack ExePackage is Permanent="yes",
+        // so engine.Apply will only remove the bundle's own ARP entry. The
+        // actual app removal is Velopack's job — invoke Update.exe directly,
+        // synchronously, before we hand control back to Burn.
+        var action = _command?.Action ?? LaunchAction.Install;
+        if (action == LaunchAction.Uninstall)
+        {
+            UpdateUi(vm =>
+            {
+                vm.Progress.Status = "Uninstalling…";
+                vm.Progress.CurrentOperation = "Removing Startup Groups…";
+                vm.Show(InstallerStep.Progress);
+            });
+            RunVelopackUninstall();
+        }
+        else
+        {
+            UpdateUi(vm => vm.Progress.Status = "Installing…");
+        }
 
         // Burn needs a non-null hwnd so it can parent UAC and Windows
         // Installer prompts to our window. WindowInteropHelper.Handle has to
@@ -453,6 +484,53 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
             });
         }
         engine.Apply(hwnd);
+    }
+
+    private void RunVelopackUninstall()
+    {
+        var updateExe = ResolveVelopackUpdateExe();
+        if (updateExe is null)
+        {
+            // Already gone (manual cleanup, partial prior uninstall, etc).
+            // Nothing to do — let Burn finish removing the bundle ARP entry.
+            engine.Log(LogLevel.Standard, "Velopack Update.exe not found; skipping app uninstall.");
+            return;
+        }
+
+        try
+        {
+            engine.Log(LogLevel.Standard, $"Invoking Velopack uninstaller: {updateExe} --silent --uninstall");
+            var psi = new ProcessStartInfo
+            {
+                FileName = updateExe,
+                Arguments = "--silent --uninstall",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WorkingDirectory = Path.GetDirectoryName(updateExe) ?? string.Empty,
+            };
+            using var proc = Process.Start(psi);
+            if (proc is null)
+            {
+                engine.Log(LogLevel.Error, "Velopack Update.exe failed to start.");
+                return;
+            }
+            // Cap the wait so a hung uninstaller can't strand the bundle.
+            // Velopack's silent uninstall is typically <5s; 60s is a generous
+            // ceiling. Past that we just proceed to remove the bundle ARP and
+            // let the user clean up any leftovers manually.
+            if (!proc.WaitForExit(60_000))
+            {
+                engine.Log(LogLevel.Error, "Velopack Update.exe did not exit within 60s; continuing.");
+                return;
+            }
+            engine.Log(LogLevel.Standard, $"Velopack uninstaller exited with code {proc.ExitCode}.");
+        }
+        catch (Exception ex)
+        {
+            // Best-effort. A failed Velopack uninstall shouldn't block the
+            // bundle's own ARP cleanup; the user can re-run if needed.
+            engine.Log(LogLevel.Error, $"Velopack uninstall failed: {ex.Message}");
+        }
     }
 
     private void StopRunningInstances()
