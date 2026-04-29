@@ -242,6 +242,7 @@ public static class Strings
     public static string UpdateFlyout_ReleaseNotes_Heading => Get(nameof(UpdateFlyout_ReleaseNotes_Heading));
     public static string UpdateFlyout_Install => Get(nameof(UpdateFlyout_Install));
     public static string UpdateFlyout_Defer => Get(nameof(UpdateFlyout_Defer));
+    public static string UpdateFlyout_ViewOnGitHub => Get(nameof(UpdateFlyout_ViewOnGitHub));
     public static string UpdateFlyout_SpeedEtaFormat => Get(nameof(UpdateFlyout_SpeedEtaFormat));
 
     // Tooltips

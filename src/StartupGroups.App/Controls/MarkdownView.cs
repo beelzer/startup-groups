@@ -245,6 +245,12 @@ internal static class MarkdownToFlowDocument
                         hyperlink.NavigateUri = uri;
                         hyperlink.RequestNavigate += OnHyperlinkNavigate;
                     }
+                    // Override WPF's default hyperlink foreground (HotTrack
+                    // blue when fresh, dark red once "visited"). The visited
+                    // colour in particular is unreadable on dark Mica. Pin
+                    // both states to the WPF-UI accent text brush so links
+                    // stay legible and theme-aware.
+                    hyperlink.SetResourceReference(TextElement.ForegroundProperty, "AccentTextFillColorPrimaryBrush");
                     target.Add(hyperlink);
                     break;
                 case "code":

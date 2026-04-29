@@ -151,7 +151,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <ui:HyperlinkButton Grid.Column="0"
-                                        Content="{loc:Translate Settings_Version_SeeWhatsNew}"
+                                        Content="{loc:Translate UpdateFlyout_ViewOnGitHub}"
                                         Command="{Binding OpenReleaseNotesCommand}"
                                         VerticalAlignment="Center" />
                     <ui:Button Grid.Column="2"

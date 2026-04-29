@@ -267,6 +267,7 @@ Run elevated now?</value></data>
   <data name="UpdateFlyout_ReleaseNotes_Heading" xml:space="preserve"><value>What's new</value></data>
   <data name="UpdateFlyout_Install" xml:space="preserve"><value>Install now</value></data>
   <data name="UpdateFlyout_Defer" xml:space="preserve"><value>Later</value></data>
+  <data name="UpdateFlyout_ViewOnGitHub" xml:space="preserve"><value>View on GitHub</value></data>
   <data name="UpdateFlyout_SpeedEtaFormat" xml:space="preserve"><value>{0} · {1} remaining</value></data>
 
   <!-- ===== Tooltips ===== -->
