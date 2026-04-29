@@ -21,7 +21,9 @@
     for Stable or Releases/StartupGroups-canary-Setup.exe for Canary).
 #>
 param(
-    [string]$VelopackSetupPath = ''
+    [string]$VelopackSetupPath = '',
+    [ValidateSet('stable', 'canary')]
+    [string]$DefaultChannel = 'stable'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -140,6 +142,7 @@ $wixArgs = @(
     '-define', "SupportUrl=$SupportUrl",
     '-define', "AboutUrl=$AboutUrl",
     '-define', "VelopackSetupPath=$VelopackSetupPath",
+    '-define', "DefaultChannel=$DefaultChannel",
     '-define', "IconPath=$IconPath",
     '-define', "MainExePath=$mainExePath",
     '-ext', 'WixToolset.BootstrapperApplications.wixext',

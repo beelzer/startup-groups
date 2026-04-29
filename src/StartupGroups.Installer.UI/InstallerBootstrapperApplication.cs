@@ -85,6 +85,7 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
         {
             StartUiThread();
             _uiReady.Wait();
+            ApplyDefaultChannelFromBundle();
         }
 
         DetectComplete += OnDetectComplete;
@@ -484,6 +485,29 @@ public sealed class InstallerBootstrapperApplication : BootstrapperApplication
             });
         }
         engine.Apply(hwnd);
+    }
+
+    private void ApplyDefaultChannelFromBundle()
+    {
+        // The bundle's WiX <Variable Name="DefaultChannel" .../> is set per
+        // build flavour: "canary" for the canary channel (ci.yml), "stable"
+        // for everything else. Pre-select the matching radio on the Customize
+        // screen so the user doesn't have to remember to flip it. The
+        // default in CustomizeViewModel is Stable, so we only need to flip
+        // when the bundle is canary.
+        try
+        {
+            var channel = engine.GetVariableString("DefaultChannel");
+            if (string.Equals(channel, "canary", StringComparison.OrdinalIgnoreCase))
+            {
+                UpdateUi(vm => vm.Customize.SelectedChannel = InstallerUpdateChannel.Canary);
+                engine.Log(LogLevel.Standard, "DefaultChannel=canary — Customize pre-selected to Canary.");
+            }
+        }
+        catch (Exception ex)
+        {
+            engine.Log(LogLevel.Verbose, $"DefaultChannel lookup failed: {ex.Message}");
+        }
     }
 
     private void RunVelopackUninstall()
