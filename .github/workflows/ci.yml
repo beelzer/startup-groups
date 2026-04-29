@@ -58,21 +58,29 @@ jobs:
         run: |
           [xml]$props = Get-Content Directory.Build.props
           $base = [string]$props.Project.PropertyGroup.Version
-          # Count existing canary releases on the same base version, then
-          # increment. Resets when Directory.Build.props bumps the base
-          # (e.g. 0.2.14 → 0.3.0 starts a fresh canary.1). Plain numeric
-          # so the prerelease identifier is semver-2.0 compliant.
+          # Take the max existing canary number on this base version + 1.
+          # Resets when Directory.Build.props bumps the base (e.g. 0.2.14 →
+          # 0.3.0 starts a fresh canary.1). Plain numeric so the prerelease
+          # identifier is semver-2.0 compliant.
+          #
+          # Why max+1 not count+1: deleted canaries leave numbering gaps
+          # (e.g. canary.1 + canary.2 deleted, canary.3..9 kept → count=7
+          # would collide with the existing canary.8). Max+1 is gap-safe.
+          #
           # Filter in PowerShell rather than via gh's --jq flag — the
           # latter needs nested-quote escaping that pwsh's parser mangles.
           $releases = gh api "repos/${{ github.repository }}/releases" --paginate | ConvertFrom-Json
-          $prefix = "v$base-canary."
-          $existing = @($releases | Where-Object { $_.tag_name.StartsWith($prefix) }).Count
-          $next = $existing + 1
+          $pattern = "^v$([regex]::Escape($base))-canary\.(\d+)$"
+          $numbers = @($releases | ForEach-Object {
+            if ($_.tag_name -match $pattern) { [int]$Matches[1] }
+          })
+          $max = if ($numbers.Count -gt 0) { ($numbers | Measure-Object -Maximum).Maximum } else { 0 }
+          $next = $max + 1
           $version = "$base-canary.$next"
           $tag = "v$version"
           "version=$version" >> $env:GITHUB_OUTPUT
           "tag=$tag" >> $env:GITHUB_OUTPUT
-          Write-Host "Canary version=$version tag=$tag (existing on base $base = $existing)"
+          Write-Host "Canary version=$version tag=$tag (existing on base $base: count=$($numbers.Count) max=$max)"
 
       - name: Install WiX
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
