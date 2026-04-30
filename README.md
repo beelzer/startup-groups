@@ -22,13 +22,18 @@ A Windows launcher that boots groups of apps in the right order — with adaptiv
 
 ## Install
 
-Download **`StartupGroups-Setup.exe`** from the [releases page](https://github.com/beelzer/startup-groups/releases/latest) and run it.
+| Channel | Status | How |
+| --- | --- | --- |
+| **GitHub direct download** | 🟢 live | Download the latest [`.appinstaller`](https://github.com/beelzer/startup-groups/releases/latest) and double-click. Windows App Installer handles install + silent background updates. |
+| **Microsoft Store** | 🟡 coming soon | Reserved app identity; certification pending. |
+| **winget** | 🟡 coming soon | `winget install StartupGroups` once the manifest is approved. |
+| **Chocolatey** | 🟡 coming soon | `choco install startupgroups` once the package is approved. |
+| **Scoop** | 🟡 coming soon | Bucket entry pending. |
+| **MSI for IT admins** | ⚪ legacy | A vanilla `.msi` still ships on each release. New deployments should prefer the MSIX above — Intune / SCCM / Group Policy all support MSIX as of 2026. |
 
-The installer is a Mica-themed Fluent setup wizard (Welcome → License → Progress → Success, with optional Customize for picking the update channel + auto-start). Once installed, in-app updates are silent — no UAC, no installer flicker.
+The MSIX install runs in a packaged-app context with the full-trust desktop bridge — settings live at `%AppData%\StartupGroups\` exactly as before, registry / Task Scheduler integration works unchanged. Auto-update is silent and Windows-driven; the in-app **Check for updates** button surfaces release notes for users who want to see what's changing.
 
-For IT departments and silent deployment, a vanilla **`StartupGroups-<version>.msi`** is also published on every release.
-
-> The installer is unsigned, so Windows SmartScreen will show a warning on first install. Click **More info** → **Run anyway**.
+> Until a code-signing cert is in place, the GitHub download installs only via Windows **Developer Mode** (Settings → Privacy & security → For developers). Once the cert is wired up, sideload installs work for everyone, and the Microsoft Store / winget / Chocolatey / Scoop entries light up. SmartScreen reputation rebuilds over a few weeks regardless of cert tier.
 
 ## Build from source
 

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Chocolatey package manifest. Wraps the GitHub-released MSIX so users on
+  Chocolatey can `choco install startupgroups` to get the same artifact
+  everyone else gets.
+
+  Submission status: NOT YET SUBMITTED. Once user is ready to publish:
+    1. Create a free account at community.chocolatey.org
+    2. Generate an API key from the account profile
+    3. Register the API key with the chocolatey CLI (choco apikey)
+    4. From this directory: choco pack
+    5. choco push startupgroups.<version>.nupkg
+    6. First-submission moderation: days-to-weeks; subsequent versions
+       auto-pass.
+
+  The version field below + the install-script's url field need to be
+  updated each release. A future CI job can automate this — for now it's
+  a manual flow until there's enough demand to justify automation.
+-->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+    <metadata>
+        <id>startupgroups</id>
+        <version>0.0.0</version>
+        <title>Startup Groups</title>
+        <authors>Startup Groups</authors>
+        <owners>Startup Groups</owners>
+        <projectUrl>https://github.com/beelzer/startup-groups</projectUrl>
+        <projectSourceUrl>https://github.com/beelzer/startup-groups</projectSourceUrl>
+        <packageSourceUrl>https://github.com/beelzer/startup-groups/tree/main/installer/Chocolatey</packageSourceUrl>
+        <docsUrl>https://github.com/beelzer/startup-groups/blob/main/README.md</docsUrl>
+        <bugTrackerUrl>https://github.com/beelzer/startup-groups/issues</bugTrackerUrl>
+        <licenseUrl>https://github.com/beelzer/startup-groups/blob/main/LICENSE</licenseUrl>
+        <iconUrl>https://raw.githubusercontent.com/beelzer/startup-groups/main/src/StartupGroups.App/Assets/app.png</iconUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>A Windows app launcher that organises and launches groups of programs at startup. Configure groups of apps and launch them on demand or at boot, with launch benchmarking and readiness-gated orchestration.</description>
+        <summary>Launch groups of apps at Windows startup.</summary>
+        <tags>startup launcher windows productivity admin foss</tags>
+        <releaseNotes>https://github.com/beelzer/startup-groups/releases</releaseNotes>
+    </metadata>
+    <files>
+        <file src="tools\**" target="tools" />
+    </files>
+</package>

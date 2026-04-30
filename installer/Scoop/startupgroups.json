@@ -1,0 +1,33 @@
+{
+    "$comment": "Scoop manifest for StartupGroups. Submission status: NOT YET PUBLISHED. To go live, copy this file into a Scoop bucket repo (e.g. https://github.com/<owner>/scoop-startupgroups) and update url + hash per release. Scoop installs MSIX via the architecture-specific url; the architecture key matches the manifest 'arch' Scoop normalises to.",
+    "version": "0.0.0",
+    "description": "A Windows app launcher that organises and launches groups of programs at startup.",
+    "homepage": "https://github.com/beelzer/startup-groups",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/beelzer/startup-groups/releases/download/v0.0.0/StartupGroups-0.0.0.0.msix",
+            "hash": ""
+        }
+    },
+    "shortcuts": [
+        [
+            "StartupGroups.exe",
+            "Startup Groups"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/beelzer/startup-groups",
+        "regex": "v([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/beelzer/startup-groups/releases/download/v$version/StartupGroups-$version.0.msix"
+            }
+        },
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}
