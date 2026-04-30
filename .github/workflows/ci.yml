@@ -47,6 +47,29 @@ jobs:
       - name: Test
         run: dotnet test StartupGroups.slnx -c Release --no-build --verbosity normal
 
+      # ---- MSIX build (Phase 0 of the Velopack→MSIX migration) ----
+      # Produces an unsigned .msix as a CI artifact for verification via
+      # Windows Developer Mode. Not yet shipped to releases. Once a signing
+      # cert lands (SignPath approval or Certum purchase), pass the cert
+      # via -CertPath and the same script produces a signed package.
+      # See docs/MIGRATION_PLAN.md.
+      #
+      # Direct MakeAppx.exe (from the Windows SDK) instead of an MSBuild
+      # wapproj — Microsoft removed the "Universal Windows Platform build
+      # tools" workload from VS Build Tools 2026, which broke the wapproj
+      # path for the foreseeable future.
+      - name: Build MSIX (unsigned)
+        shell: pwsh
+        run: ./installer/Msix/build.ps1
+
+      - name: Upload MSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: StartupGroups-msix-unsigned
+          path: artifacts/msix/*.msix
+          if-no-files-found: error
+          retention-days: 14
+
       # ---- Canary publish steps (push-to-main only; skipped on PR runs) ----
 
       - name: Compute canary version

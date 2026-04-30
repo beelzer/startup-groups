@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Phase 0 manifest for the StartupGroups MSIX package.
+
+  - Identity Name + Publisher are placeholders pending Partner Center
+    reservation. Once reserved, swap Publisher to the CN= value Microsoft
+    issues in Partner Center, and (for Store builds) keep Identity Name
+    matching the reserved app name. Sideload builds keep their own
+    Publisher matching the signing cert subject.
+  - Version is the MSIX 4-part W.X.Y.Z. Z stays 0 (Store reserves the
+    revision field). Build pipeline rewrites this from
+    Directory.Build.props at pack time.
+  - Windows.FullTrustApplication + rescap:runFullTrust together declare
+    this as a packaged Win32 desktop app. Existing %AppData% paths,
+    registry access, UAC elevation, and WPF + Mica all keep working as
+    they do in the unpackaged build.
+  - Min target 10.0.17763.0 (Windows 10 1809 — first version with stable
+    full-trust MSIX support). Max tested 10.0.26100.0 (Windows 11 24H2).
+-->
+<Package
+    xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+    xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+    xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+    IgnorableNamespaces="uap rescap">
+
+    <Identity Name="StartupGroups"
+              Publisher="CN=StartupGroupsDev"
+              Version="0.2.14.0"
+              ProcessorArchitecture="x64" />
+
+    <Properties>
+        <DisplayName>Startup Groups</DisplayName>
+        <PublisherDisplayName>Startup Groups</PublisherDisplayName>
+        <Logo>Images\StoreLogo.png</Logo>
+        <Description>A Windows app launcher that organises and launches groups of programs at startup.</Description>
+    </Properties>
+
+    <Dependencies>
+        <TargetDeviceFamily Name="Windows.Desktop"
+                            MinVersion="10.0.17763.0"
+                            MaxVersionTested="10.0.26100.0" />
+    </Dependencies>
+
+    <Resources>
+        <Resource Language="en-US" />
+    </Resources>
+
+    <Applications>
+        <Application Id="App"
+                     Executable="StartupGroups.exe"
+                     EntryPoint="Windows.FullTrustApplication">
+            <uap:VisualElements
+                DisplayName="Startup Groups"
+                Description="A Windows app launcher that organises and launches groups of programs at startup."
+                Square150x150Logo="Images\Square150x150Logo.png"
+                Square44x44Logo="Images\Square44x44Logo.png"
+                BackgroundColor="transparent">
+                <uap:DefaultTile
+                    Wide310x150Logo="Images\Wide310x150Logo.png" />
+                <uap:SplashScreen
+                    Image="Images\SplashScreen.png"
+                    BackgroundColor="#1F1F1F" />
+            </uap:VisualElements>
+        </Application>
+    </Applications>
+
+    <Capabilities>
+        <rescap:Capability Name="runFullTrust" />
+    </Capabilities>
+</Package>
