@@ -146,6 +146,42 @@ public partial class App : Application
     private const string EnableAutoStartArg = "--enable-autostart";
     private const string ShowMainWindowArg = "--show-main-window";
 
+    /// <summary>
+    /// Picks the right <see cref="IUpdateService"/> implementation at runtime
+    /// based on whether we're hosted inside an MSIX package. Packaged
+    /// builds (App Installer or Microsoft Store) use the WinRT
+    /// PackageManager / StoreContext path; everything else stays on
+    /// Velopack for now (the legacy canary track, still alive while the
+    /// MSIX migration phases through).
+    /// </summary>
+    private static IUpdateService CreateUpdateService(IServiceProvider sp)
+    {
+        var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+
+        // Fully-qualified to disambiguate from System.Windows.* under the
+        // WPF Application base. Package.Current throws in unpackaged
+        // contexts, which we catch and fall through to Velopack.
+        global::Windows.ApplicationModel.Package? package = null;
+        try
+        {
+            package = global::Windows.ApplicationModel.Package.Current;
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        if (package is not null)
+        {
+            return new MsixUpdateService(
+                loggerFactory.CreateLogger<MsixUpdateService>(),
+                package);
+        }
+
+        return new VelopackUpdateService(
+            loggerFactory.CreateLogger<VelopackUpdateService>(),
+            sp.GetRequiredService<ISettingsStore>());
+    }
+
     private void TrySeedChannelFromRunningVersion(ISettingsStore settings)
     {
         // Once per install version, align the update channel to whatever
@@ -258,7 +294,7 @@ public partial class App : Application
         services.AddSingleton<ISettingsStore, SettingsStore>();
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<ILanguageService, LanguageService>();
-        services.AddSingleton<IUpdateService, VelopackUpdateService>();
+        services.AddSingleton<IUpdateService>(CreateUpdateService);
         services.AddSingleton<IWindowsStartupService, WindowsStartupService>();
         services.AddSingleton<ShellInstalledAppsProvider>();
         services.AddSingleton<WindowsServicesProvider>();

@@ -194,6 +194,136 @@ jobs:
             "artifacts/installer/StartupGroups-Setup.exe" `
             --clobber
 
+      # ---- MSIX track (Phase 1 of the Velopack→MSIX migration) ----
+      # Builds the MSIX + .appinstaller and uploads to the GitHub release
+      # alongside the legacy Velopack/Burn assets. Once the MSIX track has
+      # soaked through real users, Phase 3 cleanup deletes the legacy
+      # steps above and this becomes the only path. See
+      # docs/MIGRATION_PLAN.md.
+      #
+      # Signing flips on automatically when the MSIX_SIGNING_CERT_BASE64 +
+      # MSIX_SIGNING_PASSWORD secrets are set. Until then, the .msix
+      # uploads unsigned — installable only via Windows Developer Mode.
+      # Real users get a working install path the moment the cert lands.
+
+      - name: Decode MSIX signing cert (if available)
+        if: env.MSIX_SIGNING_CERT_BASE64 != ''
+        env:
+          MSIX_SIGNING_CERT_BASE64: ${{ secrets.MSIX_SIGNING_CERT_BASE64 }}
+        id: cert
+        shell: pwsh
+        run: |
+          $bytes = [Convert]::FromBase64String($env:MSIX_SIGNING_CERT_BASE64)
+          $path = Join-Path $env:RUNNER_TEMP 'msix-signing.pfx'
+          [IO.File]::WriteAllBytes($path, $bytes)
+          "path=$path" >> $env:GITHUB_OUTPUT
+          Write-Host "Cert decoded to $path"
+
+      - name: Build MSIX (sideload variant)
+        env:
+          MSIX_SIGNING_CERT_BASE64: ${{ secrets.MSIX_SIGNING_CERT_BASE64 }}
+          MSIX_SIGNING_PASSWORD: ${{ secrets.MSIX_SIGNING_PASSWORD }}
+          MSIX_SIDELOAD_PUBLISHER: ${{ secrets.MSIX_SIDELOAD_PUBLISHER }}
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}.0"
+          $args = @(
+              '-Version', $version
+          )
+          # Publisher: defaults to CN=StartupGroupsDev (manifest default).
+          # Override via MSIX_SIDELOAD_PUBLISHER secret to match the cert
+          # subject once SignPath/Certum issues it.
+          if ($env:MSIX_SIDELOAD_PUBLISHER) {
+              $args += @('-Publisher', $env:MSIX_SIDELOAD_PUBLISHER)
+          }
+          # Sign only if both cert + password are present.
+          if ($env:MSIX_SIGNING_CERT_BASE64 -and $env:MSIX_SIGNING_PASSWORD) {
+              $args += @('-CertPath', '${{ steps.cert.outputs.path }}',
+                         '-CertPassword', $env:MSIX_SIGNING_PASSWORD)
+              Write-Host 'Building signed MSIX...' -ForegroundColor Cyan
+          } else {
+              Write-Host 'No signing secrets set — building unsigned MSIX.' -ForegroundColor Yellow
+          }
+          ./installer/Msix/build.ps1 @args
+
+      - name: Generate .appinstaller XML
+        env:
+          MSIX_SIDELOAD_PUBLISHER: ${{ secrets.MSIX_SIDELOAD_PUBLISHER }}
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}.0"
+          $msixFile = "StartupGroups-$version.msix"
+          $args = @(
+              '-Version', $version,
+              '-MsixFileName', $msixFile,
+              '-RepoUrl', "https://github.com/${{ github.repository }}",
+              '-Tag', "${{ github.ref_name }}"
+          )
+          if ($env:MSIX_SIDELOAD_PUBLISHER) {
+              $args += @('-Publisher', $env:MSIX_SIDELOAD_PUBLISHER)
+          }
+          ./installer/Msix/generate-appinstaller.ps1 @args
+
+      - name: Upload MSIX + .appinstaller to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}.0"
+          gh release upload "${{ github.ref_name }}" `
+            "artifacts/msix/StartupGroups-$version.msix" `
+            "artifacts/msix/StartupGroups.appinstaller" `
+            --clobber
+
+      # ---- Store variant (only built when MSIX_STORE_PUBLISHER is set) ----
+      # Same MSIX content, but the Identity Publisher field matches the
+      # Partner Center reservation. Microsoft re-signs with their own cert
+      # during Store certification, so no signing cert is required here —
+      # we just rebuild the package with the Store publisher value baked in.
+      # Output is left as a CI artifact (not on the GitHub release) so the
+      # binary intended for Store submission stays visibly distinct from
+      # the sideload binary on the release page.
+      - name: Build MSIX (Store variant)
+        if: env.MSIX_STORE_PUBLISHER != ''
+        env:
+          MSIX_STORE_PUBLISHER: ${{ secrets.MSIX_STORE_PUBLISHER }}
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}.0"
+          $output  = "artifacts/msix-store/StartupGroups-Store-$version.msix"
+          ./installer/Msix/build.ps1 `
+            -Version $version `
+            -Publisher $env:MSIX_STORE_PUBLISHER `
+            -OutputPath $output
+
+      - name: Upload Store MSIX as artifact
+        if: env.MSIX_STORE_PUBLISHER != ''
+        env:
+          MSIX_STORE_PUBLISHER: ${{ secrets.MSIX_STORE_PUBLISHER }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: StartupGroups-msix-store
+          path: artifacts/msix-store/*.msix
+          if-no-files-found: error
+          retention-days: 30
+
+      # ---- winget submission ----
+      # Auto-PRs a manifest update to microsoft/winget-pkgs on every signed
+      # release. Skips when WINGET_RELEASER_TOKEN is not set so unsigned
+      # development releases don't try to submit. Identifier must match the
+      # one registered in winget-pkgs (Publisher.AppName); placeholder
+      # below until reservation confirms the canonical name.
+      - name: Submit to winget
+        if: env.WINGET_RELEASER_TOKEN != '' && env.MSIX_SIGNING_CERT_BASE64 != ''
+        env:
+          WINGET_RELEASER_TOKEN: ${{ secrets.WINGET_RELEASER_TOKEN }}
+          MSIX_SIGNING_CERT_BASE64: ${{ secrets.MSIX_SIGNING_CERT_BASE64 }}
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: StartupGroups.StartupGroups
+          installers-regex: '\.msix$'
+          token: ${{ secrets.WINGET_RELEASER_TOKEN }}
+
       # vpk creates the release as a draft. Publish it with auto-generated
       # notes from PRs/commits since the previous tag.
       # Note: gh release edit doesn't support --generate-notes (only gh release

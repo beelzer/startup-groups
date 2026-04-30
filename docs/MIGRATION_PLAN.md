@@ -12,7 +12,7 @@ GitHub direct download is plumbed at launch. The rest light up incrementally
 as approvals roll in.
 
 | Path | Status at launch | Goes live when |
-|---|---|---|
+| --- | --- | --- |
 | **GitHub direct download** | **Live** | Phase 1 — cert in hand, signed MSIX uploaded |
 | Microsoft Store | Architecturally supported | Partner Center cert review approves (~24-72h after submission) |
 | winget | Architecturally supported | `microsoft/winget-pkgs` manifest PR approved (~24h) |
@@ -39,7 +39,7 @@ serves all five.
 ## Locked decisions
 
 | # | Decision | Rationale |
-|---|---|---|
+| --- | --- | --- |
 | 1 | Drop the canary channel | Pre-1.0 single-dev project; bleeding-edge users build from source |
 | 2 | Drop the `.msi` admin track | MSIX is enterprise-deployable via Intune/SCCM/MDM in 2026 |
 | 3 | Skip the WPF launcher refactor | All problems it solved disappear under MSIX |
@@ -87,28 +87,59 @@ Net: codebase gets meaningfully smaller despite gaining a new packaging format.
 
 ## Phases
 
-### Phase 0 — Build the pipeline (now → ~2 weeks)
+### Phase 0 — Build the pipeline (DONE — PR #58)
 
-You keep using current canary builds for personal dogfooding. The MSIX
-pipeline gets built in parallel.
+Local + CI MSIX builds working end-to-end. Verified via
+`Add-AppxPackage -Register` against the staging dir.
 
-**Engineering work**:
-- Add `installer/Msix/` with `.wapproj` + `Package.appxmanifest`
-- Add CI job producing unsigned `.msix` artifact (downloadable from Action
-  run for verification)
-- Parameterise the signing step so cert arrival is a "flip a secret on" event
-- Smoke-test the elevated helper (`StartupGroups.Elevator.exe`) inside the
-  packaged container — highest-risk piece
-- Refactor `UpdateService` to call MSIX/`PackageManager` APIs (alongside
-  Velopack via build flag)
+**Shipped**:
+- `installer/Msix/Package.appxmanifest` — full-trust desktop bridge declaration
+- `installer/Msix/Images/` — visual assets generated from app.png
+- `installer/Msix/build.ps1` — direct `MakeAppx.exe` invocation (replaced
+  the planned `.wapproj` after VS Build Tools 2026 dropped the UWP workload)
+- CI job in `ci.yml` producing unsigned `.msix` artifact on every push
+- 78MB MSIX, all existing AppData paths working, Mica + WPF-UI rendering
+  unchanged inside the packaged container
 
-**External work** (wall-clock, non-blocking):
+### Phase 1 prep (DONE — this PR)
+
+Distribution infrastructure all wired up but gated on secrets/approvals.
+The moment a signing cert + Publisher ID land, releases ship through
+every channel automatically.
+
+**Shipped**:
+- `MsixUpdateService` — IUpdateService implementation using
+  `PackageManager.AddPackageByAppInstallerFileAsync`. Runtime selector
+  in `App.xaml.cs` picks Velopack vs MSIX based on `Package.Current`.
+- `release.yml` MSIX build steps: signed if `MSIX_SIGNING_CERT_BASE64`
+  + `MSIX_SIGNING_PASSWORD` secrets are set, otherwise unsigned.
+- `installer/Msix/generate-appinstaller.ps1` — produces the
+  `StartupGroups.appinstaller` XML with `releases/latest/download/...`
+  self-reference + per-version MainPackage URI.
+- Store variant build — gated on `MSIX_STORE_PUBLISHER` secret;
+  produces a Store-flavoured `.msix` as a CI artifact for Partner
+  Center upload.
+- WinGet Releaser action — gated on `WINGET_RELEASER_TOKEN` + signing.
+- `installer/Chocolatey/` — `.nuspec` + install/uninstall PowerShell
+  scripts ready to `choco pack` + push.
+- `installer/Scoop/startupgroups.json` — manifest ready to copy to a
+  Scoop bucket repo.
+
+**External work** (wall-clock, non-blocking, all still TODO):
 - Apply to SignPath Foundation — free OSS signing, 2-6 week review
 - Reserve "Startup Groups" in Partner Center — free for individuals,
   1-3 day identity reservation. Note the Publisher ID.
+- Once cert + Publisher ID are in hand, populate the GitHub secrets
+  listed below and the next tag-driven release goes live everywhere.
 
-**Output**: downloadable unsigned MSIX you can install via Windows
-Developer Mode for verification. Not yet user-facing.
+**Required GitHub secrets to flip distribution channels live**:
+| Secret | Purpose | Channels it unlocks |
+| --- | --- | --- |
+| `MSIX_SIGNING_CERT_BASE64` | Base64-encoded `.pfx` for sideload signing | GitHub direct download, winget, Chocolatey, Scoop |
+| `MSIX_SIGNING_PASSWORD` | Password for the `.pfx` above | (same as above) |
+| `MSIX_SIDELOAD_PUBLISHER` | `CN=...` of the cert subject (so manifest matches signature) | (same as above) |
+| `MSIX_STORE_PUBLISHER` | Partner Center reserved Publisher ID | Microsoft Store |
+| `WINGET_RELEASER_TOKEN` | Personal access token with `repo:public` scope | winget submission |
 
 ### Phase 1 — GitHub direct download live (when cert lands)
 
@@ -171,7 +202,7 @@ None of this blocks Phase 0 from starting.
 ## Top risks
 
 | Risk | Likelihood | Mitigation |
-|---|---|---|
+| --- | --- | --- |
 | Elevated helper breaks under MSIX container | Medium | Smoke-test in Phase 0, fix early. Usually absolute paths. |
 | SignPath rejection | Medium | Buy Certum (~€100 + €30/yr) |
 | Settings loss when MSIX uninstall wipes per-package AppData | Medium | Add in-app "Export settings"; document migration |
