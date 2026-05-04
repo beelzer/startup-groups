@@ -63,7 +63,7 @@ jobs:
         run: ./installer/Msix/build.ps1
 
       - name: Upload MSIX artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: StartupGroups-msix-unsigned
           path: artifacts/msix/*.msix
