@@ -300,7 +300,7 @@ jobs:
         if: env.MSIX_STORE_PUBLISHER != ''
         env:
           MSIX_STORE_PUBLISHER: ${{ secrets.MSIX_STORE_PUBLISHER }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: StartupGroups-msix-store
           path: artifacts/msix-store/*.msix
