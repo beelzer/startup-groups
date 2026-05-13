@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 
-# Chocolatey install script for StartupGroups.
+# Chocolatey install script for Salvo.
 #
 # Pulls the .msix from the GitHub release and registers it via
 # Add-AppxPackage. The MSIX itself drives all install state — we don't
@@ -9,13 +9,13 @@ $ErrorActionPreference = 'Stop'
 # Both URL + checksum need updating per release. A future CI job can
 # automate this. For now it's a manual edit before `choco pack`.
 
-$packageName = 'startupgroups'
+$packageName = 'salvo'
 $version     = '0.0.0'  # bump per release
-$msixUrl     = "https://github.com/beelzer/startup-groups/releases/download/v$version/StartupGroups-$version.0.msix"
+$msixUrl     = "https://github.com/beelzer/salvo/releases/download/v$version/Salvo-$version.0.msix"
 $msixSha256  = ''  # fill in from sha256sum of the released .msix
 
 $tempDir  = Join-Path $env:TEMP "$packageName-install"
-$msixPath = Join-Path $tempDir "StartupGroups-$version.0.msix"
+$msixPath = Join-Path $tempDir "Salvo-$version.0.msix"
 
 Get-ChocolateyWebFile -PackageName $packageName `
                       -FileFullPath $msixPath `
@@ -25,4 +25,4 @@ Get-ChocolateyWebFile -PackageName $packageName `
 
 Add-AppxPackage -Path $msixPath -ForceApplicationShutdown
 
-Write-Host "StartupGroups $version installed via Add-AppxPackage."
+Write-Host "Salvo $version installed via Add-AppxPackage."

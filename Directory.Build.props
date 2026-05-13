@@ -7,16 +7,16 @@
     <AnalysisLevel>latest</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <Deterministic>true</Deterministic>
-    <Product>Startup Groups</Product>
-    <Company>Startup Groups</Company>
+    <Product>Salvo</Product>
+    <Company>Salvo</Company>
     <Copyright>Copyright (c) $([System.DateTime]::UtcNow.Year)</Copyright>
     <Version>0.2.14</Version>
     <InformationalVersion>$(Version)</InformationalVersion>
-    <AppId>startup-groups</AppId>
-    <AppUpgradeCode>B2F3A4E5-1C6D-4B9A-9F8E-0D6A2B1C3E4F</AppUpgradeCode>
+    <AppId>salvo</AppId>
+    <AppUpgradeCode>4A543774-32C7-42DD-888B-CF2FCE525267</AppUpgradeCode>
     <!-- Burn bundle UpgradeCode. Distinct from the MSI UpgradeCode above; never change. -->
-    <AppBundleUpgradeCode>656877FE-59A4-48B4-9EF2-402CA405280A</AppBundleUpgradeCode>
-    <AppSupportUrl>https://github.com/beelzer/startup-groups</AppSupportUrl>
-    <AppAboutUrl>https://github.com/beelzer/startup-groups</AppAboutUrl>
+    <AppBundleUpgradeCode>C1198714-85D8-48B7-A172-2B40B81F8873</AppBundleUpgradeCode>
+    <AppSupportUrl>https://github.com/beelzer/salvo</AppSupportUrl>
+    <AppAboutUrl>https://github.com/beelzer/salvo</AppAboutUrl>
   </PropertyGroup>
 </Project>

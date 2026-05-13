@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Chocolatey package manifest. Wraps the GitHub-released MSIX so users on
+  Chocolatey can `choco install salvo` to get the same artifact
+  everyone else gets.
+
+  Submission status: NOT YET SUBMITTED. Once user is ready to publish:
+    1. Create a free account at community.chocolatey.org
+    2. Generate an API key from the account profile
+    3. Register the API key with the chocolatey CLI (choco apikey)
+    4. From this directory: choco pack
+    5. choco push salvo.<version>.nupkg
+    6. First-submission moderation: days-to-weeks; subsequent versions
+       auto-pass.
+
+  The version field below + the install-script's url field need to be
+  updated each release. A future CI job can automate this — for now it's
+  a manual flow until there's enough demand to justify automation.
+-->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+    <metadata>
+        <id>salvo</id>
+        <version>0.0.0</version>
+        <title>Salvo</title>
+        <authors>Salvo</authors>
+        <owners>Salvo</owners>
+        <projectUrl>https://github.com/beelzer/salvo</projectUrl>
+        <projectSourceUrl>https://github.com/beelzer/salvo</projectSourceUrl>
+        <packageSourceUrl>https://github.com/beelzer/salvo/tree/main/installer/Chocolatey</packageSourceUrl>
+        <docsUrl>https://github.com/beelzer/salvo/blob/main/README.md</docsUrl>
+        <bugTrackerUrl>https://github.com/beelzer/salvo/issues</bugTrackerUrl>
+        <licenseUrl>https://github.com/beelzer/salvo/blob/main/LICENSE</licenseUrl>
+        <iconUrl>https://raw.githubusercontent.com/beelzer/salvo/main/src/Salvo.App/Assets/app.png</iconUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>Coordinated, readiness-gated launcher for your Windows startup apps. Configure groups of apps and launch them in parallel waves with launch benchmarking and readiness-gated orchestration.</description>
+        <summary>Coordinated, readiness-gated launcher for Windows startup apps.</summary>
+        <tags>startup launcher windows productivity admin foss</tags>
+        <releaseNotes>https://github.com/beelzer/salvo/releases</releaseNotes>
+    </metadata>
+    <files>
+        <file src="tools\**" target="tools" />
+    </files>
+</package>

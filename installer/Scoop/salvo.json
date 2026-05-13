@@ -1,0 +1,33 @@
+{
+    "$comment": "Scoop manifest for Salvo. Submission status: NOT YET PUBLISHED. To go live, copy this file into a Scoop bucket repo (e.g. https://github.com/<owner>/scoop-salvo) and update url + hash per release. Scoop installs MSIX via the architecture-specific url; the architecture key matches the manifest 'arch' Scoop normalises to.",
+    "version": "0.0.0",
+    "description": "Coordinated, readiness-gated launcher for your Windows startup apps.",
+    "homepage": "https://github.com/beelzer/salvo",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/beelzer/salvo/releases/download/v0.0.0/Salvo-0.0.0.0.msix",
+            "hash": ""
+        }
+    },
+    "shortcuts": [
+        [
+            "Salvo.exe",
+            "Salvo"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/beelzer/salvo",
+        "regex": "v([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/beelzer/salvo/releases/download/v$version/Salvo-$version.0.msix"
+            }
+        },
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}

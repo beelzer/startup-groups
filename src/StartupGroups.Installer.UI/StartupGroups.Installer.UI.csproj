@@ -6,7 +6,7 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>StartupGroups.Installer.UI</RootNamespace>
     <AssemblyName>StartupGroups.Installer.UI</AssemblyName>
-    <ApplicationIcon>..\StartupGroups.App\Assets\app.ico</ApplicationIcon>
+    <ApplicationIcon>..\Salvo.App\Assets\app.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- We own Main via Program.cs (Burn's OOP entry); App.xaml is consumed
          as a Page so its merged ResourceDictionaries (WPF-UI themes) load,
@@ -30,6 +30,6 @@
   <ItemGroup>
     <!-- For AppBranding constants (AppName, Version, SupportUrl) so the
          installer chrome stays in sync with the running app. -->
-    <ProjectReference Include="..\StartupGroups.Core\StartupGroups.Core.csproj" />
+    <ProjectReference Include="..\Salvo.Core\Salvo.Core.csproj" />
   </ItemGroup>
 </Project>

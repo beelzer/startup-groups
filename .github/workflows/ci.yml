@@ -39,15 +39,15 @@ jobs:
           cache-dependency-path: '**/*.csproj'
 
       - name: Restore
-        run: dotnet restore StartupGroups.slnx
+        run: dotnet restore Salvo.slnx
 
       - name: Build
-        run: dotnet build StartupGroups.slnx -c Release --no-restore
+        run: dotnet build Salvo.slnx -c Release --no-restore
 
       - name: Test
-        run: dotnet test StartupGroups.slnx -c Release --no-build --verbosity normal
+        run: dotnet test Salvo.slnx -c Release --no-build --verbosity normal
 
-      # ---- MSIX build (Phase 0 of the Velopack→MSIX migration) ----
+      # ---- MSIX build (primary distribution path) ----
       # Produces an unsigned .msix as a CI artifact for verification via
       # Windows Developer Mode. Not yet shipped to releases. Once a signing
       # cert lands (SignPath approval or Certum purchase), pass the cert
@@ -65,7 +65,7 @@ jobs:
       - name: Upload MSIX artifact
         uses: actions/upload-artifact@v7
         with:
-          name: StartupGroups-msix-unsigned
+          name: Salvo-msix-unsigned
           path: artifacts/msix/*.msix
           if-no-files-found: error
           retention-days: 14
@@ -105,18 +105,6 @@ jobs:
           "tag=$tag" >> $env:GITHUB_OUTPUT
           Write-Host "Canary version=$version tag=$tag (existing on base ${base}: count=$($numbers.Count) max=$max)"
 
-      - name: Install WiX
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: pwsh
-        run: |
-          # Pin all four to the same version — extension and core wix must match.
-          # BootstrapperApplications.wixext is the WiX 5 successor to Bal.wixext;
-          # required for the Burn bundle that wraps Velopack Setup.exe.
-          dotnet tool install --global wix --version 5.0.2
-          wix extension add -g WixToolset.UI.wixext/5.0.2
-          wix extension add -g WixToolset.Util.wixext/5.0.2
-          wix extension add -g WixToolset.BootstrapperApplications.wixext/5.0.2
-
       - name: Install Velopack CLI
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: dotnet tool install --global vpk --version 0.0.1589-ga2c5a97
@@ -125,10 +113,10 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: pwsh
         run: |
-          dotnet publish src/StartupGroups.App/StartupGroups.App.csproj `
+          dotnet publish src/Salvo.App/Salvo.App.csproj `
             -c Release -r win-x64 --self-contained true `
             -o artifacts/publish-velopack -nologo -v minimal
-          dotnet publish src/StartupGroups.Elevator/StartupGroups.Elevator.csproj `
+          dotnet publish src/Salvo.Elevator/Salvo.Elevator.csproj `
             -c Release -r win-x64 --self-contained true `
             -o artifacts/publish-velopack -nologo -v minimal
 
@@ -137,45 +125,19 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.version }}"
-          # Output goes to ./Releases/ by default — Burn bundle build below
-          # picks up Releases/StartupGroups-canary-Setup.exe from there.
+          # vpk output goes to ./Releases/. The Burn-bundle wrapper that
+          # used to repackage this output was removed during the
+          # StartupGroups → Salvo rename; canary now ships the lean
+          # Velopack Setup.exe directly. Phase 3 cleanup will retire the
+          # entire canary feed.
           vpk pack `
-            -u StartupGroups `
+            -u Salvo `
             -v $version `
             -p artifacts/publish-velopack `
             --channel canary `
-            --mainExe StartupGroups.exe `
-            --packTitle "Startup Groups" `
-            --icon src/StartupGroups.App/Assets/app.ico
-
-      - name: Build Burn bundle (Setup.exe wrapping Velopack Setup + managed BA)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: pwsh
-        run: |
-          # Wraps vpk's lean Setup.exe with the styled Mica BA UX. The
-          # chained ExePackage runs Setup.exe --silent under the hood, so
-          # the Velopack runtime (Update.exe + current\ + packages\) ends
-          # up at %LocalAppData%\StartupGroups\ — same destination as a
-          # direct Setup.exe install. Auto-update keeps working because
-          # the runtime files are present.
-          ./installer/StartupGroups.Bundle/build.ps1 `
-            -VelopackSetupPath Releases/StartupGroups-canary-Setup.exe `
-            -DefaultChannel canary
-
-      - name: Replace lean Setup.exe with Burn bundle in Releases/
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: pwsh
-        run: |
-          # vpk upload uploads everything in Releases/ under each file's
-          # current name. By overwriting Releases/StartupGroups-canary-Setup.exe
-          # with our Burn bundle, canary releases get exactly ONE first-install
-          # asset — the styled bundle — under the canonical name. The lean vpk
-          # Setup.exe is dropped (would have been redundant on canary anyway:
-          # both end up at %LocalAppData%\StartupGroups\, just with different
-          # first-install UX).
-          Move-Item -Force `
-            artifacts/installer/StartupGroups-Bundle-Setup.exe `
-            Releases/StartupGroups-canary-Setup.exe
+            --mainExe Salvo.exe `
+            --packTitle "Salvo" `
+            --icon src/Salvo.App/Assets/app.ico
 
       - name: Upload canary to GitHub releases (prerelease)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

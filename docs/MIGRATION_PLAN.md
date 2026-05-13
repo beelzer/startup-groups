@@ -127,7 +127,7 @@ every channel automatically.
 
 **External work** (wall-clock, non-blocking, all still TODO):
 - Apply to SignPath Foundation — free OSS signing, 2-6 week review
-- Reserve "Startup Groups" in Partner Center — free for individuals,
+- Reserve "Salvo" in Partner Center — free for individuals,
   1-3 day identity reservation. Note the Publisher ID.
 - Once cert + Publisher ID are in hand, populate the GitHub secrets
   listed below and the next tag-driven release goes live everywhere.

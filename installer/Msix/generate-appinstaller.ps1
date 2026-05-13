@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Generate a StartupGroups.appinstaller XML file pointing at a tagged
+    Generate a Salvo.appinstaller XML file pointing at a tagged
     GitHub release's .msix asset, with auto-update settings wired so App
     Installer silently keeps users on the latest release.
 .DESCRIPTION
@@ -18,7 +18,7 @@
 .PARAMETER MsixFileName
     Filename of the .msix asset uploaded to the GitHub release.
 .PARAMETER RepoUrl
-    GitHub repo URL, e.g. https://github.com/beelzer/startup-groups.
+    GitHub repo URL, e.g. https://github.com/beelzer/salvo.
 .PARAMETER Tag
     Release tag (e.g. v0.3.0).
 .PARAMETER Publisher
@@ -32,7 +32,7 @@ param(
     [Parameter(Mandatory)] [string]$MsixFileName,
     [Parameter(Mandatory)] [string]$RepoUrl,
     [Parameter(Mandatory)] [string]$Tag,
-    [string]$Publisher = 'CN=StartupGroupsDev',
+    [string]$Publisher = 'CN=SalvoDev',
     [string]$OutputPath = ''
 )
 
@@ -40,11 +40,11 @@ $ErrorActionPreference = 'Stop'
 
 if (-not $OutputPath) {
     $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-    $OutputPath = Join-Path $ScriptDir '..\..\artifacts\msix\StartupGroups.appinstaller'
+    $OutputPath = Join-Path $ScriptDir '..\..\artifacts\msix\Salvo.appinstaller'
 }
 
 $RepoUrl = $RepoUrl.TrimEnd('/')
-$selfUri = "$RepoUrl/releases/latest/download/StartupGroups.appinstaller"
+$selfUri = "$RepoUrl/releases/latest/download/Salvo.appinstaller"
 $mainPackageUri = "$RepoUrl/releases/download/$Tag/$MsixFileName"
 
 # 2021 schema — supports OnLaunch background polling + AutomaticBackgroundTask
@@ -59,7 +59,7 @@ $xml = @"
     Version="$Version">
 
     <MainPackage
-        Name="StartupGroups"
+        Name="Salvo"
         Publisher="$Publisher"
         Version="$Version"
         ProcessorArchitecture="x64"
