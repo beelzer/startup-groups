@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Salvo.App/Salvo.App.csproj" />
+    <Project Path="src/Salvo.Core/Salvo.Core.csproj" />
+    <Project Path="src/Salvo.Elevator/Salvo.Elevator.csproj" />
+    <Project Path="src/StartupGroups.Installer.UI/StartupGroups.Installer.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Salvo.App.Tests/Salvo.App.Tests.csproj" />
+    <Project Path="tests/Salvo.Core.Tests/Salvo.Core.Tests.csproj" />
+  </Folder>
+</Solution>

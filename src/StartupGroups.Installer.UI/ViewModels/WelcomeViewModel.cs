@@ -1,7 +1,7 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using StartupGroups.Core.Branding;
+using Salvo.Core.Branding;
 
 namespace StartupGroups.Installer.UI.ViewModels;
 

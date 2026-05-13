@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Build the StartupGroups MSIX package (Phase 0 of the Velopack→MSIX
+    Build the Salvo MSIX package (Phase 0 of the Velopack→MSIX
     migration; see docs/MIGRATION_PLAN.md).
 .DESCRIPTION
     Direct invocation of MakeAppx.exe + (optionally) SignTool.exe from the
@@ -12,7 +12,7 @@
     modern path.
 
     Steps:
-      1. Publish StartupGroups.App with dotnet publish (multi-file,
+      1. Publish Salvo.App with dotnet publish (multi-file,
          self-contained, no single-file extraction — MakeAppx needs
          discrete files for hashing and delta updates).
       2. Stage the publish output + manifest + visual assets in a single
@@ -26,7 +26,7 @@
     4-part MSIX version W.X.Y.Z. Defaults to Directory.Build.props Version
     with .0 appended. Z must stay 0 — Store reserves the revision field.
 .PARAMETER OutputPath
-    Output .msix path. Default: artifacts/msix/StartupGroups-<version>.msix.
+    Output .msix path. Default: artifacts/msix/Salvo-<version>.msix.
 .PARAMETER CertPath
     Optional .pfx file to sign the package with. If omitted, package is
     unsigned (installable only via Developer Mode or after Phase 1's signing
@@ -35,7 +35,7 @@
     Password for -CertPath, if any.
 .PARAMETER Publisher
     Publisher CN= value baked into the manifest. Default
-    "CN=StartupGroupsDev". Override to match your Partner Center publisher
+    "CN=SalvoDev". Override to match your Partner Center publisher
     ID (Store builds) or your sideload signing cert subject.
 #>
 param(
@@ -44,13 +44,13 @@ param(
     [string]$OutputPath = '',
     [string]$CertPath = '',
     [string]$CertPassword = '',
-    [string]$Publisher = 'CN=StartupGroupsDev'
+    [string]$Publisher = 'CN=SalvoDev'
 )
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot  = Resolve-Path (Join-Path $ScriptDir '..\..')
-$AppProj   = Join-Path $RepoRoot 'src\StartupGroups.App\StartupGroups.App.csproj'
+$AppProj   = Join-Path $RepoRoot 'src\Salvo.App\Salvo.App.csproj'
 $Manifest  = Join-Path $ScriptDir 'Package.appxmanifest'
 $ImagesDir = Join-Path $ScriptDir 'Images'
 $StageDir  = Join-Path $RepoRoot 'artifacts\msix-stage'
@@ -64,7 +64,7 @@ if (-not $Version) {
     $Version = $base
 }
 if (-not $OutputPath) {
-    $OutputPath = Join-Path $OutputDir "StartupGroups-$Version.msix"
+    $OutputPath = Join-Path $OutputDir "Salvo-$Version.msix"
 }
 
 # --- Resolve Windows SDK tools ---
@@ -95,7 +95,7 @@ New-Item -ItemType Directory -Path $StageDir -Force | Out-Null
 New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 
 # --- Publish the app ---
-Write-Host "Publishing StartupGroups.App ($Configuration, win-x64, multi-file)..." -ForegroundColor Cyan
+Write-Host "Publishing Salvo.App ($Configuration, win-x64, multi-file)..." -ForegroundColor Cyan
 # PublishSingleFile must be FALSE for MSIX. MakeAppx hashes individual
 # files for block-level deltas; single-file output collapses everything
 # into one EXE and breaks both delta updates and Store certification.

@@ -102,9 +102,9 @@ The release workflow has been through three iterations because of subtle interac
 Replace the custom updater with Velopack while keeping the existing MSI build alive.
 
 **Deliverables:**
-- Add `Velopack` NuGet package to `StartupGroups.App`
+- Add `Velopack` NuGet package to `Salvo.App`
 - Add `VelopackApp.Build().Run()` at the top of `App.OnStartup` (lets the runtime hook install/uninstall/firstrun events)
-- Replace [src/StartupGroups.App/Services/UpdateInstaller.cs](src/StartupGroups.App/Services/UpdateInstaller.cs) and [UpdateChecker.cs](src/StartupGroups.App/Services/UpdateChecker.cs) with `Velopack.UpdateManager` calls
+- Replace [src/Salvo.App/Services/UpdateInstaller.cs](src/Salvo.App/Services/UpdateInstaller.cs) and [UpdateChecker.cs](src/Salvo.App/Services/UpdateChecker.cs) with `Velopack.UpdateManager` calls
 - Add `vpk` CLI step to [.github/workflows/release.yml](.github/workflows/release.yml): after `dotnet publish`, run `vpk pack` then `vpk upload github`
 - Keep the WiX MSI build alongside as a parallel artifact (don't delete — needed for Phase 3)
 
@@ -124,7 +124,7 @@ Replace the custom updater with Velopack while keeping the existing MSI build al
 - **Nightly is its own workflow.** [nightly.yml](.github/workflows/nightly.yml) runs at 04:00 UTC daily plus on-demand via `workflow_dispatch`. It synthesises a SemVer-2.0 prerelease version (`<base>-nightly.<YYYYMMDDHHmm>`), packs with `--channel nightly`, and skips the run if no commits have landed since the last nightly (cheap: one `gh api` call against the releases listing).
 - **Channel picker in Settings.** Three-option ComboBox (Stable / Beta / Nightly) wired through `ISettingsStore.UpdateChannel`. Changing it triggers `CheckForUpdatesAsync(force: true)` so the user sees the channel switch reflected without restarting.
 - **`UpdateOptions { ExplicitChannel, AllowVersionDowngrade = true }`** wired in `VelopackUpdateService.BuildManager`. `ToVelopackChannel(Stable)` returns null on purpose — see the backward-compatibility note above. The manager is rebuilt lazily inside `AcquireManager` when the active channel diverges from the persisted setting; this avoids races with an in-flight check on the old manager.
-- **Branded WPF update flyout.** [`UpdateFlyoutWindow.xaml`](src/StartupGroups.App/Views/UpdateFlyoutWindow.xaml) is a Mica `FluentWindow` opened modally from the Settings update banner. Hero header shows version + active channel. Release notes render via [`MarkdownView`](src/StartupGroups.App/Controls/MarkdownView.cs) — a hand-rolled markdown→FlowDocument renderer that handles headings, bullet/numbered lists, **bold**, _italic_, `inline code`, fenced code blocks, and `[text](url)` links. Chose hand-rolled over Markdig.Wpf (~150 lines vs. a NuGet dep that would also need its own theming pass for Mica).
+- **Branded WPF update flyout.** [`UpdateFlyoutWindow.xaml`](src/Salvo.App/Views/UpdateFlyoutWindow.xaml) is a Mica `FluentWindow` opened modally from the Settings update banner. Hero header shows version + active channel. Release notes render via [`MarkdownView`](src/Salvo.App/Controls/MarkdownView.cs) — a hand-rolled markdown→FlowDocument renderer that handles headings, bullet/numbered lists, **bold**, _italic_, `inline code`, fenced code blocks, and `[text](url)` links. Chose hand-rolled over Markdig.Wpf (~150 lines vs. a NuGet dep that would also need its own theming pass for Mica).
 - **Speed + ETA below the progress bar.** `DownloadSpeedTracker` keeps a 5-sample sliding window over a 750ms minimum span; below that threshold the speed text stays empty so the UI doesn't twitch on the first few millisecond-resolution callbacks.
 - **1-hour disk cache for the GitHub feed.** `CachelessGithubSource` writes the parsed `GithubRelease[]` to `<LocalAppData>\StartupGroups\cache\releases.<channel>.json`, keyed by channel name. TTL is `DateTime.UtcNow - File.GetLastWriteTimeUtc(path)`. **Manual "Check now" passes `bypassCache: true`** through `CheckAsync(force: true)` to skip the cache; the auto-check on first Settings open uses the cache.
 
@@ -172,7 +172,7 @@ Built the visible installer flow inside the bundle scaffold from 3a. Deliberatel
 - **License** ([`LicenseView`](src/StartupGroups.Installer.UI/Views/LicenseView.xaml)) — MIT text in a `ScrollViewer`, "I accept" checkbox, Back / Cancel / Install. The Install button's `CanExecute` is gated on `IsAccepted` via `[NotifyCanExecuteChangedFor]`. License text embedded directly in the VM (it's short; resx-based localization can come in 3c if needed).
 - **Progress** ([`ProgressView`](src/StartupGroups.Installer.UI/Views/ProgressView.xaml)) — animated download icon, progress bar, status text, error text shown only when `HasFailed`. No Cancel button yet — the engine's mid-Apply cancellation surface is finicky and we'll wire it in 3c.
 - **Success** ([`SuccessView`](src/StartupGroups.Installer.UI/Views/SuccessView.xaml)) — green checkmark in a circular accent badge, "Install complete", Close / Launch.
-- **Launch handoff** — when the user clicks Launch on Success, the BA spawns `StartupGroups.exe` from `%ProgramFiles%\Startup Groups\` (with x86 fallback). Resolved via `Environment.GetFolderPath`; works whether Burn installed per-machine or per-user.
+- **Launch handoff** — when the user clicks Launch on Success, the BA spawns `Salvo.exe` from `%ProgramFiles%\Salvo\` (with x86 fallback). Resolved via `Environment.GetFolderPath`; works whether Burn installed per-machine or per-user.
 - **Detect ↔ Install race** — Detect kicks off in the background as soon as `Run()` enters, so it's typically done before the user finishes reading the license. A small lock-protected state machine in the BA (`_detectComplete` + `_installRequested`) ensures `BeginPlan()` is called exactly once regardless of which event arrives first.
 
 **Battle scars added in 3b:**
@@ -220,7 +220,7 @@ Setup.exe (Burn bundle)
 │   ├── License screen (MIT, scroll-to-accept)
 │   ├── Optional "Customize" screen (install path, channel picker, auto-start checkbox)
 │   ├── Progress screen (Fluent ProgressBar, animated icon, current operation)
-│   └── Success screen (checkmark, "Launch StartupGroups" button)
+│   └── Success screen (checkmark, "Launch Salvo" button)
 └── StartupGroups.msi (existing MSI — installed under the hood by Burn)
 ```
 

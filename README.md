@@ -1,10 +1,10 @@
-# Startup Groups
+# Salvo
 
-A Windows launcher that boots groups of apps in the right order — with adaptive readiness detection, wave-parallel orchestration, and built-in launch benchmarking.
+A Windows launcher that fires groups of apps in coordinated waves — with adaptive readiness detection, wave-parallel orchestration, and built-in launch benchmarking.
 
 > **Stop waiting on Slack to be ready before clicking your IDE.** Define a group, hit launch, and your full work environment comes up in the right order without you babysitting it.
 
-![Startup Groups main window](docs/screenshots/main-window.png)
+![Salvo main window](docs/screenshots/main-window.png)
 
 ## Features
 
@@ -24,14 +24,13 @@ A Windows launcher that boots groups of apps in the right order — with adaptiv
 
 | Channel | Status | How |
 | --- | --- | --- |
-| **GitHub direct download** | 🟢 live | Download the latest [`.appinstaller`](https://github.com/beelzer/startup-groups/releases/latest) and double-click. Windows App Installer handles install + silent background updates. |
+| **GitHub direct download** | 🟢 live | Download the latest [`.appinstaller`](https://github.com/beelzer/salvo/releases/latest) and double-click. Windows App Installer handles install + silent background updates. |
 | **Microsoft Store** | 🟡 coming soon | Reserved app identity; certification pending. |
-| **winget** | 🟡 coming soon | `winget install StartupGroups` once the manifest is approved. |
-| **Chocolatey** | 🟡 coming soon | `choco install startupgroups` once the package is approved. |
+| **winget** | 🟡 coming soon | `winget install Salvo` once the manifest is approved. |
+| **Chocolatey** | 🟡 coming soon | `choco install salvo` once the package is approved. |
 | **Scoop** | 🟡 coming soon | Bucket entry pending. |
-| **MSI for IT admins** | ⚪ legacy | A vanilla `.msi` still ships on each release. New deployments should prefer the MSIX above — Intune / SCCM / Group Policy all support MSIX as of 2026. |
 
-The MSIX install runs in a packaged-app context with the full-trust desktop bridge — settings live at `%AppData%\StartupGroups\` exactly as before, registry / Task Scheduler integration works unchanged. Auto-update is silent and Windows-driven; the in-app **Check for updates** button surfaces release notes for users who want to see what's changing.
+The MSIX install runs in a packaged-app context with the full-trust desktop bridge — settings live at `%AppData%\Salvo\`, registry / Task Scheduler integration works as it does for any traditional Win32 app. Auto-update is silent and Windows-driven; the in-app **Check for updates** button surfaces release notes for users who want to see what's changing.
 
 > Until a code-signing cert is in place, the GitHub download installs only via Windows **Developer Mode** (Settings → Privacy & security → For developers). Once the cert is wired up, sideload installs work for everyone, and the Microsoft Store / winget / Chocolatey / Scoop entries light up. SmartScreen reputation rebuilds over a few weeks regardless of cert tier.
 
@@ -40,34 +39,27 @@ The MSIX install runs in a packaged-app context with the full-trust desktop brid
 Requirements:
 - **Windows 10/11**
 - **.NET 10 SDK** (see [global.json](global.json))
-- **WiX 5** (only needed if building the MSI or the Burn bundle)
+- **Windows 10/11 SDK** (only needed to build the MSIX — provides `MakeAppx.exe` and `SignTool.exe`)
 
 ```powershell
 # clone
-git clone https://github.com/beelzer/startup-groups.git
-cd startup-groups
+git clone https://github.com/beelzer/salvo.git
+cd salvo
 
 # build
-dotnet build StartupGroups.slnx -c Release
+dotnet build Salvo.slnx -c Release
 
 # run the WPF app
-dotnet run --project src/StartupGroups.App -c Release
+dotnet run --project src/Salvo.App -c Release
 
 # run the test suite
 dotnet test
 ```
 
-To build the MSI installer:
+To build the MSIX package locally (unsigned — installable via Windows Developer Mode):
 
 ```powershell
-./installer/StartupGroups.Installer/build.ps1
-```
-
-To build the Burn bundle (`Setup.exe`) — wraps the MSI with the Mica/Fluent installer UI:
-
-```powershell
-# Run after the MSI build above; the bundle chains the produced .msi.
-./installer/StartupGroups.Bundle/build.ps1
+./installer/Msix/build.ps1
 ```
 
 ## Architecture
@@ -75,16 +67,16 @@ To build the Burn bundle (`Setup.exe`) — wraps the MSI with the Mica/Fluent in
 Three projects under [src/](src/):
 
 | Project | Role |
-|---|---|
-| **StartupGroups.App** | WPF UI (WPF-UI Fluent theme, CommunityToolkit.Mvvm). Views, ViewModels, tray, settings, drag-reorder. |
-| **StartupGroups.Core** | Domain model, launch orchestration, Win32 interop, readiness probes, SQLite benchmark store, JSON config. |
-| **StartupGroups.Elevator** | Tiny admin helper invoked via UAC for privileged ops (service start/stop, machine-scope Run keys). |
+| --- | --- |
+| **Salvo.App** | WPF UI (WPF-UI Fluent theme, CommunityToolkit.Mvvm). Views, ViewModels, tray, settings, drag-reorder. |
+| **Salvo.Core** | Domain model, launch orchestration, Win32 interop, readiness probes, SQLite benchmark store, JSON config. |
+| **Salvo.Elevator** | Tiny admin helper invoked via UAC for privileged ops (service start/stop, machine-scope Run keys). |
 
-Tests live in [tests/StartupGroups.Core.Tests](tests/StartupGroups.Core.Tests/) (xUnit + FluentAssertions).
+Tests live in [tests/Salvo.Core.Tests](tests/Salvo.Core.Tests/) (xUnit + FluentAssertions).
 
 ### Tech stack
 
-.NET 10 · WPF · WPF-UI · CommunityToolkit.Mvvm · Serilog · Microsoft.Data.Sqlite · WiX 4
+.NET 10 · WPF · WPF-UI · CommunityToolkit.Mvvm · Serilog · Microsoft.Data.Sqlite · MSIX (MakeAppx)
 
 ## Cutting a release
 
@@ -97,7 +89,7 @@ Tests live in [tests/StartupGroups.Core.Tests](tests/StartupGroups.Core.Tests/) 
    git push origin v0.2.0
    ```
 
-4. The [release workflow](.github/workflows/release.yml) will build the MSI, run the tests, and publish a GitHub release with the installer attached. Auto-update will pick it up on the next check.
+4. The [release workflow](.github/workflows/release.yml) will build the MSIX + `.appinstaller`, run the tests, and publish a GitHub release with the installer attached. App Installer picks it up on the next check.
 
 ## Roadmap
 

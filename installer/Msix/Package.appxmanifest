@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Phase 0 manifest for the StartupGroups MSIX package.
+  MSIX manifest for the Salvo package.
 
   - Identity Name + Publisher are placeholders pending Partner Center
     reservation. Once reserved, swap Publisher to the CN= value Microsoft
@@ -23,16 +23,16 @@
     xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
     IgnorableNamespaces="uap rescap">
 
-    <Identity Name="StartupGroups"
-              Publisher="CN=StartupGroupsDev"
+    <Identity Name="Salvo"
+              Publisher="CN=SalvoDev"
               Version="0.2.14.0"
               ProcessorArchitecture="x64" />
 
     <Properties>
-        <DisplayName>Startup Groups</DisplayName>
-        <PublisherDisplayName>Startup Groups</PublisherDisplayName>
+        <DisplayName>Salvo</DisplayName>
+        <PublisherDisplayName>Salvo</PublisherDisplayName>
         <Logo>Images\StoreLogo.png</Logo>
-        <Description>A Windows app launcher that organises and launches groups of programs at startup.</Description>
+        <Description>Coordinated, readiness-gated launcher for your Windows startup apps.</Description>
     </Properties>
 
     <Dependencies>
@@ -47,11 +47,11 @@
 
     <Applications>
         <Application Id="App"
-                     Executable="StartupGroups.exe"
+                     Executable="Salvo.exe"
                      EntryPoint="Windows.FullTrustApplication">
             <uap:VisualElements
-                DisplayName="Startup Groups"
-                Description="A Windows app launcher that organises and launches groups of programs at startup."
+                DisplayName="Salvo"
+                Description="Coordinated, readiness-gated launcher for your Windows startup apps."
                 Square150x150Logo="Images\Square150x150Logo.png"
                 Square44x44Logo="Images\Square44x44Logo.png"
                 BackgroundColor="transparent">
