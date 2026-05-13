@@ -307,7 +307,7 @@ public partial class MainWindow : FluentWindow
         ShowDragGhost(_dragSourceRow, grabPoint);
 
         var itemsControl = FindAncestor<ItemsControl>(_dragSourceRow);
-        var apps = _viewModel.SelectedGroup?.Apps;
+        var apps = _viewModel.SelectedGroup?.Apps.ToList();
         if (itemsControl is not null && apps is not null)
         {
             BeginReorderPreview(
@@ -355,7 +355,7 @@ public partial class MainWindow : FluentWindow
 
         // Slide siblings out of the way so the gap shows where the ghost would land; the static
         // drop bar is redundant while the preview is live.
-        if (target.Tag is AppEntryViewModel targetApp && _viewModel.SelectedGroup?.Apps is { } apps)
+        if (target.Tag is AppEntryViewModel targetApp && _viewModel.SelectedGroup?.Apps.ToList() is { } apps)
         {
             var targetIdx = apps.IndexOf(targetApp);
             if (targetIdx >= 0)
@@ -413,7 +413,7 @@ public partial class MainWindow : FluentWindow
 
     private void CommitAppReorder(AppEntryViewModel source)
     {
-        if (_viewModel.SelectedGroup?.Apps is not { } apps) return;
+        if (_viewModel.SelectedGroup?.Apps.ToList() is not { } apps) return;
 
         // Prefer the insertion index computed during DragOver — it's correct even when the preview
         // has translated rows out from under the cursor at drop time.

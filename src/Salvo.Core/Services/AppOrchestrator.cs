@@ -38,6 +38,14 @@ public sealed class AppOrchestrator : IAppOrchestrator
         _logger = logger ?? NullLogger<AppOrchestrator>.Instance;
     }
 
+    /// <summary>
+    /// Optional callback to resolve <see cref="GroupCallNode"/> references
+    /// to their target groups. The Boot Sequence orchestrator wires this
+    /// to the in-memory groups collection; left null for callers that
+    /// don't need cross-group calls.
+    /// </summary>
+    public Func<string, Group?>? GroupResolver { get; set; }
+
     public bool IsRunning(AppEntry app)
     {
         if (app.Kind == AppKind.Service)
@@ -221,10 +229,23 @@ public sealed class AppOrchestrator : IAppOrchestrator
     /// - <see cref="IfElseNode"/> evaluates its condition and fires the
     ///   matching label ("then"/"else"); the unmatched label is skipped.
     /// </summary>
-    private async Task<IReadOnlyList<OperationResult>> ExecuteGraphAsync(Group group, CancellationToken cancellationToken)
+    private Task<IReadOnlyList<OperationResult>> ExecuteGraphAsync(Group group, CancellationToken cancellationToken)
+    {
+        return ExecuteGraphAsync(group, cancellationToken, new HashSet<string>());
+    }
+
+    private async Task<IReadOnlyList<OperationResult>> ExecuteGraphAsync(Group group, CancellationToken cancellationToken, HashSet<string> callChain)
     {
         if (group.Nodes.Count == 0)
         {
+            return [];
+        }
+
+        // Cycle detection: refuse to recurse back into a group we're
+        // already inside (Boot Sequence → Group A → Boot Sequence …).
+        if (!string.IsNullOrEmpty(group.Id) && !callChain.Add(group.Id))
+        {
+            _logger.LogWarning("Refusing recursive GroupCall into {GroupId}", group.Id);
             return [];
         }
 
@@ -345,6 +366,45 @@ public sealed class AppOrchestrator : IAppOrchestrator
                         FireOutgoing(ifElse, edge => edge.Label == taken);
                         return; // skip the default fan-out below
                     }
+
+                    case ServiceStartNode svcStart:
+                    {
+                        var pseudo = new AppEntry { Name = svcStart.ServiceName, Kind = AppKind.Service, Service = svcStart.ServiceName };
+                        var (result, _) = LaunchAppCore(pseudo, group.Id);
+                        lock (resultsLock) { results.Add(result); }
+                        _logger.LogInformation("Service start {Service}: {Status} - {Message}", svcStart.ServiceName, result.Status, result.Message);
+                        break;
+                    }
+
+                    case ServiceStopNode svcStop:
+                    {
+                        var pseudo = new AppEntry { Name = svcStop.ServiceName, Kind = AppKind.Service, Service = svcStop.ServiceName };
+                        var result = StopApp(pseudo);
+                        lock (resultsLock) { results.Add(result); }
+                        _logger.LogInformation("Service stop {Service}: {Status} - {Message}", svcStop.ServiceName, result.Status, result.Message);
+                        break;
+                    }
+
+                    case RunCommandNode cmd:
+                    {
+                        var result = RunCommand(cmd, cancellationToken);
+                        lock (resultsLock) { results.Add(result); }
+                        _logger.LogInformation("RunCommand: {Status} - {Message}", result.Status, result.Message);
+                        break;
+                    }
+
+                    case GroupCallNode call:
+                    {
+                        var target = GroupResolver?.Invoke(call.GroupId);
+                        if (target is null)
+                        {
+                            _logger.LogWarning("GroupCallNode references unknown group {Id}", call.GroupId);
+                            break;
+                        }
+                        var subResults = await ExecuteGraphAsync(target, cancellationToken, callChain).ConfigureAwait(false);
+                        lock (resultsLock) { results.AddRange(subResults); }
+                        break;
+                    }
                 }
 
                 FireOutgoing(node, _ => true);
@@ -381,6 +441,88 @@ public sealed class AppOrchestrator : IAppOrchestrator
         {
             FireOutgoing(from, _ => false);
         }
+    }
+
+    private OperationResult RunCommand(RunCommandNode node, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(node.Command))
+        {
+            return OperationResult.Failed("Empty command", new AppEntry { Name = "RunCommand" });
+        }
+
+        try
+        {
+            var (fileName, args) = node.Interpreter switch
+            {
+                "powershell" => ("powershell.exe", $"-NoProfile -Command \"{node.Command}\""),
+                "direct" => ParseDirect(node.Command),
+                _ => ("cmd.exe", $"/c {node.Command}"),
+            };
+
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = args,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WorkingDirectory = node.WorkingDirectory ?? string.Empty,
+            };
+
+            using var process = System.Diagnostics.Process.Start(psi);
+            if (process is null)
+            {
+                return OperationResult.Failed("Failed to start", new AppEntry { Name = node.Command });
+            }
+
+            // Wait synchronously up to a generous timeout. Long-running
+            // commands should be modeled as background side-effects, not
+            // as part of the launch graph. Cancel-aware via the token.
+            try
+            {
+                process.WaitForExit(60_000);
+            }
+            catch
+            {
+                /* fall through to result */
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!process.HasExited)
+            {
+                return OperationResult.Failed("Timed out", new AppEntry { Name = node.Command });
+            }
+
+            var exitCode = process.ExitCode;
+            var pseudo = new AppEntry { Name = node.Command };
+            return exitCode == 0
+                ? OperationResult.Success($"Exit 0", pseudo)
+                : OperationResult.Failed($"Exit {exitCode}", pseudo);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            return OperationResult.Failed(ex.Message, new AppEntry { Name = node.Command });
+        }
+    }
+
+    private static (string FileName, string Arguments) ParseDirect(string command)
+    {
+        var trimmed = command.Trim();
+        if (trimmed.Length == 0) return ("cmd.exe", "/c ");
+        if (trimmed[0] == '"')
+        {
+            var closing = trimmed.IndexOf('"', 1);
+            if (closing > 0)
+            {
+                var exe = trimmed.Substring(1, closing - 1);
+                var rest = trimmed[(closing + 1)..].TrimStart();
+                return (exe, rest);
+            }
+        }
+        var space = trimmed.IndexOf(' ');
+        if (space < 0) return (trimmed, string.Empty);
+        return (trimmed[..space], trimmed[(space + 1)..]);
     }
 
     private bool EvaluateCondition(FlowCondition condition) => condition switch

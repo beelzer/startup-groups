@@ -11,6 +11,10 @@ namespace Salvo.Core.Models.Flow;
 [JsonDerivedType(typeof(AppNode), "app")]
 [JsonDerivedType(typeof(WaitNode), "wait")]
 [JsonDerivedType(typeof(IfElseNode), "ifElse")]
+[JsonDerivedType(typeof(ServiceStartNode), "serviceStart")]
+[JsonDerivedType(typeof(ServiceStopNode), "serviceStop")]
+[JsonDerivedType(typeof(RunCommandNode), "runCommand")]
+[JsonDerivedType(typeof(GroupCallNode), "groupCall")]
 public abstract class Node
 {
     public string Id { get; set; } = string.Empty;
@@ -67,4 +71,52 @@ public sealed class WaitNode : Node
 public sealed class IfElseNode : Node
 {
     public FlowCondition Condition { get; set; } = new ServiceRunningCondition();
+}
+
+/// <summary>
+/// Start a Windows service by name (with a UAC elevation request if the
+/// running app isn't elevated). Completes when the service reports Running
+/// or the start operation fails.
+/// </summary>
+public sealed class ServiceStartNode : Node
+{
+    public string ServiceName { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Stop a Windows service. Mirror of <see cref="ServiceStartNode"/>.
+/// </summary>
+public sealed class ServiceStopNode : Node
+{
+    public string ServiceName { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Run an arbitrary command (shell, PowerShell, or a direct executable).
+/// Used as the power-user escape hatch when none of the structured node
+/// types fit. Captures exit code; non-zero exits fail the node but the
+/// flow continues per the standard "failures don't halt the graph" rule.
+/// </summary>
+public sealed class RunCommandNode : Node
+{
+    public string Command { get; set; } = string.Empty;
+
+    /// <summary>
+    /// One of "shell" (cmd /c), "powershell" (powershell -Command), or
+    /// "direct" (CreateProcess directly with the parsed Command).
+    /// </summary>
+    public string Interpreter { get; set; } = "shell";
+
+    /// <summary>Optional working directory. Null = process's cwd.</summary>
+    public string? WorkingDirectory { get; set; }
+}
+
+/// <summary>
+/// Call another group as a subroutine. Used by the top-level
+/// Boot Sequence to orchestrate multiple groups in order. Completes
+/// when every node in the called group has run.
+/// </summary>
+public sealed class GroupCallNode : Node
+{
+    public string GroupId { get; set; } = string.Empty;
 }

@@ -941,7 +941,7 @@ public partial class MainWindowViewModel : ObservableObject
                 Service = isService ? item.ServiceName : null,
                 Enabled = true
             };
-            SelectedGroup.Apps.Add(app);
+            AppendAppNode(SelectedGroup, app);
             last = app;
         }
 
@@ -953,6 +953,43 @@ public partial class MainWindowViewModel : ObservableObject
         RefreshRunningStates();
         AppIconLoader.LoadFor(SelectedGroup.Apps);
         PersistConfig();
+    }
+
+    /// <summary>
+    /// Add a new <see cref="Salvo.App.ViewModels.Flow.AppNodeViewModel"/> to the group's graph,
+    /// running after every current leaf (node with no outgoing edges) —
+    /// i.e. "appended to the end of the chain". The new node becomes the
+    /// new sole leaf, so subsequent appends extend the chain linearly.
+    /// </summary>
+    private static Salvo.App.ViewModels.Flow.AppNodeViewModel AppendAppNode(GroupViewModel group, AppEntryViewModel app)
+    {
+        var leaves = group.Graph.Nodes
+            .Where(n => !group.Graph.Edges.Any(e => e.From == n.Id))
+            .ToList();
+        // Fallback: empty graph (shouldn't happen — Start is always
+        // present) — anchor on Start as the predecessor.
+        if (leaves.Count == 0 && group.Graph.Start is not null)
+        {
+            leaves = [group.Graph.Start];
+        }
+
+        var newNode = new Salvo.App.ViewModels.Flow.AppNodeViewModel
+        {
+            Id = Guid.NewGuid().ToString(),
+            App = app,
+        };
+        group.Graph.Nodes.Add(newNode);
+        foreach (var leaf in leaves)
+        {
+            group.Graph.Edges.Add(new Salvo.App.ViewModels.Flow.EdgeViewModel
+            {
+                Id = Guid.NewGuid().ToString(),
+                From = leaf.Id,
+                To = newNode.Id,
+            });
+        }
+        group.Graph.RebuildStages();
+        return newNode;
     }
 
     private void AddAppWithEditor(Action<AppEntryEditorViewModel> configure)
@@ -971,7 +1008,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         var app = new AppEntryViewModel();
         editor.ApplyTo(app);
-        SelectedGroup.Apps.Add(app);
+        AppendAppNode(SelectedGroup, app);
         SelectedApp = app;
         RefreshRunningStates();
         AppIconLoader.LoadFor([app]);
@@ -1006,7 +1043,13 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        SelectedGroup.Apps.Remove(app);
+        var node = SelectedGroup.Graph.Nodes
+            .OfType<Salvo.App.ViewModels.Flow.AppNodeViewModel>()
+            .FirstOrDefault(n => ReferenceEquals(n.App, app));
+        if (node is not null)
+        {
+            SelectedGroup.Graph.RemoveNode(node);
+        }
         PersistConfig();
     }
 
@@ -1022,43 +1065,120 @@ public partial class MainWindowViewModel : ObservableObject
         PersistConfig();
     }
 
+    /// <summary>
+    /// Legacy linear-reorder hook. The flow editor handles drag-reorder
+    /// directly through stage drop targets now; kept as a no-op so the
+    /// old MainWindow drag handlers (queued for removal with the apps
+    /// list area) don't NRE while the graph editor takes over.
+    /// </summary>
     public void ReorderApp(AppEntryViewModel source, int targetIndex)
     {
-        if (SelectedGroup is null) return;
+        _ = source;
+        _ = targetIndex;
+    }
 
-        var apps = SelectedGroup.Apps;
-        var srcIdx = apps.IndexOf(source);
-        if (srcIdx < 0) return;
+    // ---- Flow editor commands -----------------------------------------
 
-        var clamped = Math.Clamp(targetIndex, 0, apps.Count - 1);
-        if (clamped == srcIdx) return;
+    /// <summary>
+    /// Exposed for the GroupCallNode card's group picker so it can
+    /// resolve target groups by id.
+    /// </summary>
+    public IReadOnlyList<GroupViewModel> AllGroups => Groups;
 
-        apps.Move(srcIdx, clamped);
+    [RelayCommand]
+    private void AddNode(string? kind)
+    {
+        if (SelectedGroup is null || string.IsNullOrEmpty(kind)) return;
+
+        Salvo.App.ViewModels.Flow.NodeViewModel? newNode = kind switch
+        {
+            "App" => BuildAppNodeViaEditor(),
+            "Wait" => new Salvo.App.ViewModels.Flow.WaitNodeViewModel { Id = Guid.NewGuid().ToString(), DurationSeconds = 5 },
+            "IfElse" => new Salvo.App.ViewModels.Flow.IfElseNodeViewModel { Id = Guid.NewGuid().ToString() },
+            "ServiceStart" => new Salvo.App.ViewModels.Flow.ServiceStartNodeViewModel { Id = Guid.NewGuid().ToString() },
+            "ServiceStop" => new Salvo.App.ViewModels.Flow.ServiceStopNodeViewModel { Id = Guid.NewGuid().ToString() },
+            "RunCommand" => new Salvo.App.ViewModels.Flow.RunCommandNodeViewModel { Id = Guid.NewGuid().ToString() },
+            "GroupCall" => new Salvo.App.ViewModels.Flow.GroupCallNodeViewModel { Id = Guid.NewGuid().ToString() },
+            _ => null,
+        };
+        if (newNode is null) return;
+
+        // Append after the current leaves of the graph.
+        var leaves = SelectedGroup.Graph.Nodes
+            .Where(n => !SelectedGroup.Graph.Edges.Any(e => e.From == n.Id))
+            .ToList();
+        if (leaves.Count == 0 && SelectedGroup.Graph.Start is not null)
+        {
+            leaves = [SelectedGroup.Graph.Start];
+        }
+
+        SelectedGroup.Graph.Nodes.Add(newNode);
+        foreach (var leaf in leaves)
+        {
+            SelectedGroup.Graph.Edges.Add(new Salvo.App.ViewModels.Flow.EdgeViewModel
+            {
+                Id = Guid.NewGuid().ToString(),
+                From = leaf.Id,
+                To = newNode.Id,
+            });
+        }
+        SelectedGroup.Graph.RebuildStages();
+
+        if (newNode is Salvo.App.ViewModels.Flow.AppNodeViewModel app)
+        {
+            AppIconLoader.LoadFor([app.App]);
+            RefreshRunningStates();
+        }
         PersistConfig();
     }
 
-    [RelayCommand]
-    private void MoveAppUp(AppEntryViewModel? app)
+    /// <summary>
+    /// Build an AppNodeViewModel via the existing AppEntryEditor flow.
+    /// Returns null if the user cancels the editor.
+    /// </summary>
+    private Salvo.App.ViewModels.Flow.AppNodeViewModel? BuildAppNodeViaEditor()
     {
-        if (app is null || SelectedGroup is null) return;
-        var index = SelectedGroup.Apps.IndexOf(app);
-        if (index > 0)
+        var editor = _serviceProvider.GetRequiredService<AppEntryEditorViewModel>();
+        editor.IsNew = true;
+
+        var window = new AppEntryEditorWindow(editor);
+        if (window.ShowDialog() != true) return null;
+
+        var entry = new AppEntryViewModel();
+        editor.ApplyTo(entry);
+        return new Salvo.App.ViewModels.Flow.AppNodeViewModel
         {
-            SelectedGroup.Apps.Move(index, index - 1);
-            PersistConfig();
-        }
+            Id = Guid.NewGuid().ToString(),
+            App = entry,
+        };
     }
 
     [RelayCommand]
-    private void MoveAppDown(AppEntryViewModel? app)
+    private async Task RemoveNodeAsync(Salvo.App.ViewModels.Flow.NodeViewModel? node)
     {
-        if (app is null || SelectedGroup is null) return;
-        var index = SelectedGroup.Apps.IndexOf(app);
-        if (index >= 0 && index < SelectedGroup.Apps.Count - 1)
+        if (node is null || SelectedGroup is null) return;
+        if (node is Salvo.App.ViewModels.Flow.StartNodeViewModel) return; // never remove Start
+
+        var label = node switch
         {
-            SelectedGroup.Apps.Move(index, index + 1);
-            PersistConfig();
+            Salvo.App.ViewModels.Flow.AppNodeViewModel a => a.App.Name,
+            Salvo.App.ViewModels.Flow.WaitNodeViewModel w => $"Wait {w.DurationSeconds}s",
+            Salvo.App.ViewModels.Flow.IfElseNodeViewModel => "If / Else",
+            Salvo.App.ViewModels.Flow.ServiceStartNodeViewModel s => $"Start {s.ServiceName}",
+            Salvo.App.ViewModels.Flow.ServiceStopNodeViewModel s => $"Stop {s.ServiceName}",
+            Salvo.App.ViewModels.Flow.RunCommandNodeViewModel c => $"Run: {c.Command}",
+            Salvo.App.ViewModels.Flow.GroupCallNodeViewModel => "Group call",
+            _ => "node",
+        };
+        if (!await _dialogs.ConfirmAsync(
+            Strings.Dialog_RemoveApp_Title,
+            string.Format(CultureInfo.CurrentUICulture, Strings.Dialog_RemoveApp_MessageFormat, label, SelectedGroup.Name)))
+        {
+            return;
         }
+
+        SelectedGroup.Graph.RemoveNode(node);
+        PersistConfig();
     }
 
     [RelayCommand]

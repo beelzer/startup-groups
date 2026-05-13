@@ -1,0 +1,435 @@
+<UserControl x:Class="Salvo.App.Views.Flow.GroupFlowView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:vm="clr-namespace:Salvo.App.ViewModels"
+             xmlns:fvm="clr-namespace:Salvo.App.ViewModels.Flow"
+             xmlns:conv="clr-namespace:Salvo.App.Converters"
+             xmlns:loc="clr-namespace:Salvo.App.Localization">
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+        <conv:BoolToVisibilityConverter x:Key="NotBoolToVisibility" Invert="True" />
+        <conv:NullToVisibilityConverter x:Key="NullToVisibility" />
+        <conv:NullToVisibilityConverter x:Key="NotNullToVisibility" Invert="True" />
+        <conv:RunningStateBrushConverter x:Key="RunningBrush" />
+        <conv:RunningStateAppearanceConverter x:Key="PlayAppearance" RunningAppearance="Secondary" StoppedAppearance="Primary" />
+        <conv:RunningStateAppearanceConverter x:Key="StopAppearance" RunningAppearance="Primary" StoppedAppearance="Secondary" />
+
+        <!-- ============ Card templates per node type ============ -->
+
+        <!-- Reusable card chrome: rounded border + shadow on hover -->
+        <Style x:Key="NodeCardBorder" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="14,12" />
+            <Setter Property="MinWidth" Value="280" />
+            <Setter Property="MaxWidth" Value="380" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsExecuting}" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                    <Setter Property="BorderThickness" Value="2" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- StartNode: small badge, not a full card -->
+        <DataTemplate DataType="{x:Type fvm:StartNodeViewModel}">
+            <Border Background="{DynamicResource AccentFillColorDefaultBrush}"
+                    CornerRadius="20" Padding="14,6"
+                    HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal">
+                    <ui:SymbolIcon Symbol="Play16" FontSize="14"
+                                   Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                                   VerticalAlignment="Center" />
+                    <TextBlock Text="Start" Margin="6,0,0,0"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- AppNode card -->
+        <DataTemplate DataType="{x:Type fvm:AppNodeViewModel}">
+            <Border Style="{StaticResource NodeCardBorder}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Ellipse Grid.Column="0" Width="10" Height="10" Margin="0,0,10,0"
+                             VerticalAlignment="Center"
+                             Fill="{Binding App.IsRunning, Converter={StaticResource RunningBrush}}" />
+
+                    <Grid Grid.Column="1" Width="28" Height="28" Margin="0,0,10,0" VerticalAlignment="Center">
+                        <ui:SymbolIcon Symbol="Apps24" FontSize="22"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Visibility="{Binding App.Icon, Converter={StaticResource NullToVisibility}}" />
+                        <Image Source="{Binding App.Icon}"
+                               Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="HighQuality"
+                               Visibility="{Binding App.Icon, Converter={StaticResource NotNullToVisibility}}" />
+                    </Grid>
+
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding App.Name}"
+                                   FontWeight="SemiBold"
+                                   FontSize="14"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <TextBlock TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                   FontSize="12"
+                                   Margin="0,2,0,0">
+                            <TextBlock.Text>
+                                <PriorityBinding>
+                                    <Binding Path="App.Path" FallbackValue="" />
+                                    <Binding Path="App.Service" FallbackValue="" />
+                                </PriorityBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ui:Button Appearance="{Binding App.IsRunning, Converter={StaticResource PlayAppearance}}"
+                                   Icon="{ui:SymbolIcon Play24}"
+                                   ToolTip="{loc:Translate Action_Launch}"
+                                   IsEnabled="{Binding App.IsStopped}"
+                                   Command="{Binding DataContext.LaunchAppCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   CommandParameter="{Binding App}"
+                                   Margin="0,0,4,0" />
+                        <ui:Button Appearance="{Binding App.IsRunning, Converter={StaticResource StopAppearance}}"
+                                   Icon="{ui:SymbolIcon Stop24}"
+                                   ToolTip="{loc:Translate Action_Stop}"
+                                   IsEnabled="{Binding App.IsRunning}"
+                                   Command="{Binding DataContext.StopAppCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   CommandParameter="{Binding App}"
+                                   Margin="0,0,4,0" />
+                        <ui:Button Icon="{ui:SymbolIcon Edit24}"
+                                   Appearance="Transparent"
+                                   ToolTip="{loc:Translate Action_Edit}"
+                                   Command="{Binding DataContext.EditAppCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   CommandParameter="{Binding App}"
+                                   Margin="0,0,4,0" />
+                        <ui:Button Icon="{ui:SymbolIcon Delete24}"
+                                   Appearance="Transparent"
+                                   ToolTip="{loc:Translate Action_Remove}"
+                                   Command="{Binding DataContext.RemoveNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   CommandParameter="{Binding}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- WaitNode card -->
+        <DataTemplate DataType="{x:Type fvm:WaitNodeViewModel}">
+            <Border Style="{StaticResource NodeCardBorder}" MinWidth="200">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:SymbolIcon Grid.Column="0" Symbol="Timer24" FontSize="22"
+                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Wait" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <ui:NumberBox Value="{Binding DurationSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      Minimum="0" Maximum="3600"
+                                      Width="80" Margin="10,0,0,0" />
+                        <TextBlock Text="seconds" Margin="6,0,0,0" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
+                               Appearance="Transparent"
+                               Command="{Binding DataContext.RemoveNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                               CommandParameter="{Binding}" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- IfElseNode card (condition editor inline; branches render in following stages) -->
+        <DataTemplate DataType="{x:Type fvm:IfElseNodeViewModel}">
+            <Border Style="{StaticResource NodeCardBorder}">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Grid.Column="0" Symbol="BranchFork24" FontSize="22"
+                                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                       VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBlock Grid.Column="1" Text="If / Else" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                        <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
+                                   Appearance="Transparent"
+                                   Command="{Binding DataContext.RemoveNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   CommandParameter="{Binding}" />
+                    </Grid>
+                    <Border Margin="0,10,0,0" Padding="10"
+                            Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                            CornerRadius="6">
+                        <TextBlock Text="{Binding Condition.DisplayName}"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </Border>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- ServiceStartNode card -->
+        <DataTemplate DataType="{x:Type fvm:ServiceStartNodeViewModel}">
+            <Border Style="{StaticResource NodeCardBorder}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:SymbolIcon Grid.Column="0" Symbol="Play24" FontSize="22"
+                                   Foreground="#16A34A"
+                                   VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Start service" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding ServiceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,4,0,0" />
+                    </StackPanel>
+                    <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
+                               Appearance="Transparent"
+                               Command="{Binding DataContext.RemoveNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                               CommandParameter="{Binding}" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- ServiceStopNode card -->
+        <DataTemplate DataType="{x:Type fvm:ServiceStopNodeViewModel}">
+            <Border Style="{StaticResource NodeCardBorder}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:SymbolIcon Grid.Column="0" Symbol="Stop24" FontSize="22"
+                                   Foreground="#DC2626"
+                                   VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Stop service" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding ServiceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,4,0,0" />
+                    </StackPanel>
+                    <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
+                               Appearance="Transparent"
+                               Command="{Binding DataContext.RemoveNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                               CommandParameter="{Binding}" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- RunCommandNode card -->
+        <DataTemplate DataType="{x:Type fvm:RunCommandNodeViewModel}">
+            <Border Style="{StaticResource NodeCardBorder}" MinWidth="320">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:SymbolIcon Grid.Column="0" Symbol="WindowConsole20" FontSize="22"
+                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Run command" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <ComboBox Grid.Column="1" Width="110" Margin="10,0,0,0"
+                                      SelectedValue="{Binding Interpreter, Mode=TwoWay}"
+                                      SelectedValuePath="Tag">
+                                <ComboBoxItem Tag="shell">Shell</ComboBoxItem>
+                                <ComboBoxItem Tag="powershell">PowerShell</ComboBoxItem>
+                                <ComboBoxItem Tag="direct">Direct</ComboBoxItem>
+                            </ComboBox>
+                        </Grid>
+                        <TextBox Text="{Binding Command, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 FontFamily="Consolas"
+                                 Margin="0,6,0,0" />
+                    </StackPanel>
+                    <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
+                               Appearance="Transparent"
+                               Command="{Binding DataContext.RemoveNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                               CommandParameter="{Binding}" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- GroupCallNode card -->
+        <DataTemplate DataType="{x:Type fvm:GroupCallNodeViewModel}">
+            <Border Style="{StaticResource NodeCardBorder}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:SymbolIcon Grid.Column="0" Symbol="FolderArrowRight24" FontSize="22"
+                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Run group" FontWeight="SemiBold" />
+                        <ComboBox ItemsSource="{Binding DataContext.AllGroups, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  SelectedValuePath="Id"
+                                  DisplayMemberPath="Name"
+                                  SelectedValue="{Binding GroupId, Mode=TwoWay}"
+                                  Margin="0,4,0,0" />
+                    </StackPanel>
+                    <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
+                               Appearance="Transparent"
+                               Command="{Binding DataContext.RemoveNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                               CommandParameter="{Binding}" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- ============ Stage container template ============ -->
+
+        <DataTemplate DataType="{x:Type fvm:StageViewModel}">
+            <StackPanel HorizontalAlignment="Center" Margin="0,0,0,4">
+                <!-- Parallel hint -->
+                <TextBlock Text="Runs in parallel"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           FontSize="11"
+                           FontStyle="Italic"
+                           Margin="0,0,0,4"
+                           Visibility="{Binding IsParallel, Converter={StaticResource BoolToVisibility}}" />
+
+                <ItemsControl ItemsSource="{Binding Nodes}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ContentControl Content="{Binding}" Margin="6,4" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Connector down to next stage -->
+                <Rectangle Width="2" Height="16"
+                           HorizontalAlignment="Center"
+                           Fill="{DynamicResource ControlStrokeColorDefaultBrush}"
+                           Margin="0,4,0,4" />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar: Add node menu + Run/Stop all -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource LayerFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <ui:DropDownButton Grid.Column="0"
+                                   Content="Add node"
+                                   Icon="{ui:SymbolIcon Add24}"
+                                   Appearance="Primary">
+                    <ui:DropDownButton.Flyout>
+                        <ContextMenu>
+                            <MenuItem Header="App"
+                                      Command="{Binding AddNodeCommand}"
+                                      CommandParameter="App">
+                                <MenuItem.Icon>
+                                    <ui:SymbolIcon Symbol="Apps24" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Wait"
+                                      Command="{Binding AddNodeCommand}"
+                                      CommandParameter="Wait">
+                                <MenuItem.Icon>
+                                    <ui:SymbolIcon Symbol="Timer24" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="If / Else"
+                                      Command="{Binding AddNodeCommand}"
+                                      CommandParameter="IfElse">
+                                <MenuItem.Icon>
+                                    <ui:SymbolIcon Symbol="BranchFork24" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="Start service"
+                                      Command="{Binding AddNodeCommand}"
+                                      CommandParameter="ServiceStart">
+                                <MenuItem.Icon>
+                                    <ui:SymbolIcon Symbol="Play24" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Stop service"
+                                      Command="{Binding AddNodeCommand}"
+                                      CommandParameter="ServiceStop">
+                                <MenuItem.Icon>
+                                    <ui:SymbolIcon Symbol="Stop24" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Run command"
+                                      Command="{Binding AddNodeCommand}"
+                                      CommandParameter="RunCommand">
+                                <MenuItem.Icon>
+                                    <ui:SymbolIcon Symbol="WindowConsole20" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="Call group"
+                                      Command="{Binding AddNodeCommand}"
+                                      CommandParameter="GroupCall">
+                                <MenuItem.Icon>
+                                    <ui:SymbolIcon Symbol="FolderArrowRight24" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </ContextMenu>
+                    </ui:DropDownButton.Flyout>
+                </ui:DropDownButton>
+            </Grid>
+        </Border>
+
+        <!-- Stages list -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Auto"
+                      Padding="20,16">
+            <ItemsControl ItemsSource="{Binding SelectedGroup.Graph.Stages}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
