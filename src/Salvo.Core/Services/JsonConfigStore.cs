@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Salvo.Core.Models;
+using Salvo.Core.Models.Flow;
 
 namespace Salvo.Core.Services;
 
@@ -45,7 +46,29 @@ public sealed class JsonConfigStore : IConfigStore, IDisposable
             {
                 var config = JsonSerializer.Deserialize(json, ConfigurationJsonContext.Default.Configuration);
                 _lastLoadUtc = DateTime.UtcNow;
-                return config ?? new Configuration();
+                if (config is null)
+                {
+                    return new Configuration();
+                }
+
+                // One-shot migration of any legacy Apps[] lists into the
+                // new flow-graph form. Persists immediately so the next
+                // load sees the migrated representation.
+                var migrated = false;
+                foreach (var group in config.Groups)
+                {
+                    if (FlowMigration.NeedsMigration(group))
+                    {
+                        FlowMigration.Migrate(group);
+                        migrated = true;
+                    }
+                }
+                if (migrated)
+                {
+                    SaveInternal(config);
+                }
+
+                return config;
             }
             catch (JsonException ex)
             {
@@ -71,6 +94,19 @@ public sealed class JsonConfigStore : IConfigStore, IDisposable
         if (!string.IsNullOrEmpty(directory))
         {
             Directory.CreateDirectory(directory);
+        }
+
+        // Phase A1: the list-based UI is the authoring source; rebuild
+        // the graph from Apps on every save so the orchestrator (which
+        // reads only Nodes/Edges) always sees the latest topology. This
+        // step goes away in Phase A2 when the graph editor replaces the
+        // list view as the authoring surface.
+        foreach (var group in configuration.Groups)
+        {
+            if (group.Apps.Count > 0)
+            {
+                FlowMigration.Rebuild(group);
+            }
         }
 
         var json = JsonSerializer.Serialize(configuration, ConfigurationJsonContext.Default.Configuration);
