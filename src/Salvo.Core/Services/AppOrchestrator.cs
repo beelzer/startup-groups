@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Salvo.Core.Launch;
 using Salvo.Core.Models;
+using Salvo.Core.Models.Flow;
 
 namespace Salvo.Core.Services;
 
@@ -36,6 +37,14 @@ public sealed class AppOrchestrator : IAppOrchestrator
         _telemetry = telemetry;
         _logger = logger ?? NullLogger<AppOrchestrator>.Instance;
     }
+
+    /// <summary>
+    /// Optional callback to resolve <see cref="GroupCallNode"/> references
+    /// to their target groups. The Boot Sequence orchestrator wires this
+    /// to the in-memory groups collection; left null for callers that
+    /// don't need cross-group calls.
+    /// </summary>
+    public Func<string, Group?>? GroupResolver { get; set; }
 
     public bool IsRunning(AppEntry app)
     {
@@ -172,72 +181,30 @@ public sealed class AppOrchestrator : IAppOrchestrator
     {
         ArgumentNullException.ThrowIfNull(group);
 
-        var results = new List<OperationResult>(group.Apps.Count);
-        var waveObservations = new List<Task<LaunchMetrics>>();
-        var waveStartedAt = DateTimeOffset.UtcNow;
-
-        for (var i = 0; i < group.Apps.Count; i++)
+        // Defensive: if a caller hands us a group that only has the
+        // legacy Apps list populated (e.g. tests that build a Group
+        // directly without going through JsonConfigStore), build the
+        // graph on the fly so we still execute the apps.
+        if (group.Nodes.Count == 0 && group.Apps.Count > 0)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var app = group.Apps[i];
-            var (result, obs) = LaunchAppCore(app, group.Id);
-            results.Add(result);
-            _logger.LogInformation("Launch {AppName}: {Status} - {Message}", app.Name, result.Status, result.Message);
-            if (obs is not null)
-            {
-                waveObservations.Add(obs);
-            }
-
-            var isLast = i == group.Apps.Count - 1;
-            var closesWave = app.DelayAfterSeconds > 0 || isLast;
-
-            if (closesWave)
-            {
-                if (waveObservations.Count > 0)
-                {
-                    try
-                    {
-                        await Task.WhenAll(waveObservations).WaitAsync(cancellationToken).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogDebug(ex, "One or more wave observations faulted");
-                    }
-                }
-
-                if (!isLast && app.DelayAfterSeconds > 0)
-                {
-                    var elapsed = DateTimeOffset.UtcNow - waveStartedAt;
-                    var floor = TimeSpan.FromSeconds(app.DelayAfterSeconds);
-                    var remaining = floor - elapsed;
-                    if (remaining > TimeSpan.Zero)
-                    {
-                        await Task.Delay(remaining, cancellationToken).ConfigureAwait(false);
-                    }
-                }
-
-                waveObservations.Clear();
-                waveStartedAt = DateTimeOffset.UtcNow;
-            }
+            FlowMigration.Migrate(group);
         }
 
-        return results;
+        return await ExecuteGraphAsync(group, cancellationToken).ConfigureAwait(false);
     }
 
     public Task<IReadOnlyList<OperationResult>> StopGroupAsync(Group group, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(group);
 
-        var results = new List<OperationResult>(group.Apps.Count);
-        foreach (var app in group.Apps)
+        // Stop only touches AppNode entries; control-flow nodes (Wait,
+        // If/Else, Start) have nothing to stop. Order doesn't matter
+        // here — just stop everything once.
+        var apps = group.Nodes.OfType<AppNode>().Select(n => n.App).ToList();
+        var results = new List<OperationResult>(apps.Count);
+        foreach (var app in apps)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
             var result = StopApp(app);
             results.Add(result);
             _logger.LogInformation("Stop {AppName}: {Status} - {Message}", app.Name, result.Status, result.Message);
@@ -245,4 +212,329 @@ public sealed class AppOrchestrator : IAppOrchestrator
 
         return Task.FromResult<IReadOnlyList<OperationResult>>(results);
     }
+
+    /// <summary>
+    /// Walk the group's flow graph, executing each node when all its
+    /// incoming edges have completed.
+    ///
+    /// Semantics (matches the docstrings on <see cref="Edge"/> and the
+    /// node types):
+    /// - A node runs when all of its incoming edges are non-pending and
+    ///   at least one is "fired" (i.e. its upstream node ran). If every
+    ///   incoming was "skipped" (the IfElse branch wasn't taken), the
+    ///   node itself is skipped — all its outgoing edges propagate skip.
+    /// - Outgoing edges of a normal node all fire in parallel after the
+    ///   node completes (which for an AppNode means *both* the launch
+    ///   call returned *and* the readiness observation settled).
+    /// - <see cref="IfElseNode"/> evaluates its condition and fires the
+    ///   matching label ("then"/"else"); the unmatched label is skipped.
+    /// </summary>
+    private Task<IReadOnlyList<OperationResult>> ExecuteGraphAsync(Group group, CancellationToken cancellationToken)
+    {
+        return ExecuteGraphAsync(group, cancellationToken, new HashSet<string>());
+    }
+
+    private async Task<IReadOnlyList<OperationResult>> ExecuteGraphAsync(Group group, CancellationToken cancellationToken, HashSet<string> callChain)
+    {
+        if (group.Nodes.Count == 0)
+        {
+            return [];
+        }
+
+        // Cycle detection: refuse to recurse back into a group we're
+        // already inside (Boot Sequence → Group A → Boot Sequence …).
+        if (!string.IsNullOrEmpty(group.Id) && !callChain.Add(group.Id))
+        {
+            _logger.LogWarning("Refusing recursive GroupCall into {GroupId}", group.Id);
+            return [];
+        }
+
+        var nodeById = group.Nodes.ToDictionary(n => n.Id);
+        var outgoing = group.Nodes.ToDictionary(n => n.Id, _ => new List<Edge>());
+        var pendingIn = group.Nodes.ToDictionary(n => n.Id, _ => 0);
+        var firedIn = group.Nodes.ToDictionary(n => n.Id, _ => 0);
+
+        foreach (var edge in group.Edges)
+        {
+            if (!nodeById.ContainsKey(edge.From) || !nodeById.ContainsKey(edge.To))
+            {
+                _logger.LogWarning("Edge {EdgeId} references unknown node ({From} → {To}); skipping", edge.Id, edge.From, edge.To);
+                continue;
+            }
+            outgoing[edge.From].Add(edge);
+            pendingIn[edge.To]++;
+        }
+
+        var results = new List<OperationResult>();
+        var resultsLock = new Lock();
+        var running = new List<Task>();
+        var readyQueue = new Queue<Node>();
+        var executed = new HashSet<string>();
+        var skipped = new HashSet<string>();
+
+        // Nodes with no incoming edges are immediately ready. Typically
+        // this is just the Start node, but we tolerate any source node.
+        foreach (var node in group.Nodes)
+        {
+            if (pendingIn[node.Id] == 0)
+            {
+                readyQueue.Enqueue(node);
+            }
+        }
+
+        while (readyQueue.Count > 0 || running.Count > 0)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            while (readyQueue.TryDequeue(out var node))
+            {
+                if (executed.Contains(node.Id) || skipped.Contains(node.Id))
+                {
+                    continue;
+                }
+
+                if (firedIn[node.Id] == 0 && node is not StartNode)
+                {
+                    // All incoming edges were skipped (or there are none
+                    // and this isn't the Start node — orphan). Skip the
+                    // node itself and propagate.
+                    skipped.Add(node.Id);
+                    PropagateSkip(node);
+                    continue;
+                }
+
+                executed.Add(node.Id);
+                running.Add(RunNodeAsync(node));
+            }
+
+            if (running.Count == 0)
+            {
+                break;
+            }
+
+            var done = await Task.WhenAny(running).ConfigureAwait(false);
+            running.Remove(done);
+            await done.ConfigureAwait(false); // re-throw any cancellation
+        }
+
+        return results;
+
+        // -- locals --
+
+        async Task RunNodeAsync(Node node)
+        {
+            try
+            {
+                switch (node)
+                {
+                    case StartNode:
+                        // Pure marker — nothing to do, just fan out.
+                        break;
+
+                    case AppNode appNode:
+                    {
+                        var (result, obs) = LaunchAppCore(appNode.App, group.Id);
+                        lock (resultsLock) { results.Add(result); }
+                        _logger.LogInformation("Launch {AppName}: {Status} - {Message}", appNode.App.Name, result.Status, result.Message);
+                        if (obs is not null)
+                        {
+                            try
+                            {
+                                await obs.WaitAsync(cancellationToken).ConfigureAwait(false);
+                            }
+                            catch (OperationCanceledException) { throw; }
+                            catch (Exception ex)
+                            {
+                                _logger.LogDebug(ex, "Readiness observation for {AppName} faulted", appNode.App.Name);
+                            }
+                        }
+                        break;
+                    }
+
+                    case WaitNode waitNode:
+                    {
+                        if (waitNode.DurationSeconds > 0)
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(waitNode.DurationSeconds), cancellationToken).ConfigureAwait(false);
+                        }
+                        break;
+                    }
+
+                    case IfElseNode ifElse:
+                    {
+                        var taken = EvaluateCondition(ifElse.Condition) ? "then" : "else";
+                        FireOutgoing(ifElse, edge => edge.Label == taken);
+                        return; // skip the default fan-out below
+                    }
+
+                    case ServiceStartNode svcStart:
+                    {
+                        var pseudo = new AppEntry { Name = svcStart.ServiceName, Kind = AppKind.Service, Service = svcStart.ServiceName };
+                        var (result, _) = LaunchAppCore(pseudo, group.Id);
+                        lock (resultsLock) { results.Add(result); }
+                        _logger.LogInformation("Service start {Service}: {Status} - {Message}", svcStart.ServiceName, result.Status, result.Message);
+                        break;
+                    }
+
+                    case ServiceStopNode svcStop:
+                    {
+                        var pseudo = new AppEntry { Name = svcStop.ServiceName, Kind = AppKind.Service, Service = svcStop.ServiceName };
+                        var result = StopApp(pseudo);
+                        lock (resultsLock) { results.Add(result); }
+                        _logger.LogInformation("Service stop {Service}: {Status} - {Message}", svcStop.ServiceName, result.Status, result.Message);
+                        break;
+                    }
+
+                    case RunCommandNode cmd:
+                    {
+                        var result = RunCommand(cmd, cancellationToken);
+                        lock (resultsLock) { results.Add(result); }
+                        _logger.LogInformation("RunCommand: {Status} - {Message}", result.Status, result.Message);
+                        break;
+                    }
+
+                    case GroupCallNode call:
+                    {
+                        var target = GroupResolver?.Invoke(call.GroupId);
+                        if (target is null)
+                        {
+                            _logger.LogWarning("GroupCallNode references unknown group {Id}", call.GroupId);
+                            break;
+                        }
+                        var subResults = await ExecuteGraphAsync(target, cancellationToken, callChain).ConfigureAwait(false);
+                        lock (resultsLock) { results.AddRange(subResults); }
+                        break;
+                    }
+                }
+
+                FireOutgoing(node, _ => true);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+        }
+
+        void FireOutgoing(Node from, Predicate<Edge> fire)
+        {
+            foreach (var edge in outgoing[from.Id])
+            {
+                if (fire(edge))
+                {
+                    pendingIn[edge.To]--;
+                    firedIn[edge.To]++;
+                }
+                else
+                {
+                    pendingIn[edge.To]--;
+                    // firedIn not incremented — counts as skip from this edge
+                }
+
+                if (pendingIn[edge.To] == 0 && !executed.Contains(edge.To) && !skipped.Contains(edge.To))
+                {
+                    readyQueue.Enqueue(nodeById[edge.To]);
+                }
+            }
+        }
+
+        void PropagateSkip(Node from)
+        {
+            FireOutgoing(from, _ => false);
+        }
+    }
+
+    private OperationResult RunCommand(RunCommandNode node, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(node.Command))
+        {
+            return OperationResult.Failed("Empty command", new AppEntry { Name = "RunCommand" });
+        }
+
+        try
+        {
+            var (fileName, args) = node.Interpreter switch
+            {
+                "powershell" => ("powershell.exe", $"-NoProfile -Command \"{node.Command}\""),
+                "direct" => ParseDirect(node.Command),
+                _ => ("cmd.exe", $"/c {node.Command}"),
+            };
+
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = args,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WorkingDirectory = node.WorkingDirectory ?? string.Empty,
+            };
+
+            using var process = System.Diagnostics.Process.Start(psi);
+            if (process is null)
+            {
+                return OperationResult.Failed("Failed to start", new AppEntry { Name = node.Command });
+            }
+
+            // Wait synchronously up to a generous timeout. Long-running
+            // commands should be modeled as background side-effects, not
+            // as part of the launch graph. Cancel-aware via the token.
+            try
+            {
+                process.WaitForExit(60_000);
+            }
+            catch
+            {
+                /* fall through to result */
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!process.HasExited)
+            {
+                return OperationResult.Failed("Timed out", new AppEntry { Name = node.Command });
+            }
+
+            var exitCode = process.ExitCode;
+            var pseudo = new AppEntry { Name = node.Command };
+            return exitCode == 0
+                ? OperationResult.Success($"Exit 0", pseudo)
+                : OperationResult.Failed($"Exit {exitCode}", pseudo);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            return OperationResult.Failed(ex.Message, new AppEntry { Name = node.Command });
+        }
+    }
+
+    private static (string FileName, string Arguments) ParseDirect(string command)
+    {
+        var trimmed = command.Trim();
+        if (trimmed.Length == 0) return ("cmd.exe", "/c ");
+        if (trimmed[0] == '"')
+        {
+            var closing = trimmed.IndexOf('"', 1);
+            if (closing > 0)
+            {
+                var exe = trimmed.Substring(1, closing - 1);
+                var rest = trimmed[(closing + 1)..].TrimStart();
+                return (exe, rest);
+            }
+        }
+        var space = trimmed.IndexOf(' ');
+        if (space < 0) return (trimmed, string.Empty);
+        return (trimmed[..space], trimmed[(space + 1)..]);
+    }
+
+    private bool EvaluateCondition(FlowCondition condition) => condition switch
+    {
+        ServiceRunningCondition c =>
+            !string.IsNullOrEmpty(c.ServiceName)
+            && _services.QueryStatus(c.ServiceName) == ServiceState.Running,
+        FileExistsCondition c =>
+            !string.IsNullOrEmpty(c.Path) && File.Exists(c.Path),
+        ProcessRunningCondition c =>
+            !string.IsNullOrEmpty(c.ProcessName)
+            && System.Diagnostics.Process.GetProcessesByName(c.ProcessName).Length > 0,
+        _ => false,
+    };
 }
