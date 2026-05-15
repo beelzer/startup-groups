@@ -762,6 +762,8 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
+    public void PersistConfigPublic() => PersistConfig();
+
     private void PersistConfig()
     {
         var config = new Configuration
@@ -1151,6 +1153,50 @@ public partial class MainWindowViewModel : ObservableObject
             Id = Guid.NewGuid().ToString(),
             App = entry,
         };
+    }
+
+    /// <summary>
+    /// Inserts a freshly-created node of the given <paramref name="kind"/>
+    /// immediately after the given <paramref name="stage"/>, splitting
+    /// any outgoing edges so the structure remains connected. Wired to
+    /// the per-stage "+ Insert below" affordance.
+    /// </summary>
+    public void InsertNodeAfterStage(Salvo.App.ViewModels.Flow.StageViewModel? stage, string? kind)
+    {
+        if (SelectedGroup is null || stage is null || string.IsNullOrEmpty(kind)) return;
+
+        Salvo.App.ViewModels.Flow.NodeViewModel? newNode = kind switch
+        {
+            "App" => BuildAppNodeViaEditor(),
+            "Wait" => new Salvo.App.ViewModels.Flow.WaitNodeViewModel { Id = Guid.NewGuid().ToString(), DurationSeconds = 5 },
+            "IfElse" => new Salvo.App.ViewModels.Flow.IfElseNodeViewModel { Id = Guid.NewGuid().ToString() },
+            "ServiceStart" => new Salvo.App.ViewModels.Flow.ServiceStartNodeViewModel { Id = Guid.NewGuid().ToString() },
+            "ServiceStop" => new Salvo.App.ViewModels.Flow.ServiceStopNodeViewModel { Id = Guid.NewGuid().ToString() },
+            "RunCommand" => new Salvo.App.ViewModels.Flow.RunCommandNodeViewModel { Id = Guid.NewGuid().ToString() },
+            "GroupCall" => new Salvo.App.ViewModels.Flow.GroupCallNodeViewModel { Id = Guid.NewGuid().ToString() },
+            _ => null,
+        };
+        if (newNode is null) return;
+
+        SelectedGroup.Graph.InsertAfterStage(stage, newNode);
+        if (newNode is Salvo.App.ViewModels.Flow.AppNodeViewModel app)
+        {
+            AppIconLoader.LoadFor([app.App]);
+            RefreshRunningStates();
+        }
+        PersistConfig();
+    }
+
+    /// <summary>
+    /// Convert a parallel stage into a sequential chain. Wired to the
+    /// "Make sequential" button on the parallel container header.
+    /// </summary>
+    [RelayCommand]
+    private void MakeStageSequential(Salvo.App.ViewModels.Flow.StageViewModel? stage)
+    {
+        if (SelectedGroup is null || stage is null) return;
+        SelectedGroup.Graph.MakeStageSequential(stage);
+        PersistConfig();
     }
 
     [RelayCommand]

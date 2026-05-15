@@ -21,6 +21,15 @@ public sealed partial class StageViewModel : ObservableObject
 
     public ObservableCollection<NodeViewModel> Nodes { get; } = [];
 
+    /// <summary>
+    /// During a drag-reorder, the view-side drop logic sets one of these
+    /// to true on the hovered stage to show an insertion bar at the top
+    /// or bottom edge. They're cleared on drag-leave and drop. Mutually
+    /// exclusive.
+    /// </summary>
+    [ObservableProperty] private bool _dropIndicatorTop;
+    [ObservableProperty] private bool _dropIndicatorBottom;
+
     public StageViewModel()
     {
         Nodes.CollectionChanged += (_, _) => OnPropertyChanged(nameof(IsParallel));

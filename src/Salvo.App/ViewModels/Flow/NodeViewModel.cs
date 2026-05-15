@@ -29,6 +29,13 @@ public abstract partial class NodeViewModel : ObservableObject
     /// </summary>
     [ObservableProperty] private bool _hasCompleted;
 
+    /// <summary>
+    /// True while a drag is hovering over this row's center area —
+    /// dropping here merges the dragged node into this row's stage as
+    /// a parallel sibling. Drives the row's "drop to merge" highlight.
+    /// </summary>
+    [ObservableProperty] private bool _isMergeTarget;
+
     public abstract string Kind { get; }
 
     public abstract Node ToModel();
