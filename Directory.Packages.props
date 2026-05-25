@@ -24,7 +24,7 @@
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="FluentAssertions" Version="7.2.2" />
-    <PackageVersion Include="coverlet.collector" Version="10.0.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="Velopack" Version="0.0.1589-ga2c5a97" />
     <!-- Managed BA SDK for WiX 5's out-of-process model. Version pinned to match
          the wix CLI (5.0.2) installed in CI. Packages BootstrapperApplicationApi +
