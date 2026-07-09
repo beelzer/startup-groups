@@ -1,3 +1,4 @@
+using Salvo.Core.Branding;
 using Salvo.Core.Models.Flow;
 
 namespace Salvo.Core.Models;
@@ -8,7 +9,7 @@ public sealed class Group
 
     public string Name { get; set; } = string.Empty;
 
-    public string Icon { get; set; } = "Apps24";
+    public string Icon { get; set; } = AppBranding.DefaultGroupIcon;
 
     /// <summary>
     /// Flow graph that defines what the group launches and in what order.

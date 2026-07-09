@@ -4,6 +4,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Salvo.App.Resources;
 using Salvo.App.ViewModels.Flow;
+using Salvo.Core.Branding;
 using Salvo.Core.Models;
 
 namespace Salvo.App.ViewModels;
@@ -23,7 +24,7 @@ public partial class GroupViewModel : ObservableObject
 
     [ObservableProperty] private string _id = string.Empty;
     [ObservableProperty] private string _name = string.Empty;
-    [ObservableProperty] private string _icon = "Apps24";
+    [ObservableProperty] private string _icon = AppBranding.DefaultGroupIcon;
 
     /// <summary>
     /// Flow graph of the group. Owned by this VM; views bind into
@@ -128,7 +129,7 @@ public partial class GroupViewModel : ObservableObject
         {
             Id = group.Id,
             Name = group.Name,
-            Icon = string.IsNullOrWhiteSpace(group.Icon) ? "Apps24" : group.Icon,
+            Icon = string.IsNullOrWhiteSpace(group.Icon) ? AppBranding.DefaultGroupIcon : group.Icon,
         };
         foreach (var n in group.Nodes) vm.Graph.Nodes.Add(NodeViewModel.FromModel(n));
         foreach (var e in group.Edges) vm.Graph.Edges.Add(EdgeViewModel.FromModel(e));

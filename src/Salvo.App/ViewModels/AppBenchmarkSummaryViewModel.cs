@@ -44,7 +44,7 @@ public partial class AppBenchmarkSummaryViewModel : ObservableObject
             if (reference is TimeSpan refDur && refDur.TotalMilliseconds > 0)
             {
                 var ratio = lastDur.TotalMilliseconds / refDur.TotalMilliseconds;
-                if (ratio >= 2.0 && ready.Count >= 3)
+                if (ratio >= BenchmarkPolicy.RegressionRatio && ready.Count >= BenchmarkPolicy.RegressionMinSampleSize)
                 {
                     isRegression = true;
                     regressionText = string.Create(CultureInfo.InvariantCulture, $"{ratio:F1}x slower than median");

@@ -21,7 +21,7 @@ public sealed class SettingsStore : ISettingsStore
     {
         _logger = logger ?? NullLogger<SettingsStore>.Instance;
         AppPaths.EnsureUserDirectories();
-        _settingsPath = Path.Combine(AppPaths.UserDataFolder, "settings.json");
+        _settingsPath = AppPaths.SettingsFilePath;
         _current = Load();
     }
 

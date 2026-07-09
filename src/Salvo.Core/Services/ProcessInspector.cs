@@ -175,7 +175,7 @@ public sealed class ProcessInspector : IProcessInspector
                 try
                 {
                     process.Kill(entireProcessTree: true);
-                    process.WaitForExit(5_000);
+                    process.WaitForExit((int)Timeouts.ProcessKillGrace.TotalMilliseconds);
                     killed++;
                 }
                 catch (Win32Exception)

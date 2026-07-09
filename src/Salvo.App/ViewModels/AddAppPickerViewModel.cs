@@ -11,6 +11,7 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using Salvo.App.Animations;
 using Salvo.App.Resources;
 using Salvo.App.Services;
 using Salvo.Core.Models;
@@ -206,7 +207,7 @@ public partial class AddAppPickerViewModel : ObservableObject
                     var source = !string.IsNullOrWhiteSpace(vm.Model.IconPath)
                         ? vm.Model.IconPath!
                         : vm.Model.ParsingName;
-                    var icon = ShellIconExtractor.GetImage(source, 32);
+                    var icon = ShellIconExtractor.GetImage(source, UiMetrics.ListIconSize);
                     if (icon is not null)
                     {
                         dispatcher.BeginInvoke(() => vm.Icon = icon, DispatcherPriority.Background);

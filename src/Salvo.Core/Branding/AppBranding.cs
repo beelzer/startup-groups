@@ -23,6 +23,9 @@ public static class AppBranding
         SourceAssembly.GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright
         ?? string.Empty;
 
+    /// <summary>Default WPF-UI SymbolRegular glyph name for a group with no icon set.</summary>
+    public const string DefaultGroupIcon = "Apps24";
+
     public const string AppId = "salvo";
     public const string SupportUrl = "https://github.com/beelzer/salvo";
     public const string AboutUrl = "https://github.com/beelzer/salvo";

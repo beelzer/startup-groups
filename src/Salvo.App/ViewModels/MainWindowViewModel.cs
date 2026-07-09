@@ -794,7 +794,7 @@ public partial class MainWindowViewModel : ObservableObject
         editor.IsNew = true;
         editor.Id = "";
         editor.Name = "";
-        editor.Icon = "Apps24";
+        editor.Icon = AppBranding.DefaultGroupIcon;
         editor.LoadApps([]);
 
         var window = new GroupEditorWindow(editor);

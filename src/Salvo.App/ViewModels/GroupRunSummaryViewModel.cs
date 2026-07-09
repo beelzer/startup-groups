@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Salvo.Core.Branding;
 using Salvo.Core.Launch;
 
 namespace Salvo.App.ViewModels;
@@ -9,7 +10,7 @@ public partial class GroupRunSummaryViewModel : ObservableObject
 {
     [ObservableProperty] private string _groupId = string.Empty;
     [ObservableProperty] private string _groupName = string.Empty;
-    [ObservableProperty] private string _groupIcon = "Apps24";
+    [ObservableProperty] private string _groupIcon = AppBranding.DefaultGroupIcon;
     [ObservableProperty] private DateTimeOffset _startedAt;
     [ObservableProperty] private string _startedDisplay = string.Empty;
     [ObservableProperty] private int _appCount;
@@ -44,7 +45,7 @@ public partial class GroupRunSummaryViewModel : ObservableObject
         {
             GroupId = groupId,
             GroupName = string.IsNullOrWhiteSpace(groupName) ? groupId : groupName,
-            GroupIcon = string.IsNullOrWhiteSpace(groupIcon) ? "Apps24" : groupIcon,
+            GroupIcon = string.IsNullOrWhiteSpace(groupIcon) ? AppBranding.DefaultGroupIcon : groupIcon,
             StartedAt = startedAt,
             StartedDisplay = startedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
             AppCount = ordered.Count,

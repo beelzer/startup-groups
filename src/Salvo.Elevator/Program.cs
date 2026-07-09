@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.Win32;
+using Salvo.Core.Branding;
 using Salvo.Core.Elevation;
 using Salvo.Core.Models;
 using Salvo.Core.Services;
@@ -121,7 +122,7 @@ internal static class Program
     {
         for (var i = 0; i < args.Length - 1; i++)
         {
-            if (string.Equals(args[i], "--payload", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(args[i], AppIdentifiers.PayloadCommandLineFlag, StringComparison.OrdinalIgnoreCase))
             {
                 try
                 {

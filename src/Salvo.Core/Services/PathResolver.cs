@@ -2,6 +2,9 @@ namespace Salvo.Core.Services;
 
 public sealed class PathResolver : IPathResolver
 {
+    /// <summary>Scheme prefix for shell parsing names (e.g. shell:AppsFolder\...).</summary>
+    public const string ShellUriPrefix = "shell:";
+
     public string? Resolve(string? rawPath)
     {
         if (string.IsNullOrWhiteSpace(rawPath))
@@ -9,7 +12,7 @@ public sealed class PathResolver : IPathResolver
             return null;
         }
 
-        if (rawPath.StartsWith("shell:", StringComparison.OrdinalIgnoreCase))
+        if (rawPath.StartsWith(ShellUriPrefix, StringComparison.OrdinalIgnoreCase))
         {
             return rawPath;
         }

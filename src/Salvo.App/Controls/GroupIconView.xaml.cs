@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Salvo.App.Services;
+using Salvo.Core.Branding;
 
 namespace Salvo.App.Controls;
 
@@ -14,7 +15,7 @@ public partial class GroupIconView : UserControl
             nameof(Icon),
             typeof(string),
             typeof(GroupIconView),
-            new PropertyMetadata("Apps24", OnIconChanged));
+            new PropertyMetadata(AppBranding.DefaultGroupIcon, OnIconChanged));
 
     public static readonly DependencyProperty IconSizeProperty =
         DependencyProperty.Register(

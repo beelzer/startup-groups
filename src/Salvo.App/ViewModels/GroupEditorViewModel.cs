@@ -7,6 +7,7 @@ using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Salvo.App.Services;
+using Salvo.Core.Branding;
 using Wpf.Ui.Controls;
 
 namespace Salvo.App.ViewModels;
@@ -70,7 +71,7 @@ public partial class GroupEditorViewModel : ObservableObject
 
     [ObservableProperty] private string _id = string.Empty;
     [ObservableProperty] private string _name = string.Empty;
-    [ObservableProperty] private string _icon = "Apps24";
+    [ObservableProperty] private string _icon = AppBranding.DefaultGroupIcon;
     [ObservableProperty] private string _iconSearch = string.Empty;
 
     public bool IsNew { get; set; } = true;

@@ -13,4 +13,7 @@ public static class UiMetrics
     public const double AdminCardHighlightBlurRadius = 24;
     public const int AdminCardPulseRepeats = 2;
     public const double RowReorderSnapToleranceY = 0.5;
+
+    /// <summary>Pixel size requested for shell icons rendered in list rows.</summary>
+    public const int ListIconSize = 32;
 }

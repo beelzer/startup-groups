@@ -69,7 +69,7 @@ public sealed class MainWindowProbe : IReadinessProbe
                 return true;
             }
 
-            if (SendMessageTimeoutW(hwnd, WM_NULL, IntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, 500, out _) == IntPtr.Zero)
+            if (SendMessageTimeoutW(hwnd, WM_NULL, IntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, (uint)Timeouts.MainWindowResponsivenessProbe.TotalMilliseconds, out _) == IntPtr.Zero)
             {
                 return true;
             }

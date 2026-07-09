@@ -20,7 +20,11 @@ public static class Timeouts
     public static readonly TimeSpan StatusRefreshInterval = TimeSpan.FromSeconds(3);
     public static readonly TimeSpan AutoStartDelay = TimeSpan.FromSeconds(5);
 
+    // Process control
+    public static readonly TimeSpan ProcessKillGrace = TimeSpan.FromSeconds(5);
+
     // Readiness probes
+    public static readonly TimeSpan MainWindowResponsivenessProbe = TimeSpan.FromMilliseconds(500);
     public static readonly TimeSpan ProbePollDefault = TimeSpan.FromMilliseconds(250);
     public static readonly TimeSpan ProbePollService = TimeSpan.FromMilliseconds(500);
     public static readonly TimeSpan ProbePollActivity = TimeSpan.FromMilliseconds(500);

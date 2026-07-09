@@ -60,7 +60,7 @@ public sealed class ProcessLauncher : IProcessLauncher
             }
         }
 
-        if (resolvedPath.StartsWith("shell:", StringComparison.OrdinalIgnoreCase))
+        if (resolvedPath.StartsWith(PathResolver.ShellUriPrefix, StringComparison.OrdinalIgnoreCase))
         {
             return Environment.CurrentDirectory;
         }

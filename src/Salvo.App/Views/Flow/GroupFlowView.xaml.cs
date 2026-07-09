@@ -407,8 +407,13 @@ public partial class GroupFlowView : UserControl
             var dyFromTop = cursorInList.Y - top;
             var relative = height > 0 ? dyFromTop / height : 0.5;
 
+            // Middle 40% of a row's height arms a parallel-merge; the outer
+            // bands fall through to sequential snap-to-boundary below.
+            const double mergeBandLower = 0.30;
+            const double mergeBandUpper = 0.70;
+
             var alreadyArmedOnThisRow = ReferenceEquals(_activeMergeRow, hoverNode);
-            var enteringMerge = relative > 0.30 && relative < 0.70;
+            var enteringMerge = relative > mergeBandLower && relative < mergeBandUpper;
 
             if (enteringMerge || alreadyArmedOnThisRow)
             {

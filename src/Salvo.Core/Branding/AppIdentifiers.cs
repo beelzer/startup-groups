@@ -5,6 +5,10 @@ public static class AppIdentifiers
     public const string TrayTaskName = "SalvoTray";
     public const string TrayCommandLineFlag = "--tray";
 
+    // Cross-process flag: ElevationClient passes it to the elevator, which
+    // parses it back. Kept in one place so the two sides can't drift.
+    public const string PayloadCommandLineFlag = "--payload";
+
     public const string ElevatorExecutableName = "Salvo.Elevator.exe";
 
     public const string AssetsFolderName = "Assets";

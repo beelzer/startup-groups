@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Salvo.Core.Branding;
 using Salvo.Core.Models;
 
 namespace Salvo.Core.Elevation;
@@ -50,7 +51,7 @@ public sealed class ElevationClient : IElevationClient
         var startInfo = new ProcessStartInfo
         {
             FileName = _elevatorExecutablePath,
-            Arguments = $"--payload {payloadBase64}",
+            Arguments = $"{AppIdentifiers.PayloadCommandLineFlag} {payloadBase64}",
             UseShellExecute = true,
             Verb = "runas",
             WindowStyle = ProcessWindowStyle.Hidden,

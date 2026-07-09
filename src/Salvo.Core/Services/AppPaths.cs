@@ -7,6 +7,7 @@ public static class AppPaths
     public const string LocalDataFolderName = "Salvo.UserData";
 
     public const string ConfigFileName = "config.json";
+    public const string SettingsFileName = "settings.json";
     public const string LogFolderName = "logs";
     public const string BenchmarksDbFileName = "launch-benchmarks.db";
 
@@ -18,6 +19,9 @@ public static class AppPaths
 
     public static string ConfigFilePath =>
         Path.Combine(UserDataFolder, ConfigFileName);
+
+    public static string SettingsFilePath =>
+        Path.Combine(UserDataFolder, SettingsFileName);
 
     public static string LogFolder =>
         Path.Combine(LocalDataFolder, LogFolderName);
