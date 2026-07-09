@@ -8,14 +8,12 @@ namespace Salvo.Core.Tests;
 
 public sealed class LaunchTelemetryServicePidResolverTests : IDisposable
 {
-    private readonly string _tempRoot;
+    private readonly SqliteTempDirectory _dir = new();
     private readonly SqliteLaunchBenchmarkStore _store;
 
     public LaunchTelemetryServicePidResolverTests()
     {
-        _tempRoot = Path.Combine(Path.GetTempPath(), "sg-pidres-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_tempRoot);
-        _store = new SqliteLaunchBenchmarkStore(Path.Combine(_tempRoot, "t.db"));
+        _store = new SqliteLaunchBenchmarkStore(_dir.DbPath("t.db"));
         _store.InitializeAsync().GetAwaiter().GetResult();
     }
 
@@ -64,22 +62,15 @@ public sealed class LaunchTelemetryServicePidResolverTests : IDisposable
         var metrics = await telemetry.BeginObservation(app, resolvedPath: null, groupId: null, process: null);
 
         metrics.RootPid.Should().BeNull();
+        // With no inspector the PID never resolves and no probe can fire; the
+        // early-exit watcher is now gated on a resolved PID, so ExitedEarly and
+        // Ready are impossible here — only TimedOut or (on a store fault) Unknown.
         metrics.Outcome.Should().BeOneOf(
-            LaunchOutcome.Ready,
             LaunchOutcome.TimedOut,
-            LaunchOutcome.ExitedEarly,
             LaunchOutcome.Unknown);
     }
 
-    public void Dispose()
-    {
-        try
-        {
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-            if (Directory.Exists(_tempRoot)) Directory.Delete(_tempRoot, recursive: true);
-        }
-        catch { }
-    }
+    public void Dispose() => _dir.Dispose();
 
     private sealed class MemoryMatcherResolver : IProcessMatcherResolver
     {

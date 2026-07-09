@@ -4,14 +4,12 @@ namespace Salvo.Core.Tests;
 
 public sealed class SqliteLaunchBenchmarkStoreTests : IDisposable
 {
-    private readonly string _tempRoot;
+    private readonly SqliteTempDirectory _dir = new();
     private readonly string _dbPath;
 
     public SqliteLaunchBenchmarkStoreTests()
     {
-        _tempRoot = Path.Combine(Path.GetTempPath(), "sg-bench-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_tempRoot);
-        _dbPath = Path.Combine(_tempRoot, "bench.db");
+        _dbPath = _dir.DbPath("bench.db");
     }
 
     [Fact]
@@ -169,19 +167,5 @@ public sealed class SqliteLaunchBenchmarkStoreTests : IDisposable
         BootEpochUtc = requestedAt.AddMinutes(-5),
     };
 
-    public void Dispose()
-    {
-        try
-        {
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-            if (Directory.Exists(_tempRoot))
-            {
-                Directory.Delete(_tempRoot, recursive: true);
-            }
-        }
-        catch
-        {
-            // Best-effort cleanup.
-        }
-    }
+    public void Dispose() => _dir.Dispose();
 }

@@ -1,5 +1,6 @@
 using Salvo.Core.Models;
 using Salvo.Core.Services;
+using static Salvo.Core.Tests.OrchestratorTestHarness;
 
 namespace Salvo.Core.Tests;
 
@@ -53,7 +54,7 @@ public sealed class AppOrchestratorTests
     [Fact]
     public void LaunchApp_Exe_Launches_WhenResolved()
     {
-        using var temp = new TempDir();
+        using var temp = new TempDirectory();
         var path = temp.CreateFile("fake.exe");
 
         var orchestrator = BuildOrchestrator(out _, out var inspector, out var launcher);
@@ -69,7 +70,7 @@ public sealed class AppOrchestratorTests
     [Fact]
     public void StopApp_Exe_ReturnsAlreadyInState_WhenNotRunning()
     {
-        using var temp = new TempDir();
+        using var temp = new TempDirectory();
         var path = temp.CreateFile("fake.exe");
 
         var orchestrator = BuildOrchestrator(out _, out var inspector, out _);
@@ -83,7 +84,7 @@ public sealed class AppOrchestratorTests
     [Fact]
     public void StopApp_Exe_Kills_WhenRunning()
     {
-        using var temp = new TempDir();
+        using var temp = new TempDirectory();
         var path = temp.CreateFile("fake.exe");
 
         var orchestrator = BuildOrchestrator(out _, out var inspector, out _);
@@ -96,9 +97,9 @@ public sealed class AppOrchestratorTests
     }
 
     [Fact]
-    public async Task LaunchGroupAsync_RunsEachApp_InOrder()
+    public async Task LaunchGroupAsync_RunsAllApps_InSingleParallelWave()
     {
-        using var temp = new TempDir();
+        using var temp = new TempDirectory();
         var p1 = temp.CreateFile("one.exe");
         var p2 = temp.CreateFile("two.exe");
 
@@ -107,6 +108,7 @@ public sealed class AppOrchestratorTests
         inspector.RunningByExe["two"] = false;
         launcher.LaunchResult = (true, "Launched");
 
+        // Two apps with no delay → Migrate fans both out from Start in one wave.
         var group = new Group
         {
             Apps =
@@ -123,124 +125,31 @@ public sealed class AppOrchestratorTests
         launcher.CallCount.Should().Be(2);
     }
 
-    private static AppOrchestrator BuildOrchestrator(
-        out FakeServices services,
-        out FakeInspector inspector,
-        out FakeLauncher launcher)
+    [Fact]
+    public async Task LaunchGroupAsync_HonorsWaitBarrier_BetweenWaves()
     {
-        services = new FakeServices();
-        inspector = new FakeInspector();
-        launcher = new FakeLauncher();
-        var resolver = new PathResolver();
-        var matchers = new ProcessMatcherResolver(resolver);
-        return new AppOrchestrator(resolver, launcher, inspector, matchers, services);
+        using var temp = new TempDirectory();
+        var p1 = temp.CreateFile("one.exe");
+        var p2 = temp.CreateFile("two.exe");
+
+        var orchestrator = BuildOrchestrator(out _, out var inspector, out var launcher);
+        inspector.RunningByExe["one"] = false;
+        inspector.RunningByExe["two"] = false;
+
+        // DelayAfterSeconds on the first app makes Migrate insert a WaitNode
+        // barrier, so "two" cannot launch until "one" (and its wait) complete.
+        var group = new Group
+        {
+            Apps =
+            [
+                new AppEntry { Name = "one", Path = p1, DelayAfterSeconds = 1 },
+                new AppEntry { Name = "two", Path = p2 }
+            ]
+        };
+
+        await orchestrator.LaunchGroupAsync(group);
+
+        launcher.LaunchOrder.Should().Equal("one", "two");
     }
 
-    private sealed class FakeServices : IServiceController
-    {
-        public Dictionary<string, ServiceState> Status { get; } = new(StringComparer.OrdinalIgnoreCase);
-        public Dictionary<string, (bool Success, string Message)> StartResult { get; } = new(StringComparer.OrdinalIgnoreCase);
-        public Dictionary<string, (bool Success, string Message)> StopResult { get; } = new(StringComparer.OrdinalIgnoreCase);
-
-        public ServiceState QueryStatus(string serviceName) =>
-            Status.TryGetValue(serviceName, out var state) ? state : ServiceState.NotFound;
-
-        public bool TryStart(string serviceName, TimeSpan timeout, out string message)
-        {
-            if (StartResult.TryGetValue(serviceName, out var r))
-            {
-                message = r.Message;
-                return r.Success;
-            }
-
-            message = "Started";
-            return true;
-        }
-
-        public bool TryStop(string serviceName, TimeSpan timeout, out string message)
-        {
-            if (StopResult.TryGetValue(serviceName, out var r))
-            {
-                message = r.Message;
-                return r.Success;
-            }
-
-            message = "Stopped";
-            return true;
-        }
-    }
-
-    private sealed class FakeInspector : IProcessInspector
-    {
-        public Dictionary<string, bool> RunningByExe { get; } = new(StringComparer.OrdinalIgnoreCase);
-        public (bool Success, string Message) KillResult { get; set; } = (true, "Stopped");
-
-        public bool IsRunning(IReadOnlyList<ProcessMatcher> matchers)
-        {
-            foreach (var m in matchers)
-            {
-                if (!string.IsNullOrEmpty(m.ExeName) && RunningByExe.TryGetValue(m.ExeName!, out var v) && v)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public bool TryKill(IReadOnlyList<ProcessMatcher> matchers, out string message)
-        {
-            message = KillResult.Message;
-            return KillResult.Success;
-        }
-
-        public IReadOnlyList<int> FindMatchingPids(IReadOnlyList<ProcessMatcher> matchers) =>
-            Array.Empty<int>();
-    }
-
-    private sealed class FakeLauncher : IProcessLauncher
-    {
-        public (bool Success, string Message) LaunchResult { get; set; } = (true, "Launched");
-        public AppEntry? LastCall { get; private set; }
-        public int CallCount { get; private set; }
-
-        public bool TryStart(AppEntry app, string resolvedPath, out string message)
-        {
-            CallCount++;
-            LastCall = app;
-            message = LaunchResult.Message;
-            return LaunchResult.Success;
-        }
-
-        public bool TryStartAndCapture(AppEntry app, string resolvedPath, out System.Diagnostics.Process? process, out string message)
-        {
-            process = null;
-            return TryStart(app, resolvedPath, out message);
-        }
-    }
-
-    private sealed class TempDir : IDisposable
-    {
-        public string Root { get; } = Path.Combine(Path.GetTempPath(), "sg-orch-" + Guid.NewGuid().ToString("N"));
-
-        public TempDir() => Directory.CreateDirectory(Root);
-
-        public string CreateFile(string name)
-        {
-            var path = Path.Combine(Root, name);
-            File.WriteAllText(path, "");
-            return path;
-        }
-
-        public void Dispose()
-        {
-            try
-            {
-                Directory.Delete(Root, recursive: true);
-            }
-            catch
-            {
-                // Best-effort.
-            }
-        }
-    }
 }

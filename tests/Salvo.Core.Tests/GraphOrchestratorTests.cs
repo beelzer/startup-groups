@@ -1,6 +1,7 @@
 using Salvo.Core.Models;
 using Salvo.Core.Models.Flow;
 using Salvo.Core.Services;
+using static Salvo.Core.Tests.OrchestratorTestHarness;
 
 namespace Salvo.Core.Tests;
 
@@ -14,7 +15,7 @@ public sealed class GraphOrchestratorTests
     [Fact]
     public async Task ExecuteGraph_FiresAppsInParallel_FromForkedStart()
     {
-        using var temp = new TempDir();
+        using var temp = new TempDirectory();
         var p1 = temp.CreateFile("one.exe");
         var p2 = temp.CreateFile("two.exe");
 
@@ -48,7 +49,7 @@ public sealed class GraphOrchestratorTests
     [Fact]
     public async Task ExecuteGraph_IfElse_FiresThenBranch_AndDownstreamMergeRuns()
     {
-        using var temp = new TempDir();
+        using var temp = new TempDirectory();
         var pThen = temp.CreateFile("then.exe");
         var pElse = temp.CreateFile("else.exe");
         var pAfter = temp.CreateFile("after.exe");
@@ -96,7 +97,7 @@ public sealed class GraphOrchestratorTests
     [Fact]
     public async Task ExecuteGraph_GroupCall_ResolvesAndRecursesIntoTargetGroup()
     {
-        using var temp = new TempDir();
+        using var temp = new TempDirectory();
         var pSub = temp.CreateFile("sub.exe");
 
         var orchestrator = BuildOrchestrator(out _, out var inspector, out var launcher);
@@ -160,7 +161,7 @@ public sealed class GraphOrchestratorTests
     [Fact]
     public async Task ExecuteGraph_IfElse_FiresElseBranch_WhenConditionFalse()
     {
-        using var temp = new TempDir();
+        using var temp = new TempDirectory();
         var pThen = temp.CreateFile("then.exe");
         var pElse = temp.CreateFile("else.exe");
 
@@ -201,7 +202,7 @@ public sealed class GraphOrchestratorTests
     public async Task ExecuteGraph_ServiceStartAndStop_InvokeTheController()
     {
         var orchestrator = BuildOrchestrator(out var services, out _, out _);
-        services.States["Svc"] = ServiceState.Stopped;
+        services.Status["Svc"] = ServiceState.Stopped;
 
         var start = new StartNode { Id = "s" };
         var svcStart = new ServiceStartNode { Id = "start", ServiceName = "Svc" };
@@ -216,7 +217,7 @@ public sealed class GraphOrchestratorTests
         services.Started.Should().Contain("Svc");
 
         // Now a stop node against a running service.
-        services.States["Svc"] = ServiceState.Running;
+        services.Status["Svc"] = ServiceState.Running;
         var stopStart = new StartNode { Id = "s2" };
         var svcStop = new ServiceStopNode { Id = "stop", ServiceName = "Svc" };
         var stopGroup = new Group
@@ -258,7 +259,7 @@ public sealed class GraphOrchestratorTests
     [Fact]
     public async Task LaunchGroupAsync_PreCancelledToken_ThrowsAndLaunchesNothing()
     {
-        using var temp = new TempDir();
+        using var temp = new TempDirectory();
         var p1 = temp.CreateFile("one.exe");
 
         var orchestrator = BuildOrchestrator(out _, out var inspector, out var launcher);
@@ -312,97 +313,4 @@ public sealed class GraphOrchestratorTests
         sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(15));
     }
 
-    private static AppOrchestrator BuildOrchestrator(
-        out FakeServices services,
-        out FakeInspector inspector,
-        out FakeLauncher launcher)
-    {
-        services = new FakeServices();
-        inspector = new FakeInspector();
-        launcher = new FakeLauncher();
-        var resolver = new PathResolver();
-        var matchers = new ProcessMatcherResolver(resolver);
-        return new AppOrchestrator(resolver, launcher, inspector, matchers, services);
-    }
-
-    // Reuse the fakes from AppOrchestratorTests — same shape, kept here
-    // as nested types to avoid coupling.
-    private sealed class FakeServices : IServiceController
-    {
-        public Dictionary<string, ServiceState> States { get; } = new();
-        public List<string> Started { get; } = [];
-        public List<string> Stopped { get; } = [];
-        public ServiceState QueryStatus(string serviceName) =>
-            States.TryGetValue(serviceName, out var s) ? s : ServiceState.NotFound;
-        public bool TryStart(string serviceName, TimeSpan timeout, out string message)
-        {
-            Started.Add(serviceName);
-            message = "Started";
-            return true;
-        }
-        public bool TryStop(string serviceName, TimeSpan timeout, out string message)
-        {
-            Stopped.Add(serviceName);
-            message = "Stopped";
-            return true;
-        }
-    }
-
-    private sealed class FakeInspector : IProcessInspector
-    {
-        public Dictionary<string, bool> RunningByExe { get; } = new(StringComparer.OrdinalIgnoreCase);
-        public (bool Success, string Message) KillResult { get; set; } = (true, "Stopped");
-
-        public bool IsRunning(IReadOnlyList<ProcessMatcher> matchers)
-        {
-            foreach (var m in matchers)
-            {
-                if (!string.IsNullOrEmpty(m.ExeName) && RunningByExe.TryGetValue(m.ExeName!, out var v) && v)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        public bool TryKill(IReadOnlyList<ProcessMatcher> matchers, out string message)
-        {
-            message = KillResult.Message;
-            return KillResult.Success;
-        }
-        public IReadOnlyList<int> FindMatchingPids(IReadOnlyList<ProcessMatcher> matchers) =>
-            Array.Empty<int>();
-    }
-
-    private sealed class FakeLauncher : IProcessLauncher
-    {
-        public (bool Success, string Message) LaunchResult { get; set; } = (true, "Launched");
-        public int CallCount { get; private set; }
-        public bool TryStart(AppEntry app, string resolvedPath, out string message)
-        {
-            CallCount++;
-            message = LaunchResult.Message;
-            return LaunchResult.Success;
-        }
-        public bool TryStartAndCapture(AppEntry app, string resolvedPath, out System.Diagnostics.Process? process, out string message)
-        {
-            process = null;
-            return TryStart(app, resolvedPath, out message);
-        }
-    }
-
-    private sealed class TempDir : IDisposable
-    {
-        public string Root { get; } = Path.Combine(Path.GetTempPath(), "sg-graph-" + Guid.NewGuid().ToString("N"));
-        public TempDir() => Directory.CreateDirectory(Root);
-        public string CreateFile(string name)
-        {
-            var path = Path.Combine(Root, name);
-            File.WriteAllText(path, "");
-            return path;
-        }
-        public void Dispose()
-        {
-            try { Directory.Delete(Root, recursive: true); } catch { }
-        }
-    }
 }

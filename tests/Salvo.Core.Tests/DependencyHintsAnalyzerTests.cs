@@ -4,14 +4,12 @@ namespace Salvo.Core.Tests;
 
 public sealed class DependencyHintsAnalyzerTests : IDisposable
 {
-    private readonly string _tempRoot;
+    private readonly SqliteTempDirectory _dir = new();
     private readonly SqliteLaunchBenchmarkStore _store;
 
     public DependencyHintsAnalyzerTests()
     {
-        _tempRoot = Path.Combine(Path.GetTempPath(), "sg-hints-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_tempRoot);
-        _store = new SqliteLaunchBenchmarkStore(Path.Combine(_tempRoot, "hints.db"));
+        _store = new SqliteLaunchBenchmarkStore(_dir.DbPath("hints.db"));
         _store.InitializeAsync().GetAwaiter().GetResult();
     }
 
@@ -83,7 +81,7 @@ public sealed class DependencyHintsAnalyzerTests : IDisposable
     }
 
     [Fact]
-    public async Task Analyze_ProducesNoHint_WhenNoSharedResources()
+    public async Task Analyze_ProducesHintWithNoEdges_WhenNoSharedResources()
     {
         await SeedRunAsync(
             groupId: "g3",
@@ -111,11 +109,12 @@ public sealed class DependencyHintsAnalyzerTests : IDisposable
         var analyzer = new DependencyHintsAnalyzer(_store);
         var hints = await analyzer.AnalyzeAsync(DateTimeOffset.UtcNow.AddHours(-1));
 
-        if (hints.Count > 0)
-        {
-            hints[0].Edges.Should().BeEmpty();
-            hints[0].IsReorderSuggested.Should().BeFalse();
-        }
+        // The analyzer emits exactly one hint for a group with runs, but with no
+        // inferred edges when the apps share no resources. Assert unconditionally
+        // so a regression that dropped the group entirely would fail here.
+        hints.Should().ContainSingle();
+        hints[0].Edges.Should().BeEmpty();
+        hints[0].IsReorderSuggested.Should().BeFalse();
     }
 
     [Fact]
@@ -176,18 +175,5 @@ public sealed class DependencyHintsAnalyzerTests : IDisposable
         }
     }
 
-    public void Dispose()
-    {
-        try
-        {
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-            if (Directory.Exists(_tempRoot))
-            {
-                Directory.Delete(_tempRoot, recursive: true);
-            }
-        }
-        catch
-        {
-        }
-    }
+    public void Dispose() => _dir.Dispose();
 }
