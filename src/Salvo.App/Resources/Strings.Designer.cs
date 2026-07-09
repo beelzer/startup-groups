@@ -230,9 +230,10 @@ public static class Strings
     public static string Settings_Version_SeeWhatsNew => Get(nameof(Settings_Version_SeeWhatsNew));
     public static string Settings_Version_ViewDetails => Get(nameof(Settings_Version_ViewDetails));
 
-    // Update channel
-    public static string Settings_UpdateChannel_Label => Get(nameof(Settings_UpdateChannel_Label));
-    public static string Settings_UpdateChannel_Hint => Get(nameof(Settings_UpdateChannel_Hint));
+    // Update channel labels (Stable / Canary still used by the update
+    // flyout's "v1.2.3 — <channel>" subtitle even though the picker is
+    // gone). Settings_UpdateChannel_Label and _Hint were removed when
+    // the picker was retired.
     public static string Settings_UpdateChannel_Stable => Get(nameof(Settings_UpdateChannel_Stable));
     public static string Settings_UpdateChannel_Canary => Get(nameof(Settings_UpdateChannel_Canary));
 

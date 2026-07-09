@@ -175,37 +175,6 @@
                     </Button>
                 </StackPanel>
             </ui:TitleBar.Header>
-            <ui:TitleBar.TrailingContent>
-                <!-- Contextual group controls: only visible when a group is selected in the Groups view. -->
-                <StackPanel Orientation="Horizontal"
-                            VerticalAlignment="Center"
-                            Margin="0,0,8,0"
-                            Visibility="{Binding IsGroupsViewWithSelection, Converter={StaticResource BoolToVisibility}}">
-                    <ui:Button Appearance="{Binding SelectedGroup.AllRunning, Converter={StaticResource PlayAppearance}}"
-                               Icon="{ui:SymbolIcon Play24}"
-                               Content="{loc:Translate Action_LaunchAll}"
-                               Command="{Binding LaunchGroupCommand}"
-                               CommandParameter="{Binding SelectedGroup}"
-                               IsEnabled="{Binding SelectedGroup.CanLaunchAll}"
-                               Margin="0,0,6,0" />
-                    <ui:Button Appearance="{Binding SelectedGroup.AllRunning, Converter={StaticResource StopAppearance}}"
-                               Icon="{ui:SymbolIcon Stop24}"
-                               Content="{loc:Translate Action_StopAll}"
-                               Command="{Binding StopGroupCommand}"
-                               CommandParameter="{Binding SelectedGroup}"
-                               IsEnabled="{Binding SelectedGroup.CanStopAll}"
-                               Margin="0,0,6,0" />
-                    <ui:Button Icon="{ui:SymbolIcon Edit24}"
-                               ToolTip="{loc:Translate Action_RenameGroup}"
-                               Command="{Binding EditGroupCommand}"
-                               CommandParameter="{Binding SelectedGroup}"
-                               Margin="0,0,6,0" />
-                    <ui:Button Icon="{ui:SymbolIcon Delete24}"
-                               ToolTip="{loc:Translate Action_RemoveGroup}"
-                               Command="{Binding RemoveGroupCommand}"
-                               CommandParameter="{Binding SelectedGroup}" />
-                </StackPanel>
-            </ui:TitleBar.TrailingContent>
         </ui:TitleBar>
         </Grid>
 
@@ -506,14 +475,36 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="2" Margin="0,0,0,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="{loc:Translate Apps_Heading}"
-                               Style="{StaticResource AppH3}" VerticalAlignment="Center" />
-                </Grid>
+                <!-- Group action toolbar: lives in the content band (moved out of the title bar). -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Margin="0,0,0,10"
+                            Visibility="{Binding IsGroupsViewWithSelection, Converter={StaticResource BoolToVisibility}}">
+                    <ui:Button Appearance="{Binding SelectedGroup.AllRunning, Converter={StaticResource PlayAppearance}}"
+                               Icon="{ui:SymbolIcon Play24}"
+                               Content="{loc:Translate Action_LaunchAll}"
+                               Command="{Binding LaunchGroupCommand}"
+                               CommandParameter="{Binding SelectedGroup}"
+                               IsEnabled="{Binding SelectedGroup.CanLaunchAll}"
+                               Margin="0,0,6,0" />
+                    <ui:Button Appearance="{Binding SelectedGroup.AllRunning, Converter={StaticResource StopAppearance}}"
+                               Icon="{ui:SymbolIcon Stop24}"
+                               Content="{loc:Translate Action_StopAll}"
+                               Command="{Binding StopGroupCommand}"
+                               CommandParameter="{Binding SelectedGroup}"
+                               IsEnabled="{Binding SelectedGroup.CanStopAll}"
+                               Margin="0,0,6,0" />
+                    <ui:Button Icon="{ui:SymbolIcon Edit24}"
+                               ToolTip="{loc:Translate Action_RenameGroup}"
+                               Command="{Binding EditGroupCommand}"
+                               CommandParameter="{Binding SelectedGroup}"
+                               Margin="0,0,6,0" />
+                    <ui:Button Icon="{ui:SymbolIcon Delete24}"
+                               ToolTip="{loc:Translate Action_RemoveGroup}"
+                               Command="{Binding RemoveGroupCommand}"
+                               CommandParameter="{Binding SelectedGroup}" />
+                </StackPanel>
 
                 <flow:GroupFlowView Grid.Row="3"
                                     DataContext="{Binding}" />
@@ -1303,30 +1294,6 @@
                                        Command="{Binding ShowUpdateDetailsCommand}"
                                        Icon="{ui:SymbolIcon ArrowDownload24}"
                                        VerticalAlignment="Center" />
-                        </Grid>
-                    </Border>
-
-                    <!-- Update channel picker -->
-                    <Border Style="{StaticResource SettingsCard}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Style="{StaticResource SettingsCardIconHost}">
-                                <ui:SymbolIcon Symbol="Branch24" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource IconSizeSm}" />
-                            </Border>
-                            <StackPanel Grid.Column="1" Margin="14,0,14,0" VerticalAlignment="Center">
-                                <TextBlock Text="{loc:Translate Settings_UpdateChannel_Label}" Style="{StaticResource SettingsCardLabel}" />
-                                <TextBlock Text="{loc:Translate Settings_UpdateChannel_Hint}" Style="{StaticResource SettingsCardHint}" />
-                            </StackPanel>
-                            <ComboBox Grid.Column="2"
-                                      MinWidth="180"
-                                      VerticalAlignment="Center"
-                                      ItemsSource="{Binding UpdateChannelOptions}"
-                                      SelectedItem="{Binding SelectedUpdateChannel}"
-                                      DisplayMemberPath="DisplayName" />
                         </Grid>
                     </Border>
 

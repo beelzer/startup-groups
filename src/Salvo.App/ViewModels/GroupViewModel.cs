@@ -132,6 +132,11 @@ public partial class GroupViewModel : ObservableObject
         };
         foreach (var n in group.Nodes) vm.Graph.Nodes.Add(NodeViewModel.FromModel(n));
         foreach (var e in group.Edges) vm.Graph.Edges.Add(EdgeViewModel.FromModel(e));
+        // Lift If then/else edge chains off the flat graph onto the If
+        // view-models (inverse of Graph.WriteTo). Must run here too — this
+        // load path builds Graph directly instead of via
+        // GroupGraphViewModel.FromModel.
+        vm.Graph.CollapseBranches();
         vm.Graph.RebuildStages();
         return vm;
     }

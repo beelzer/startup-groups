@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -31,6 +32,13 @@ public partial class GroupFlowView : UserControl
     // sibling instead of doing a sequential reorder.
     private NodeViewModel? _activeMergeRow;
 
+    // Currently highlighted If branch during a drag. Tracked like
+    // _activeMergeRow (set on branch hover, cleared when the drag moves
+    // over the outer list or ends) rather than via DragLeave — DragLeave
+    // fires on every child-element crossing and flickers the highlight.
+    private IfElseNodeViewModel? _activeBranchNode;
+    private string? _activeBranchName;
+
     public GroupFlowView()
     {
         InitializeComponent();
@@ -61,7 +69,231 @@ public partial class GroupFlowView : UserControl
         }
     }
 
+    // Trailing always-visible "+ Add item" — pops the kind picker. Reuses
+    // MainWindowViewModel.AddNode (RelayCommand) which appends after the
+    // graph's current leaves; that's the right "add to end" semantic.
+
+    private void TrailingAdd_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.ContextMenu is not null)
+        {
+            btn.ContextMenu.PlacementTarget = btn;
+            btn.ContextMenu.IsOpen = true;
+        }
+    }
+
+    private void TrailingAddMenu_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem mi || mi.Tag is not string kind) return;
+        if (DataContext is not MainWindowViewModel vm) return;
+        if (vm.AddNodeCommand.CanExecute(kind))
+        {
+            vm.AddNodeCommand.Execute(kind);
+        }
+    }
+
+    // ---- If-branch add wiring ----------------------------------------
+
+    private void BranchAdd_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.ContextMenu is not null)
+        {
+            btn.ContextMenu.PlacementTarget = btn;
+            btn.ContextMenu.IsOpen = true;
+        }
+    }
+
+    private void BranchAddMenu_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem mi || mi.Tag is not string kind) return;
+
+        // The placement target is the "+ Add to Then/Else" button. Its Tag
+        // names the branch; its DataContext is the owning If node.
+        var menu = ItemsControl.ItemsControlFromItemContainer(mi) as ContextMenu;
+        var owner = menu?.PlacementTarget as FrameworkElement;
+        if (owner?.Tag is not string branch) return;
+        if (owner.DataContext is not IfElseNodeViewModel ifNode) return;
+
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.AddNodeToBranch(ifNode, branch, kind);
+        }
+    }
+
+    /// <summary>
+    /// True only for nodes that live directly in the outer graph. Branch
+    /// nodes (held on an If view-model) render inside the If card but are
+    /// *not* outer nodes, so the drag-reorder system must ignore them —
+    /// dragging one would rewire the outer topology it isn't part of.
+    /// </summary>
+    private bool IsOuterNode(NodeViewModel node)
+        => DataContext is MainWindowViewModel vm
+           && vm.SelectedGroup is not null
+           && vm.SelectedGroup.Graph.Nodes.Contains(node);
+
+    // ---- Condition editing persistence -------------------------------
+
+    // The condition type picker (DropDownClosed) and value box (LostFocus)
+    // don't auto-persist otherwise — flush the config so the edit survives
+    // without waiting for the next structural change. DropDownClosed (not
+    // SelectionChanged) avoids a save on every virtualization realize.
+    private void Condition_OnChanged(object sender, RoutedEventArgs e) => PersistConditionEdit();
+
+    private void ConditionKind_OnClosed(object? sender, EventArgs e) => PersistConditionEdit();
+
+    private void PersistConditionEdit()
+    {
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.PersistConfigPublic();
+        }
+    }
+
+    // ---- Drag a node into an If then/else branch ---------------------
+
+    private void Branch_OnDragOver(object sender, DragEventArgs e)
+    {
+        // Keep the floating drag-name ghost tracking the cursor over
+        // branches too — otherwise it freezes at the box edge.
+        if (_ghost is not null && _ghostHost is not null)
+        {
+            _ghost.UpdatePosition(e.GetPosition(_ghostHost));
+        }
+
+        if (sender is not FrameworkElement fe
+            || fe.DataContext is not IfElseNodeViewModel ifNode
+            || fe.Tag is not string branch
+            || e.Data.GetData(NodeDragFormat) is not NodeViewModel dragged
+            || !CanDropIntoBranch(dragged, ifNode))
+        {
+            ArmBranch(null, null);
+            e.Effects = DragDropEffects.None;
+            e.Handled = true;
+            return;
+        }
+
+        ArmBranch(ifNode, branch);
+        HideInsertionLine();   // suppress the outer snap-line while over a branch
+        ArmMerge(null);
+        e.Effects = DragDropEffects.Move;
+        e.Handled = true;
+    }
+
+    // DragLeave is intentionally a near no-op — the highlight is cleared by
+    // ArmBranch when the drag moves over the outer list or ends, not on
+    // every child-crossing leave (which flickered). We just swallow the
+    // event so it doesn't bubble to the outer handlers.
+    private void Branch_OnDragLeave(object sender, DragEventArgs e) => e.Handled = true;
+
+    private void Branch_OnDrop(object sender, DragEventArgs e)
+    {
+        if (sender is not FrameworkElement fe
+            || fe.DataContext is not IfElseNodeViewModel ifNode
+            || fe.Tag is not string branch)
+        {
+            return;
+        }
+
+        if (e.Data.GetData(NodeDragFormat) is not NodeViewModel dragged || !CanDropIntoBranch(dragged, ifNode))
+        {
+            ResetDrop();
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.MoveNodeIntoBranch(dragged, ifNode, branch);
+        }
+        ResetDrop();
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// Set the single highlighted branch, clearing any previously
+    /// highlighted one. Pass (null, null) to clear. Mirrors
+    /// <see cref="ArmMerge"/> so branch highlighting is edge-triggered and
+    /// flicker-free.
+    /// </summary>
+    private void ArmBranch(IfElseNodeViewModel? ifNode, string? branch)
+    {
+        if (ReferenceEquals(_activeBranchNode, ifNode) && _activeBranchName == branch) return;
+        if (_activeBranchNode is not null && _activeBranchName is not null)
+        {
+            SetBranchDropTarget(_activeBranchNode, _activeBranchName, false);
+        }
+        _activeBranchNode = ifNode;
+        _activeBranchName = branch;
+        if (_activeBranchNode is not null && branch is not null)
+        {
+            SetBranchDropTarget(_activeBranchNode, branch, true);
+        }
+    }
+
+    private static void SetBranchDropTarget(IfElseNodeViewModel ifNode, string branch, bool on)
+    {
+        if (string.Equals(branch, "else", StringComparison.Ordinal)) ifNode.ElseIsDropTarget = on;
+        else ifNode.ThenIsDropTarget = on;
+    }
+
+    // A node may drop into a branch when it isn't the If itself, isn't
+    // Start, and isn't another If (nested branches aren't supported by the
+    // linear branch transform). Source may be an outer node or a node from
+    // another branch.
+    private static bool CanDropIntoBranch(NodeViewModel dragged, IfElseNodeViewModel ifNode)
+        => !ReferenceEquals(dragged, ifNode)
+           && dragged is not StartNodeViewModel
+           && dragged is not IfElseNodeViewModel;
+
     // ---- Drag-and-drop reorder ---------------------------------------
+
+    /// <summary>
+    /// Tunnels before any child handles the drag, keeping the ghost on the
+    /// cursor over most of the surface.
+    /// </summary>
+    private void Root_OnPreviewDragOver(object sender, DragEventArgs e)
+    {
+        if (_ghost is not null && _ghostHost is not null)
+        {
+            _ghost.UpdatePosition(e.GetPosition(_ghostHost));
+        }
+    }
+
+    /// <summary>
+    /// Source-side drag feedback fires continuously for the whole drag no
+    /// matter what the cursor is over — including inline text boxes /
+    /// combo boxes that register as their own OS drop targets and swallow
+    /// every DragOver. We use it to keep the ghost glued to the cursor
+    /// (via the live cursor position, since drag events don't reach us
+    /// over those controls).
+    /// </summary>
+    protected override void OnGiveFeedback(GiveFeedbackEventArgs e)
+    {
+        base.OnGiveFeedback(e);
+        if (_ghost is null || _ghostHost is null) return;
+        if (!GetCursorPos(out var pt)) return;
+        try
+        {
+            // GetCursorPos + PointFromScreen both work in device pixels, so
+            // this matches the DIU that DragOver's GetPosition yields — no
+            // jump when handoff switches between the two.
+            _ghost.UpdatePosition(_ghostHost.PointFromScreen(new Point(pt.X, pt.Y)));
+        }
+        catch (InvalidOperationException)
+        {
+            // Host not connected to a PresentationSource mid-drag; ignore.
+        }
+    }
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetCursorPos(out Win32Point lpPoint);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Win32Point
+    {
+        public int X;
+        public int Y;
+    }
 
     protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
     {
@@ -72,6 +304,9 @@ public partial class GroupFlowView : UserControl
         if (source is null) return;
         if (source.DataContext is not NodeViewModel node) return;
         if (node is StartNodeViewModel) return;
+        // Both outer nodes and branch nodes are draggable: outer nodes
+        // reorder / move into branches; branch nodes move out to the flow
+        // list or across to the other branch. Only Start is pinned.
 
         _dragStart = e.GetPosition(this);
         _dragSource = node;
@@ -105,6 +340,7 @@ public partial class GroupFlowView : UserControl
             HideGhost();
             HideInsertionLine();
             ArmMerge(null);
+            ArmBranch(null, null);
             _activeSnapIndex = -1;
             if (_dragSourceElement is not null)
             {
@@ -139,6 +375,9 @@ public partial class GroupFlowView : UserControl
         {
             _ghost.UpdatePosition(e.GetPosition(_ghostHost));
         }
+
+        // Over the outer list, not a branch — drop any branch highlight.
+        ArmBranch(null, null);
 
         var cursorInList = e.GetPosition(StageList);
         var boundaries = CollectRowBoundaries();
@@ -278,6 +517,15 @@ public partial class GroupFlowView : UserControl
         if (DataContext is not MainWindowViewModel vm || vm.SelectedGroup is null) { ResetDrop(); return; }
 
         var graph = vm.SelectedGroup.Graph;
+
+        // A branch node dropped on the outer flow list: lift it out of its
+        // branch into the outer graph first, then position it like any
+        // other outer node via the boundary/merge logic below.
+        if (!graph.Nodes.Contains(dragged))
+        {
+            if (!vm.ExtractBranchNodeToOuter(dragged)) { ResetDrop(); e.Handled = true; return; }
+        }
+
         var cursorInList = e.GetPosition(StageList);
 
         // Re-decide mode from the release position rather than trusting
@@ -329,6 +577,7 @@ public partial class GroupFlowView : UserControl
         HideInsertionLine();
         _activeSnapIndex = -1;
         ArmMerge(null);
+        ArmBranch(null, null);
     }
 
     // ---- Insertion line + snap-point math ----------------------------
@@ -389,12 +638,14 @@ public partial class GroupFlowView : UserControl
         for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
         {
             var child = VisualTreeHelper.GetChild(root, i);
-            if (child is FrameworkElement fe && fe.DataContext is NodeViewModel node && fe.ActualHeight > 0)
+            // Only count the outermost element bound to an *outer* node —
+            // the row's template root, not its inner sub-elements (which
+            // inherit the node DataContext), and not branch nodes nested
+            // inside an If card (excluded via IsOuterNode).
+            if (child is FrameworkElement fe && fe.DataContext is NodeViewModel node && fe.ActualHeight > 0
+                && IsOuterNode(node)
+                && !sink.Any(r => ReferenceEquals(r.Item2, node)))
             {
-                // Only count the outermost element bound to this node —
-                // the row's template root, not its inner sub-elements
-                // (which also inherit the node DataContext).
-                if (sink.Any(r => ReferenceEquals(r.Item2, node))) continue;
                 var topLeft = fe.TranslatePoint(new Point(0, 0), StageList);
                 var stage = FindAncestorStage(fe);
                 sink.Add((fe, node, stage, topLeft.Y, topLeft.Y + fe.ActualHeight));

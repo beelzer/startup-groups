@@ -12,6 +12,20 @@ namespace Salvo.App.ViewModels.Flow;
 public abstract partial class FlowConditionViewModel : ObservableObject
 {
     public abstract string DisplayName { get; }
+
+    /// <summary>Stable discriminator matching the model's "type" ("serviceRunning", etc.).</summary>
+    public abstract string Kind { get; }
+
+    /// <summary>
+    /// The single free-text operand of this condition, projected onto the
+    /// concrete subtype's field (service name / path / process name). Lets
+    /// the If card bind one value box regardless of the condition kind.
+    /// </summary>
+    public abstract string Value { get; set; }
+
+    /// <summary>Prompt shown in the value box for this condition kind.</summary>
+    public abstract string ValueLabel { get; }
+
     public abstract FlowCondition ToModel();
 
     public static FlowConditionViewModel FromModel(FlowCondition cond) => cond switch
@@ -25,21 +39,30 @@ public abstract partial class FlowConditionViewModel : ObservableObject
 
 public sealed partial class ServiceRunningConditionViewModel : FlowConditionViewModel
 {
-    [ObservableProperty] private string _serviceName = string.Empty;
+    [ObservableProperty][NotifyPropertyChangedFor(nameof(Value))] private string _serviceName = string.Empty;
     public override string DisplayName => "Service running";
+    public override string Kind => "serviceRunning";
+    public override string ValueLabel => "Service name";
+    public override string Value { get => ServiceName; set => ServiceName = value; }
     public override FlowCondition ToModel() => new ServiceRunningCondition { ServiceName = ServiceName };
 }
 
 public sealed partial class FileExistsConditionViewModel : FlowConditionViewModel
 {
-    [ObservableProperty] private string _path = string.Empty;
+    [ObservableProperty][NotifyPropertyChangedFor(nameof(Value))] private string _path = string.Empty;
     public override string DisplayName => "File exists";
+    public override string Kind => "fileExists";
+    public override string ValueLabel => "File or folder path";
+    public override string Value { get => Path; set => Path = value; }
     public override FlowCondition ToModel() => new FileExistsCondition { Path = Path };
 }
 
 public sealed partial class ProcessRunningConditionViewModel : FlowConditionViewModel
 {
-    [ObservableProperty] private string _processName = string.Empty;
+    [ObservableProperty][NotifyPropertyChangedFor(nameof(Value))] private string _processName = string.Empty;
     public override string DisplayName => "Process running";
+    public override string Kind => "processRunning";
+    public override string ValueLabel => "Process name (e.g. chrome)";
+    public override string Value { get => ProcessName; set => ProcessName = value; }
     public override FlowCondition ToModel() => new ProcessRunningCondition { ProcessName = ProcessName };
 }
