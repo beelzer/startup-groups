@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using Microsoft.Win32;
 using Salvo.Core.Branding;
 using Salvo.Core.Elevation;
 using Salvo.Core.Models;
@@ -81,41 +80,10 @@ internal static class Program
             return 2;
         }
 
-        try
-        {
-            DeleteRunValue(request.RegistryEdit.Source, request.RegistryEdit.OriginalName);
-            return 0;
-        }
-        catch
-        {
-            return 1;
-        }
-    }
-
-    private static void DeleteRunValue(StartupEntrySource source, string name)
-    {
-        const string runPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-        const string approvedRun = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-        const string approvedRun32 = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run32";
-
-        var (root, path, approvedRoot, approvedPath) = source switch
-        {
-            StartupEntrySource.RegistryRunUser => (Registry.CurrentUser, runPath, Registry.CurrentUser, approvedRun),
-            StartupEntrySource.RegistryRunUser32 => (RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32), runPath, Registry.CurrentUser, approvedRun32),
-            StartupEntrySource.RegistryRunMachine => (Registry.LocalMachine, runPath, Registry.LocalMachine, approvedRun),
-            StartupEntrySource.RegistryRunMachine32 => (RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32), runPath, Registry.LocalMachine, approvedRun32),
-            _ => (null!, string.Empty, null!, string.Empty)
-        };
-
-        if (root is null) return;
-
-        using (var runKey = root.OpenSubKey(path, writable: true))
-        {
-            runKey?.DeleteValue(name, throwOnMissingValue: false);
-        }
-
-        using var approved = approvedRoot.OpenSubKey(approvedPath, writable: true);
-        approved?.DeleteValue(name, throwOnMissingValue: false);
+        // Same shared writer the in-process HKCU path uses, so the elevator's
+        // post-UAC delete can't drift from it (and inherits the HKCU 32-bit fix).
+        var result = RegistryRunValueWriter.Delete(request.RegistryEdit.Source, request.RegistryEdit.OriginalName);
+        return result.Succeeded ? 0 : 1;
     }
 
     private static ElevationRequest? ParsePayload(string[] args)

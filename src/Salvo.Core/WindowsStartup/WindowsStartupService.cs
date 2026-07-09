@@ -6,20 +6,14 @@ namespace Salvo.Core.WindowsStartup;
 [SupportedOSPlatform("windows")]
 public sealed class WindowsStartupService : IWindowsStartupService
 {
-    private const string RunPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string RunWow64Path = @"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Run";
-    private const string StartupApprovedRun = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-    private const string StartupApprovedRun32 = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run32";
-    private const string StartupApprovedFolder = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder";
-
     public IReadOnlyList<WindowsStartupEntry> Enumerate()
     {
         var entries = new List<WindowsStartupEntry>();
 
-        ReadRegistryEntries(entries, Registry.CurrentUser, RunPath, StartupApprovedRun, StartupEntrySource.RegistryRunUser, canModify: true);
-        ReadRegistryEntries(entries, Registry.CurrentUser, RunWow64Path, StartupApprovedRun32, StartupEntrySource.RegistryRunUser32, canModify: true);
-        ReadRegistryEntries(entries, Registry.LocalMachine, RunPath, StartupApprovedRun, StartupEntrySource.RegistryRunMachine, canModify: false);
-        ReadRegistryEntries(entries, Registry.LocalMachine, RunWow64Path, StartupApprovedRun32, StartupEntrySource.RegistryRunMachine32, canModify: false);
+        ReadRegistryEntries(entries, Registry.CurrentUser, StartupRegistryLocations.RunPath, StartupRegistryLocations.StartupApprovedRun, StartupEntrySource.RegistryRunUser, canModify: true);
+        ReadRegistryEntries(entries, Registry.CurrentUser, StartupRegistryLocations.RunWow64Path, StartupRegistryLocations.StartupApprovedRun32, StartupEntrySource.RegistryRunUser32, canModify: true);
+        ReadRegistryEntries(entries, Registry.LocalMachine, StartupRegistryLocations.RunPath, StartupRegistryLocations.StartupApprovedRun, StartupEntrySource.RegistryRunMachine, canModify: false);
+        ReadRegistryEntries(entries, Registry.LocalMachine, StartupRegistryLocations.RunWow64Path, StartupRegistryLocations.StartupApprovedRun32, StartupEntrySource.RegistryRunMachine32, canModify: false);
 
         ReadFolderEntries(entries, Environment.GetFolderPath(Environment.SpecialFolder.Startup), StartupEntrySource.StartupFolderUser, canModify: true);
         ReadFolderEntries(entries, Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup), StartupEntrySource.StartupFolderCommon, canModify: false);
@@ -61,47 +55,42 @@ public sealed class WindowsStartupService : IWindowsStartupService
 
     public StartupOperationResult TryRemove(WindowsStartupEntry entry)
     {
-        try
+        switch (entry.Source)
         {
-            switch (entry.Source)
-            {
-                case StartupEntrySource.RegistryRunUser:
-                    RemoveRegistryValue(Registry.CurrentUser, RunPath, entry.Name);
-                    break;
-                case StartupEntrySource.RegistryRunUser32:
-                    RemoveRegistryValue(Registry.CurrentUser, RunWow64Path, entry.Name);
-                    break;
-                case StartupEntrySource.RegistryRunMachine:
-                    RemoveRegistryValue(Registry.LocalMachine, RunPath, entry.Name);
-                    break;
-                case StartupEntrySource.RegistryRunMachine32:
-                    RemoveRegistryValue(Registry.LocalMachine, RunWow64Path, entry.Name);
-                    break;
-                case StartupEntrySource.StartupFolderUser:
-                case StartupEntrySource.StartupFolderCommon:
+            case StartupEntrySource.RegistryRunUser:
+            case StartupEntrySource.RegistryRunUser32:
+            case StartupEntrySource.RegistryRunMachine:
+            case StartupEntrySource.RegistryRunMachine32:
+                // Run value + StartupApproved entry deleted together via the
+                // shared writer, so this path can't drift from the elevator's.
+                return RegistryRunValueWriter.Delete(entry.Source, entry.Name);
+
+            case StartupEntrySource.StartupFolderUser:
+            case StartupEntrySource.StartupFolderCommon:
+                try
+                {
                     if (!string.IsNullOrEmpty(entry.SourceDescription) && File.Exists(entry.SourceDescription))
                     {
                         File.Delete(entry.SourceDescription);
                     }
-                    break;
-                default:
-                    return StartupOperationResult.Failed("Unsupported source");
-            }
+                    RemoveFromApproved(entry);
+                    return StartupOperationResult.Ok("Removed");
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return StartupOperationResult.NeedsAdmin();
+                }
+                catch (System.Security.SecurityException)
+                {
+                    return StartupOperationResult.NeedsAdmin();
+                }
+                catch (Exception ex)
+                {
+                    return StartupOperationResult.Failed(ex.Message);
+                }
 
-            RemoveFromApproved(entry);
-            return StartupOperationResult.Ok("Removed");
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return StartupOperationResult.NeedsAdmin();
-        }
-        catch (System.Security.SecurityException)
-        {
-            return StartupOperationResult.NeedsAdmin();
-        }
-        catch (Exception ex)
-        {
-            return StartupOperationResult.Failed(ex.Message);
+            default:
+                return StartupOperationResult.Failed("Unsupported source");
         }
     }
 
@@ -119,8 +108,15 @@ public sealed class WindowsStartupService : IWindowsStartupService
 
         try
         {
-            using var key = Registry.CurrentUser.CreateSubKey(RunPath, writable: true)
+            using var key = Registry.CurrentUser.CreateSubKey(StartupRegistryLocations.RunPath, writable: true)
                 ?? throw new InvalidOperationException("Could not open Run key");
+
+            // Don't silently clobber an existing Run value of the same name
+            // (mirrors the uniqueness guard in RegistryRunValueWriter.Write).
+            if (key.GetValueNames().Any(n => n.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            {
+                return StartupOperationResult.Failed($"A startup entry named '{name}' already exists");
+            }
 
             key.SetValue(name, command, RegistryValueKind.String);
             return StartupOperationResult.Ok("Added");
@@ -148,20 +144,15 @@ public sealed class WindowsStartupService : IWindowsStartupService
 
     public IReadOnlyList<string> GetSiblingValueNames(StartupEntrySource source)
     {
-        var (root, path) = source switch
-        {
-            StartupEntrySource.RegistryRunUser => (Registry.CurrentUser, RunPath),
-            StartupEntrySource.RegistryRunUser32 => (RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32), RunPath),
-            StartupEntrySource.RegistryRunMachine => (Registry.LocalMachine, RunPath),
-            StartupEntrySource.RegistryRunMachine32 => (RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32), RunPath),
-            _ => ((RegistryKey?)null, string.Empty),
-        };
-
-        if (root is null) return Array.Empty<string>();
+        // Same key the entry was enumerated from and is edited in — the *32
+        // variants resolve to the literal WOW6432Node path, not the 32-bit view
+        // of the normal Run path.
+        var location = StartupRegistryLocations.ResolveRun(source);
+        if (location is null) return Array.Empty<string>();
 
         try
         {
-            using var key = root.OpenSubKey(path, writable: false);
+            using var key = location.Value.RunRoot.OpenSubKey(location.Value.RunPath, writable: false);
             return key?.GetValueNames() ?? Array.Empty<string>();
         }
         catch
@@ -171,16 +162,8 @@ public sealed class WindowsStartupService : IWindowsStartupService
     }
 
     // HKLM-sourced entries are approved/disapproved via HKLM\StartupApproved; everything else via HKCU.
-    private static (RegistryKey Root, string Path)? ResolveApprovedLocation(StartupEntrySource source) => source switch
-    {
-        StartupEntrySource.RegistryRunUser => (Registry.CurrentUser, StartupApprovedRun),
-        StartupEntrySource.RegistryRunUser32 => (Registry.CurrentUser, StartupApprovedRun32),
-        StartupEntrySource.RegistryRunMachine => (Registry.LocalMachine, StartupApprovedRun),
-        StartupEntrySource.RegistryRunMachine32 => (Registry.LocalMachine, StartupApprovedRun32),
-        StartupEntrySource.StartupFolderUser => (Registry.CurrentUser, StartupApprovedFolder),
-        StartupEntrySource.StartupFolderCommon => (Registry.CurrentUser, StartupApprovedFolder),
-        _ => null
-    };
+    private static (RegistryKey Root, string Path)? ResolveApprovedLocation(StartupEntrySource source) =>
+        StartupRegistryLocations.ResolveApproved(source);
 
     private static void ReadRegistryEntries(
         List<WindowsStartupEntry> entries,
@@ -244,7 +227,7 @@ public sealed class WindowsStartupService : IWindowsStartupService
 
         try
         {
-            using var approved = Registry.CurrentUser.OpenSubKey(StartupApprovedFolder, writable: false);
+            using var approved = Registry.CurrentUser.OpenSubKey(StartupRegistryLocations.StartupApprovedFolder, writable: false);
 
             foreach (var file in Directory.EnumerateFiles(folder, "*", SearchOption.TopDirectoryOnly))
             {
@@ -297,12 +280,6 @@ public sealed class WindowsStartupService : IWindowsStartupService
         var fileTime = BitConverter.GetBytes(DateTime.UtcNow.ToFileTimeUtc());
         Array.Copy(fileTime, 0, value, 4, 8);
         return value;
-    }
-
-    private static void RemoveRegistryValue(RegistryKey root, string subKey, string valueName)
-    {
-        using var key = root.OpenSubKey(subKey, writable: true);
-        key?.DeleteValue(valueName, throwOnMissingValue: false);
     }
 
     private static void RemoveFromApproved(WindowsStartupEntry entry)

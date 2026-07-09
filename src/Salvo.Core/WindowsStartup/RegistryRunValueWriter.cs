@@ -10,11 +10,6 @@ namespace Salvo.Core.WindowsStartup;
 [SupportedOSPlatform("windows")]
 public static class RegistryRunValueWriter
 {
-    private const string RunPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string RunWow64Path = @"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Run";
-    private const string StartupApprovedRun = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-    private const string StartupApprovedRun32 = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run32";
-
     public static StartupOperationResult Write(RegistryRunValueEdit edit)
     {
         ArgumentNullException.ThrowIfNull(edit);
@@ -35,7 +30,7 @@ public static class RegistryRunValueWriter
             return StartupOperationResult.Failed("Command required");
         }
 
-        var location = ResolveLocation(edit.Source);
+        var location = StartupRegistryLocations.ResolveRun(edit.Source);
         if (location is null)
         {
             return StartupOperationResult.Failed("Unsupported source");
@@ -103,9 +98,47 @@ public static class RegistryRunValueWriter
         }
     }
 
+    /// <summary>
+    /// Deletes a Run value and its StartupApproved entry in one place, so the
+    /// in-process HKCU path and the elevator's post-UAC HKLM path stay aligned.
+    /// </summary>
+    public static StartupOperationResult Delete(StartupEntrySource source, string name)
+    {
+        var location = StartupRegistryLocations.ResolveRun(source);
+        if (location is null)
+        {
+            return StartupOperationResult.Failed("Unsupported source");
+        }
+
+        try
+        {
+            using (var runKey = location.Value.RunRoot.OpenSubKey(location.Value.RunPath, writable: true))
+            {
+                runKey?.DeleteValue(name, throwOnMissingValue: false);
+            }
+
+            using var approved = location.Value.ApprovedRoot.OpenSubKey(location.Value.ApprovedPath, writable: true);
+            approved?.DeleteValue(name, throwOnMissingValue: false);
+
+            return StartupOperationResult.Ok("Removed");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return StartupOperationResult.NeedsAdmin();
+        }
+        catch (System.Security.SecurityException)
+        {
+            return StartupOperationResult.NeedsAdmin();
+        }
+        catch (Exception ex)
+        {
+            return StartupOperationResult.Failed(ex.Message);
+        }
+    }
+
     public static RegistryRunValueDetails? Read(StartupEntrySource source, string name)
     {
-        var location = ResolveLocation(source);
+        var location = StartupRegistryLocations.ResolveRun(source);
         if (location is null) return null;
 
         try
@@ -137,39 +170,10 @@ public static class RegistryRunValueWriter
 
     public static string FormatKeyPath(StartupEntrySource source)
     {
-        var location = ResolveLocation(source);
+        var location = StartupRegistryLocations.ResolveRun(source);
         if (location is null) return string.Empty;
 
         var hivePrefix = location.Value.RunRoot.Name; // "HKEY_CURRENT_USER" or "HKEY_LOCAL_MACHINE"
         return $@"{hivePrefix}\{location.Value.RunPath}";
-    }
-
-    private readonly record struct Location(
-        RegistryKey RunRoot,
-        string RunPath,
-        RegistryKey ApprovedRoot,
-        string ApprovedPath);
-
-    private static Location? ResolveLocation(StartupEntrySource source)
-    {
-        // 64-bit views for HKCU/HKLM Run; 32-bit (WOW6432Node) for the *32 variants.
-        // OpenBaseKey makes the view explicit so writes to the 32-bit hive land in the
-        // right place under a 64-bit process.
-        return source switch
-        {
-            StartupEntrySource.RegistryRunUser => new Location(
-                Registry.CurrentUser, RunPath,
-                Registry.CurrentUser, StartupApprovedRun),
-            StartupEntrySource.RegistryRunUser32 => new Location(
-                RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32), RunPath,
-                Registry.CurrentUser, StartupApprovedRun32),
-            StartupEntrySource.RegistryRunMachine => new Location(
-                Registry.LocalMachine, RunPath,
-                Registry.LocalMachine, StartupApprovedRun),
-            StartupEntrySource.RegistryRunMachine32 => new Location(
-                RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32), RunPath,
-                Registry.LocalMachine, StartupApprovedRun32),
-            _ => null
-        };
     }
 }
