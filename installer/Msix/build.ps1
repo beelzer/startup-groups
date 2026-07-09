@@ -95,15 +95,26 @@ New-Item -ItemType Directory -Path $StageDir -Force | Out-Null
 New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 
 # --- Publish the app ---
-Write-Host "Publishing Salvo.App ($Configuration, win-x64, multi-file)..." -ForegroundColor Cyan
+Write-Host "Publishing Salvo.App ($Configuration, win-x64, multi-file, R2R)..." -ForegroundColor Cyan
 # PublishSingleFile must be FALSE for MSIX. MakeAppx hashes individual
 # files for block-level deltas; single-file output collapses everything
 # into one EXE and breaks both delta updates and Store certification.
+#
+# PublishReadyToRun=true: pre-JITs the app's IL so the first invocation
+# of each method skips the optimizing JIT path. Tiered Compilation still
+# rebuilds hotter code at tier-1 over the R2R baseline. Net effect on
+# this stack: ~200-800ms cold-start saving, ~30-50% size increase. We
+# don't apply it to deps (default) — WPF + System.* assemblies are
+# already R2R'd in the runtime pack we copy alongside.
+#
+# Composite R2R is intentionally skipped: Microsoft's guidance is it
+# only helps when Tiered Compilation is disabled. We have it on.
 dotnet publish $AppProj `
     -c $Configuration -r win-x64 --self-contained true `
     -p:PublishSingleFile=false `
-    -p:PublishReadyToRun=false `
+    -p:PublishReadyToRun=true `
     -p:PublishTrimmed=false `
+    -p:TieredPGO=true `
     -o $StageDir -nologo -v minimal
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed (exit $LASTEXITCODE)." }
 

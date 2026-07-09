@@ -35,6 +35,7 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        StartupTimer.Mark("OnStartup entered");
         base.OnStartup(e);
 
         // Pin the AUMID before any window is created so Windows associates the
@@ -58,6 +59,7 @@ public partial class App : Application
                 retainedFileCountLimit: 7,
                 shared: true)
             .CreateLogger();
+        StartupTimer.Mark("Serilog configured");
 
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
         {
@@ -78,15 +80,19 @@ public partial class App : Application
             .UseSerilog()
             .ConfigureServices((_, services) => ConfigureServices(services))
             .Build();
+        StartupTimer.Mark("Host built");
 
         _host.Start();
+        StartupTimer.Mark("Host started");
 
         DispatcherUnhandledException += OnDispatcherUnhandledException;
 
         // Apply persisted UI culture BEFORE any window/binding is constructed.
         _host.Services.GetRequiredService<ILanguageService>().ApplyPersisted();
+        StartupTimer.Mark("UI culture applied");
 
         ApplyConfiguredTheme();
+        StartupTimer.Mark("Theme applied");
 
         var settings = _host.Services.GetRequiredService<ISettingsStore>();
         settings.Changed += (_, _) => Dispatcher.Invoke(ApplyConfiguredTheme);
@@ -103,9 +109,11 @@ public partial class App : Application
         var configStore = _host.Services.GetRequiredService<IConfigStore>();
         configStore.Load();
         configStore.BeginWatching();
+        StartupTimer.Mark("Config loaded");
 
         _trayViewModel = _host.Services.GetRequiredService<TrayViewModel>();
         _trayViewModel.Initialize();
+        StartupTimer.Mark("Tray initialized");
 
         // Surface the main window unless the user has explicitly opted into
         // tray-only startup. Always surface after an update restart even if
@@ -120,6 +128,11 @@ public partial class App : Application
         if (shouldShowOnLaunch)
         {
             _trayViewModel.ShowMainWindowCommand.Execute(null);
+            StartupTimer.Mark("Main window shown");
+        }
+        else
+        {
+            StartupTimer.Mark("Tray-only startup complete");
         }
 
         // First-run hand-off from the Phase 3 installer's Customize screen:
@@ -270,14 +283,14 @@ public partial class App : Application
         services.AddSingleton<IReadinessProbe, ActivityQuietProbe>();
         services.AddSingleton<IReadinessProbe, ServiceRunningProbe>();
         services.AddSingleton<ReadinessDetector>();
+        // Self-initializing: the store kicks off schema creation on a
+        // background Task in its constructor; consumer methods await that
+        // task before doing their work. Keeping this off the DI cold path
+        // saves ~100-500ms (SQLite native dll first-load + schema CREATE).
         services.AddSingleton<ILaunchBenchmarkStore>(sp =>
-        {
-            var store = new SqliteLaunchBenchmarkStore(
+            new SqliteLaunchBenchmarkStore(
                 databasePath: null,
-                logger: sp.GetRequiredService<ILogger<SqliteLaunchBenchmarkStore>>());
-            store.InitializeAsync().GetAwaiter().GetResult();
-            return store;
-        });
+                logger: sp.GetRequiredService<ILogger<SqliteLaunchBenchmarkStore>>()));
         services.AddSingleton<EtwResourceMonitor>();
         services.AddSingleton<DependencyHintsAnalyzer>();
         services.AddSingleton<ILaunchTelemetryService, LaunchTelemetryService>();

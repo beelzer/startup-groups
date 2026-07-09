@@ -20,8 +20,9 @@
 <Package
     xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
     xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+    xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
     xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-    IgnorableNamespaces="uap rescap">
+    IgnorableNamespaces="uap uap5 rescap">
 
     <Identity Name="Salvo"
               Publisher="CN=SalvoDev"
@@ -61,6 +62,29 @@
                     Image="Images\SplashScreen.png"
                     BackgroundColor="#1F1F1F" />
             </uap:VisualElements>
+            <Extensions>
+                <!--
+                  windows.startupTask: registers Salvo as a boot-startup
+                  app via Windows' native Startup Apps mechanism (visible
+                  + toggleable in Task Manager → Startup apps and
+                  Settings → Apps → Startup), with no Run-key brittleness.
+                  Enabled="false" by default — user opts in via the in-app
+                  setting (which calls StartupTask.RequestEnableAsync) so
+                  no surprise Run-on-Boot. When enabled, Windows treats
+                  the launch as part of boot and may prefetch the package,
+                  shaving ~1-3s of cold start vs the HKCU\Run path.
+
+                  TaskId is the stable identifier we pass to
+                  StartupTask.GetAsync; keep it constant across releases
+                  or the user's "enabled" choice resets.
+                -->
+                <uap5:Extension Category="windows.startupTask">
+                    <uap5:StartupTask
+                        TaskId="SalvoStartup"
+                        Enabled="false"
+                        DisplayName="Salvo" />
+                </uap5:Extension>
+            </Extensions>
         </Application>
     </Applications>
 
