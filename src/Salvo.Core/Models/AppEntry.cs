@@ -1,12 +1,11 @@
-using System.Text.Json.Serialization;
-
 namespace Salvo.Core.Models;
 
 public sealed class AppEntry
 {
     public string Name { get; set; } = string.Empty;
 
-    [JsonConverter(typeof(JsonStringEnumConverter<AppKind>))]
+    // Serialized as a string via ConfigurationJsonContext's context-wide
+    // UseStringEnumConverter; no per-property converter needed.
     public AppKind Kind { get; set; } = AppKind.Executable;
 
     public string? Path { get; set; }

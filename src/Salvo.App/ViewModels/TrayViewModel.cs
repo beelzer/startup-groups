@@ -25,6 +25,8 @@ public partial class TrayViewModel : ObservableObject, IDisposable
     private readonly IServiceProvider _serviceProvider;
     private readonly MainWindowViewModel _mainViewModel;
     private readonly ILogger<TrayViewModel> _logger;
+    private readonly RelayCommand _showMainWindowCommand;
+    private readonly RelayCommand _exitCommand;
     private TaskbarIcon? _trayIcon;
     private MainWindow? _mainWindow;
 
@@ -38,6 +40,8 @@ public partial class TrayViewModel : ObservableObject, IDisposable
         _serviceProvider = serviceProvider;
         _mainViewModel = mainViewModel;
         _logger = logger;
+        _showMainWindowCommand = new RelayCommand(ShowMainWindow);
+        _exitCommand = new RelayCommand(Exit);
 
         _configStore.Changed += (_, _) => Application.Current.Dispatcher.Invoke(RebuildGroups);
         RebuildGroups();
@@ -45,19 +49,20 @@ public partial class TrayViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<TrayGroupItem> TrayGroups { get; } = [];
 
-    public ICommand ShowMainWindowCommand => new RelayCommand(ShowMainWindow);
-    public ICommand ExitCommand => new RelayCommand(Exit);
+    // Cached command instances (rebuilt tray menus and startup both read these);
+    // a fresh RelayCommand per get would churn allocations and lose identity.
+    public ICommand ShowMainWindowCommand => _showMainWindowCommand;
+    public ICommand ExitCommand => _exitCommand;
 
     public void Initialize()
     {
-        var showCommand = new RelayCommand(ShowMainWindow);
         _trayIcon = new TaskbarIcon
         {
             IconSource = LoadTrayIcon(),
             ToolTipText = Strings.Tray_Tooltip,
             ContextMenu = TrayMenuFactory.Build(this),
-            LeftClickCommand = showCommand,
-            DoubleClickCommand = showCommand,
+            LeftClickCommand = _showMainWindowCommand,
+            DoubleClickCommand = _showMainWindowCommand,
             NoLeftClickDelay = true
         };
         _trayIcon.ForceCreate();

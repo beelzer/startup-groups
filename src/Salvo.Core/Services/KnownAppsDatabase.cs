@@ -83,10 +83,7 @@ public sealed class KnownAppsDatabase : IKnownAppsDatabase
                 return [];
             }
 
-            var file = JsonSerializer.Deserialize<KnownAppsFile>(stream, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            var file = JsonSerializer.Deserialize(stream, ConfigurationJsonContext.Default.KnownAppsFile);
             return file?.Entries ?? [];
         }
         catch (Exception ex)

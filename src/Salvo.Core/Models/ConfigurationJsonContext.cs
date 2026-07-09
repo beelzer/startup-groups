@@ -13,6 +13,7 @@ namespace Salvo.Core.Models;
 [JsonSerializable(typeof(Configuration))]
 [JsonSerializable(typeof(ElevationRequest))]
 [JsonSerializable(typeof(RegistryRunValueEdit))]
+[JsonSerializable(typeof(KnownAppsFile))]
 // Polymorphic flow-graph types: registering the abstract bases is enough
 // for source-gen to handle the [JsonDerivedType] discriminators.
 [JsonSerializable(typeof(Node))]

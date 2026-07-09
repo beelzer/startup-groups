@@ -55,22 +55,40 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
     public SqliteLaunchBenchmarkStore(string? databasePath = null, ILogger<SqliteLaunchBenchmarkStore>? logger = null)
     {
         var path = databasePath ?? Services.AppPaths.BenchmarksDbPath;
+        // Private (non-Shared) cache: each connection gets its own page cache,
+        // which is the safe default for WAL and concurrent readers/writers.
         _connectionString = new SqliteConnectionStringBuilder
         {
             DataSource = path,
             Mode = SqliteOpenMode.ReadWriteCreate,
-            Cache = SqliteCacheMode.Shared,
         }.ToString();
         _logger = logger ?? NullLogger<SqliteLaunchBenchmarkStore>.Instance;
         _initTask = Task.Run(() => InitializeCoreAsync(CancellationToken.None));
     }
 
     /// <summary>
-    /// Public initialise hook kept for explicit fire-and-await use cases
-    /// (tests, re-init after a corruption recovery). Returns the same
-    /// task the constructor started, so subsequent calls are free.
+    /// Awaits the schema-creation task the constructor started. Returns the
+    /// same cached task, so subsequent calls are free. Note this is init-once:
+    /// if the initial creation faulted, the fault is observed here on every
+    /// call — it does not retry.
     /// </summary>
     public Task InitializeAsync(CancellationToken cancellationToken = default) => _initTask;
+
+    // Opens a connection and applies the per-connection busy timeout so a
+    // concurrent writer causes a short wait rather than an immediate
+    // SQLITE_BUSY. journal_mode=WAL is set once in init (it persists in the
+    // database file), so it isn't re-applied here.
+    private async Task<SqliteConnection> OpenConnectionAsync(CancellationToken cancellationToken)
+    {
+        var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var pragma = connection.CreateCommand();
+        pragma.CommandText = $"PRAGMA busy_timeout = {BusyTimeoutMs};";
+        await pragma.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        return connection;
+    }
+
+    private const int BusyTimeoutMs = 5000;
 
     private async Task InitializeCoreAsync(CancellationToken cancellationToken)
     {
@@ -80,10 +98,11 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
             Directory.CreateDirectory(dir);
         }
 
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using var command = connection.CreateCommand();
-        command.CommandText = SchemaSql;
+        // WAL persists in the db file, so setting it here once covers all
+        // later connections; then create the schema.
+        command.CommandText = "PRAGMA journal_mode=WAL;\n" + SchemaSql;
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         _logger.LogDebug("Launch benchmark store initialized at {Path}", new SqliteConnectionStringBuilder(_connectionString).DataSource);
     }
@@ -93,8 +112,7 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
         ArgumentNullException.ThrowIfNull(metrics);
         await _initTask.ConfigureAwait(false);
 
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using var command = connection.CreateCommand();
         command.CommandText = """
             INSERT OR REPLACE INTO launches (
@@ -143,8 +161,7 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
         }
         await _initTask.ConfigureAwait(false);
 
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT * FROM launches
@@ -161,8 +178,7 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
     public async Task<IReadOnlyList<LaunchMetrics>> GetAllSinceAsync(DateTimeOffset sinceUtc, CancellationToken cancellationToken = default)
     {
         await _initTask.ConfigureAwait(false);
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT * FROM launches
@@ -179,8 +195,7 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
         ArgumentException.ThrowIfNullOrEmpty(appId);
         await _initTask.ConfigureAwait(false);
 
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT 1 FROM launches
@@ -204,8 +219,7 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
         if (distinct.Count == 0) return;
         await _initTask.ConfigureAwait(false);
 
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await using var command = connection.CreateCommand();
         command.Transaction = transaction;
@@ -226,8 +240,7 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
     public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<string>>> GetResourcesSinceAsync(DateTimeOffset sinceUtc, CancellationToken cancellationToken = default)
     {
         await _initTask.ConfigureAwait(false);
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT r.launch_id, r.path

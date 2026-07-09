@@ -31,7 +31,15 @@ public sealed class ProcessInspector : IProcessInspector
         var aumids = CollectAumids(matchers);
         if (aumids.Count == 0) return false;
 
-        return FindProcessesByAumid(aumids).HasAny;
+        var found = FindProcessesByAumid(aumids);
+        try
+        {
+            return found.HasAny;
+        }
+        finally
+        {
+            DisposeAll(found.Processes);
+        }
     }
 
     public IReadOnlyList<int> FindMatchingPids(IReadOnlyList<ProcessMatcher> matchers)
