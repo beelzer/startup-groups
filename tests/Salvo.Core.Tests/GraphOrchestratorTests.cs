@@ -157,6 +157,37 @@ public sealed class GraphOrchestratorTests
         results.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task ExecuteGraph_RunCommand_UnwindsPromptly_OnCancellation()
+    {
+        // Before the fix, RunCommand did a blocking WaitForExit(60_000) and only
+        // checked the token afterwards, so a StopGroup/cancel was unresponsive
+        // for up to a minute per running command. It must now kill the process
+        // and propagate cancellation promptly.
+        var orchestrator = BuildOrchestrator(out _, out _, out _);
+
+        var start = new StartNode { Id = "s" };
+        // ping -n 60 sleeps ~59s headlessly; the cancel must interrupt it.
+        var cmd = new RunCommandNode { Id = "c", Command = "ping 127.0.0.1 -n 60", Interpreter = "shell" };
+        var group = new Group
+        {
+            Id = "g",
+            Nodes = [start, cmd],
+            Edges = [new Edge { Id = "e1", From = "s", To = "c" }],
+        };
+
+        using var cts = new CancellationTokenSource();
+        cts.CancelAfter(TimeSpan.FromMilliseconds(500));
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var act = async () => await orchestrator.LaunchGroupAsync(group, cts.Token);
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        sw.Stop();
+
+        // Well under the 60s RunCommand timeout — proves the wait is cancel-aware.
+        sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(15));
+    }
+
     private static AppOrchestrator BuildOrchestrator(
         out FakeServices services,
         out FakeInspector inspector,

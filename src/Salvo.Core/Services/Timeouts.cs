@@ -6,6 +6,11 @@ public static class Timeouts
     public static readonly TimeSpan OrchestratorServiceOperation = TimeSpan.FromSeconds(20);
     public static readonly TimeSpan ElevatorServiceOperation = TimeSpan.FromSeconds(25);
 
+    // RunCommand graph node: cap on a synchronous command step before it is
+    // killed as timed out. Long-running commands belong as background
+    // side-effects, not graph steps.
+    public static readonly TimeSpan OrchestratorRunCommand = TimeSpan.FromSeconds(60);
+
     // Settings persistence
     public static readonly TimeSpan ConfigPersistDebounce = TimeSpan.FromMilliseconds(250);
     public static readonly TimeSpan ConfigPersistCooldown = TimeSpan.FromMilliseconds(100);

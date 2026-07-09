@@ -11,6 +11,7 @@ namespace Salvo.Core.Services;
 public sealed class AppOrchestrator : IAppOrchestrator
 {
     private static readonly TimeSpan ServiceOperationTimeout = Timeouts.OrchestratorServiceOperation;
+    private static readonly TimeSpan RunCommandTimeout = Timeouts.OrchestratorRunCommand;
 
     private readonly IPathResolver _pathResolver;
     private readonly IProcessLauncher _launcher;
@@ -387,7 +388,7 @@ public sealed class AppOrchestrator : IAppOrchestrator
 
                     case RunCommandNode cmd:
                     {
-                        var result = RunCommand(cmd, cancellationToken);
+                        var result = await RunCommandAsync(cmd, cancellationToken).ConfigureAwait(false);
                         lock (resultsLock) { results.Add(result); }
                         _logger.LogInformation("RunCommand: {Status} - {Message}", result.Status, result.Message);
                         break;
@@ -443,7 +444,7 @@ public sealed class AppOrchestrator : IAppOrchestrator
         }
     }
 
-    private OperationResult RunCommand(RunCommandNode node, CancellationToken cancellationToken)
+    private async Task<OperationResult> RunCommandAsync(RunCommandNode node, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(node.Command))
         {
@@ -454,6 +455,10 @@ public sealed class AppOrchestrator : IAppOrchestrator
         {
             var (fileName, args) = node.Interpreter switch
             {
+                // The shell/powershell forms wrap the command in double quotes,
+                // so a command containing an unescaped double quote terminates
+                // the wrapper early. Commands that need literal quotes should
+                // use the "direct" interpreter, which splits argv itself.
                 "powershell" => ("powershell.exe", $"-NoProfile -Command \"{node.Command}\""),
                 "direct" => ParseDirect(node.Command),
                 _ => ("cmd.exe", $"/c {node.Command}"),
@@ -465,7 +470,7 @@ public sealed class AppOrchestrator : IAppOrchestrator
                 Arguments = args,
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                WorkingDirectory = node.WorkingDirectory ?? string.Empty,
+                WorkingDirectory = ResolveWorkingDirectory(node.WorkingDirectory),
             };
 
             using var process = System.Diagnostics.Process.Start(psi);
@@ -474,29 +479,34 @@ public sealed class AppOrchestrator : IAppOrchestrator
                 return OperationResult.Failed("Failed to start", new AppEntry { Name = node.Command });
             }
 
-            // Wait synchronously up to a generous timeout. Long-running
-            // commands should be modeled as background side-effects, not
-            // as part of the launch graph. Cancel-aware via the token.
+            // Cancel-aware wait capped at RunCommandTimeout. A StopGroup/cancel
+            // kills the process tree and propagates cancellation immediately,
+            // instead of blocking the dispatch loop for up to a minute per
+            // running command. Long-running commands should be modeled as
+            // background side-effects, not as part of the launch graph.
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(RunCommandTimeout);
             try
             {
-                process.WaitForExit(60_000);
+                await process.WaitForExitAsync(timeoutCts.Token).ConfigureAwait(false);
             }
-            catch
+            catch (OperationCanceledException)
             {
-                /* fall through to result */
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (!process.HasExited)
-            {
+                TryKillTree(process);
+                // Distinguish a caller-requested cancel (propagate, so the
+                // dispatch loop unwinds) from a timeout-only expiry (report a
+                // failed step but let the rest of the graph continue).
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException(cancellationToken);
+                }
                 return OperationResult.Failed("Timed out", new AppEntry { Name = node.Command });
             }
 
             var exitCode = process.ExitCode;
             var pseudo = new AppEntry { Name = node.Command };
             return exitCode == 0
-                ? OperationResult.Success($"Exit 0", pseudo)
+                ? OperationResult.Success("Exit 0", pseudo)
                 : OperationResult.Failed($"Exit {exitCode}", pseudo);
         }
         catch (OperationCanceledException) { throw; }
@@ -504,6 +514,35 @@ public sealed class AppOrchestrator : IAppOrchestrator
         {
             return OperationResult.Failed(ex.Message, new AppEntry { Name = node.Command });
         }
+    }
+
+    private static void TryKillTree(System.Diagnostics.Process process)
+    {
+        try
+        {
+            process.Kill(entireProcessTree: true);
+        }
+        catch
+        {
+            // Already exited, or the OS denied the kill — nothing more to do.
+        }
+    }
+
+    // Mirrors ProcessLauncher.ResolveWorkingDirectory: expand env vars and use
+    // the directory only if it exists, otherwise fall back to the current
+    // directory (RunCommand has no resolved exe path to derive one from).
+    private static string ResolveWorkingDirectory(string? workingDirectory)
+    {
+        if (!string.IsNullOrWhiteSpace(workingDirectory))
+        {
+            var expanded = Environment.ExpandEnvironmentVariables(workingDirectory);
+            if (Directory.Exists(expanded))
+            {
+                return expanded;
+            }
+        }
+
+        return Environment.CurrentDirectory;
     }
 
     private static (string FileName, string Arguments) ParseDirect(string command)
