@@ -19,6 +19,12 @@
     <PackageVersion Include="System.ServiceProcess.ServiceController" Version="10.0.6" />
     <PackageVersion Include="TaskScheduler" Version="2.12.2" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.6" />
+    <!-- Transitive pin (CentralPackageTransitivePinningEnabled) forcing the
+         native SQLite bundle off 2.1.11, which carries high-severity advisory
+         GHSA-2m69-gcr7-jv3q. The 2.x line has no patched release; 3.0.3 bundles
+         the fixed lib.e_sqlite3 3.53.3. Overrides the version that
+         Microsoft.Data.Sqlite pulls in transitively. -->
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
     <PackageVersion Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.2.2" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />

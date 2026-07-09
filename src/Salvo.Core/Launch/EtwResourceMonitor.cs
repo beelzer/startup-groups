@@ -25,7 +25,13 @@ public sealed class EtwResourceMonitor : IDisposable
     public EtwResourceMonitor(ILogger<EtwResourceMonitor>? logger = null)
     {
         _logger = (ILogger?)logger ?? NullLogger.Instance;
-        TryStart();
+        // Defer the actual ETW kernel-session setup off the calling thread.
+        // TraceEventSession ctor + EnableKernelProvider does kernel calls
+        // and is JIT-heavy on first hit (TraceEvent is a large library);
+        // it adds ~1-3s on the cold path if run inline. The session is
+        // background-only by design — no consumer needs IsActive to be
+        // true synchronously after construction.
+        Task.Run(TryStart);
     }
 
     public IReadOnlyList<string> QueryWindow(ISet<int> pids, DateTimeOffset from, DateTimeOffset to)

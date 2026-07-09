@@ -95,11 +95,6 @@ public partial class MainWindowViewModel : ObservableObject
             new ThemeOption(AppTheme.Light),
             new ThemeOption(AppTheme.Dark),
         ];
-        UpdateChannelOptions =
-        [
-            new UpdateChannelOption(UpdateChannel.Stable),
-            new UpdateChannelOption(UpdateChannel.Canary),
-        ];
         AvailableLanguages = SupportedLanguages.All;
 
         // Initial load from persisted settings (suppress save loop)
@@ -114,7 +109,6 @@ public partial class MainWindowViewModel : ObservableObject
         _autoStartEnabled = _autoStart.IsEnabled();
         _alwaysRunAsAdmin = current.AlwaysRunAsAdmin;
         _warnWhenElevatedAppsPresent = current.WarnWhenElevatedAppsPresent;
-        _selectedUpdateChannel = UpdateChannelOptions.First(o => o.Value == current.UpdateChannel);
         _isRunningAsAdmin = ElevationDetector.IsElevated;
         _suppressSettingsSave = false;
 
@@ -159,7 +153,6 @@ public partial class MainWindowViewModel : ObservableObject
     public WindowsStartupViewModel WindowsStartup { get; }
     public IReadOnlyList<SupportedLanguage> AvailableLanguages { get; }
     public IReadOnlyList<ThemeOption> ThemeOptions { get; }
-    public IReadOnlyList<UpdateChannelOption> UpdateChannelOptions { get; }
 
     public string AppName => AppBranding.AppName;
     // Pull the running version from Velopack so canary builds display
@@ -190,7 +183,6 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty] private bool _alwaysRunAsAdmin;
     [ObservableProperty] private bool _warnWhenElevatedAppsPresent;
-    [ObservableProperty] private UpdateChannelOption _selectedUpdateChannel = null!;
     [ObservableProperty] private bool _isRunningAsAdmin;
     [ObservableProperty] private bool _isAdminCardExpanded;
     [ObservableProperty] private bool _isElevationWarningExpanded;
@@ -415,19 +407,6 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
         PersistSettings(s => s.Theme = value.Value);
-    }
-
-    partial void OnSelectedUpdateChannelChanged(UpdateChannelOption value)
-    {
-        if (_suppressSettingsSave || value is null)
-        {
-            return;
-        }
-        PersistSettings(s => s.UpdateChannel = value.Value);
-        // The settings.Changed event prompts UpdateService to rebuild its
-        // UpdateManager on the next CheckAsync — re-check immediately so
-        // the user sees the channel switch reflected without restarting.
-        _ = CheckForUpdatesAsync(force: true);
     }
 
     partial void OnMinimizeToTrayOnCloseChanged(bool value)
@@ -915,7 +894,7 @@ public partial class MainWindowViewModel : ObservableObject
                 AddInstalledApps(picker.GetCheckedModels());
                 break;
             case PickerAction.EditSelected:
-                var target = picker.GetHighlightedModel();
+                var target = picker.GetSingleCheckedModel();
                 if (target is not null)
                 {
                     AddAppWithEditor(editor => editor.LoadFromInstalled(target));
@@ -1087,22 +1066,45 @@ public partial class MainWindowViewModel : ObservableObject
     /// </summary>
     public IReadOnlyList<GroupViewModel> AllGroups => Groups;
 
+    /// <summary>
+    /// Factory mapping a node-kind string (from the add menus) to a fresh
+    /// node view-model. Shared by the top-level add, the per-stage insert,
+    /// and the If-branch add so the three stay in lockstep. "App" pops the
+    /// entry editor and returns null if the user cancels.
+    /// </summary>
+    private Salvo.App.ViewModels.Flow.NodeViewModel? CreateNode(string kind) => kind switch
+    {
+        "App" => BuildAppNodeViaEditor(),
+        "Wait" => new Salvo.App.ViewModels.Flow.WaitNodeViewModel { Id = Guid.NewGuid().ToString(), DurationSeconds = 5 },
+        "IfElse" => new Salvo.App.ViewModels.Flow.IfElseNodeViewModel { Id = Guid.NewGuid().ToString() },
+        "ServiceStart" => new Salvo.App.ViewModels.Flow.ServiceStartNodeViewModel { Id = Guid.NewGuid().ToString() },
+        "ServiceStop" => new Salvo.App.ViewModels.Flow.ServiceStopNodeViewModel { Id = Guid.NewGuid().ToString() },
+        "RunCommand" => new Salvo.App.ViewModels.Flow.RunCommandNodeViewModel { Id = Guid.NewGuid().ToString() },
+        "GroupCall" => new Salvo.App.ViewModels.Flow.GroupCallNodeViewModel { Id = Guid.NewGuid().ToString() },
+        _ => null,
+    };
+
     [RelayCommand]
     private void AddNode(string? kind)
     {
         if (SelectedGroup is null || string.IsNullOrEmpty(kind)) return;
 
-        Salvo.App.ViewModels.Flow.NodeViewModel? newNode = kind switch
+        // "App" goes through the installed-app / service scanner, which can
+        // return several apps at once; each is appended to the chain end.
+        if (kind == "App")
         {
-            "App" => BuildAppNodeViaEditor(),
-            "Wait" => new Salvo.App.ViewModels.Flow.WaitNodeViewModel { Id = Guid.NewGuid().ToString(), DurationSeconds = 5 },
-            "IfElse" => new Salvo.App.ViewModels.Flow.IfElseNodeViewModel { Id = Guid.NewGuid().ToString() },
-            "ServiceStart" => new Salvo.App.ViewModels.Flow.ServiceStartNodeViewModel { Id = Guid.NewGuid().ToString() },
-            "ServiceStop" => new Salvo.App.ViewModels.Flow.ServiceStopNodeViewModel { Id = Guid.NewGuid().ToString() },
-            "RunCommand" => new Salvo.App.ViewModels.Flow.RunCommandNodeViewModel { Id = Guid.NewGuid().ToString() },
-            "GroupCall" => new Salvo.App.ViewModels.Flow.GroupCallNodeViewModel { Id = Guid.NewGuid().ToString() },
-            _ => null,
-        };
+            var appNodes = PickAppNodes();
+            foreach (var n in appNodes) AppendAppNode(SelectedGroup, n.App);
+            if (appNodes.Count > 0)
+            {
+                AppIconLoader.LoadFor(appNodes.Select(n => n.App).ToList());
+                RefreshRunningStates();
+                PersistConfig();
+            }
+            return;
+        }
+
+        var newNode = CreateNode(kind);
         if (newNode is null) return;
 
         // Append after the current leaves of the graph.
@@ -1135,13 +1137,15 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Build an AppNodeViewModel via the existing AppEntryEditor flow.
-    /// Returns null if the user cancels the editor.
+    /// Build an AppNodeViewModel via the AppEntryEditor flow, optionally
+    /// pre-populating the editor (e.g. from a picked installed app).
+    /// Returns null if the user cancels.
     /// </summary>
-    private Salvo.App.ViewModels.Flow.AppNodeViewModel? BuildAppNodeViaEditor()
+    private Salvo.App.ViewModels.Flow.AppNodeViewModel? BuildAppNodeViaEditor(Action<AppEntryEditorViewModel>? configure = null)
     {
         var editor = _serviceProvider.GetRequiredService<AppEntryEditorViewModel>();
         editor.IsNew = true;
+        configure?.Invoke(editor);
 
         var window = new AppEntryEditorWindow(editor);
         if (window.ShowDialog() != true) return null;
@@ -1156,6 +1160,52 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Open the installed-app / service scanner (the same picker the old
+    /// list UI used) and return the app node(s) the user chose — checked
+    /// installed apps, a picked-then-edited app, or a hand-entered blank
+    /// one. Empty if cancelled. Shared by every flow "App" add so the
+    /// scanner is reachable again from the graph editor.
+    /// </summary>
+    private List<Salvo.App.ViewModels.Flow.AppNodeViewModel> PickAppNodes()
+    {
+        var picker = _serviceProvider.GetRequiredService<AddAppPickerViewModel>();
+        var window = new AddAppPickerWindow(picker);
+        window.ShowDialog();
+
+        switch (picker.Result)
+        {
+            case PickerAction.AddSelected:
+                return picker.GetCheckedModels().Select(ToAppNode).ToList();
+            case PickerAction.EditSelected:
+                var target = picker.GetSingleCheckedModel();
+                var edited = target is not null ? BuildAppNodeViaEditor(e => e.LoadFromInstalled(target)) : null;
+                return edited is null ? [] : [edited];
+            case PickerAction.AddBlank:
+                var blank = BuildAppNodeViaEditor();
+                return blank is null ? [] : [blank];
+            default:
+                return [];
+        }
+    }
+
+    private static Salvo.App.ViewModels.Flow.AppNodeViewModel ToAppNode(InstalledApp item)
+    {
+        var isService = item.Source == InstalledAppSource.Service;
+        return new Salvo.App.ViewModels.Flow.AppNodeViewModel
+        {
+            Id = Guid.NewGuid().ToString(),
+            App = new AppEntryViewModel
+            {
+                Name = item.Name,
+                Kind = isService ? AppKind.Service : AppKind.Executable,
+                Path = isService ? null : item.Launch,
+                Service = isService ? item.ServiceName : null,
+                Enabled = true,
+            },
+        };
+    }
+
+    /// <summary>
     /// Inserts a freshly-created node of the given <paramref name="kind"/>
     /// immediately after the given <paramref name="stage"/>, splitting
     /// any outgoing edges so the structure remains connected. Wired to
@@ -1165,17 +1215,28 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (SelectedGroup is null || stage is null || string.IsNullOrEmpty(kind)) return;
 
-        Salvo.App.ViewModels.Flow.NodeViewModel? newNode = kind switch
+        // "App" opens the scanner (possibly several apps); chain them in
+        // sequence starting right after the target stage.
+        if (kind == "App")
         {
-            "App" => BuildAppNodeViaEditor(),
-            "Wait" => new Salvo.App.ViewModels.Flow.WaitNodeViewModel { Id = Guid.NewGuid().ToString(), DurationSeconds = 5 },
-            "IfElse" => new Salvo.App.ViewModels.Flow.IfElseNodeViewModel { Id = Guid.NewGuid().ToString() },
-            "ServiceStart" => new Salvo.App.ViewModels.Flow.ServiceStartNodeViewModel { Id = Guid.NewGuid().ToString() },
-            "ServiceStop" => new Salvo.App.ViewModels.Flow.ServiceStopNodeViewModel { Id = Guid.NewGuid().ToString() },
-            "RunCommand" => new Salvo.App.ViewModels.Flow.RunCommandNodeViewModel { Id = Guid.NewGuid().ToString() },
-            "GroupCall" => new Salvo.App.ViewModels.Flow.GroupCallNodeViewModel { Id = Guid.NewGuid().ToString() },
-            _ => null,
-        };
+            var appNodes = PickAppNodes();
+            Salvo.App.ViewModels.Flow.NodeViewModel? prev = null;
+            foreach (var n in appNodes)
+            {
+                if (prev is null) SelectedGroup.Graph.InsertAfterStage(stage, n);
+                else SelectedGroup.Graph.AddNodeAfter(prev, n);
+                prev = n;
+            }
+            if (appNodes.Count > 0)
+            {
+                AppIconLoader.LoadFor(appNodes.Select(n => n.App).ToList());
+                RefreshRunningStates();
+                PersistConfig();
+            }
+            return;
+        }
+
+        var newNode = CreateNode(kind);
         if (newNode is null) return;
 
         SelectedGroup.Graph.InsertAfterStage(stage, newNode);
@@ -1185,6 +1246,92 @@ public partial class MainWindowViewModel : ObservableObject
             RefreshRunningStates();
         }
         PersistConfig();
+    }
+
+    /// <summary>
+    /// Append a freshly-created node to the "then" or "else" branch of an
+    /// If node. Branches are linear sequences held on the If view-model;
+    /// they're compiled into the flat then/else-labeled edge graph on save.
+    /// Wired to the per-branch "+ add" affordances in the If node card.
+    /// </summary>
+    public void AddNodeToBranch(Salvo.App.ViewModels.Flow.IfElseNodeViewModel? ifNode, string? branch, string? kind)
+    {
+        if (SelectedGroup is null || ifNode is null || string.IsNullOrEmpty(kind)) return;
+
+        var target = string.Equals(branch, "else", StringComparison.Ordinal) ? ifNode.ElseNodes : ifNode.ThenNodes;
+
+        // "App" opens the scanner; add every chosen app to the branch.
+        if (kind == "App")
+        {
+            var appNodes = PickAppNodes();
+            foreach (var n in appNodes) target.Add(n);
+            if (appNodes.Count > 0)
+            {
+                AppIconLoader.LoadFor(appNodes.Select(n => n.App).ToList());
+                RefreshRunningStates();
+                PersistConfig();
+            }
+            return;
+        }
+
+        var newNode = CreateNode(kind);
+        if (newNode is null) return;
+
+        target.Add(newNode);
+        PersistConfig();
+    }
+
+    /// <summary>
+    /// Move a node into an If node's then/else branch. Source can be an
+    /// outer-graph node (detached from the chain, restitching its
+    /// neighbours) or a node already in another branch (moved across).
+    /// Appends to the target branch.
+    /// </summary>
+    public void MoveNodeIntoBranch(Salvo.App.ViewModels.Flow.NodeViewModel? dragged,
+        Salvo.App.ViewModels.Flow.IfElseNodeViewModel? ifNode, string? branch)
+    {
+        if (SelectedGroup is null || dragged is null || ifNode is null) return;
+        // No Start, no self, no nested If (the branch transform is linear).
+        if (dragged is Salvo.App.ViewModels.Flow.StartNodeViewModel) return;
+        if (dragged is Salvo.App.ViewModels.Flow.IfElseNodeViewModel) return;
+        if (ReferenceEquals(dragged, ifNode)) return;
+
+        if (SelectedGroup.Graph.Nodes.Contains(dragged))
+        {
+            SelectedGroup.Graph.RemoveNode(dragged);   // outer → branch
+        }
+        else if (!RemoveFromAnyBranch(dragged))
+        {
+            return;   // unknown origin
+        }
+
+        var target = string.Equals(branch, "else", StringComparison.Ordinal) ? ifNode.ElseNodes : ifNode.ThenNodes;
+        if (!target.Contains(dragged)) target.Add(dragged);
+        PersistConfig();
+    }
+
+    /// <summary>
+    /// Pull a node out of whatever If branch it lives in and place it back
+    /// in the outer graph (with no edges yet). The drop handler then
+    /// positions it at the release point. Returns false if the node wasn't
+    /// found in any branch.
+    /// </summary>
+    public bool ExtractBranchNodeToOuter(Salvo.App.ViewModels.Flow.NodeViewModel? node)
+    {
+        if (SelectedGroup is null || node is null) return false;
+        if (!RemoveFromAnyBranch(node)) return false;
+        SelectedGroup.Graph.Nodes.Add(node);
+        return true;
+    }
+
+    private bool RemoveFromAnyBranch(Salvo.App.ViewModels.Flow.NodeViewModel node)
+    {
+        if (SelectedGroup is null) return false;
+        foreach (var ifNode in SelectedGroup.Graph.Nodes.OfType<Salvo.App.ViewModels.Flow.IfElseNodeViewModel>())
+        {
+            if (ifNode.ThenNodes.Remove(node) || ifNode.ElseNodes.Remove(node)) return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -1223,7 +1370,20 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        SelectedGroup.Graph.RemoveNode(node);
+        // Outer-graph node → normal topology removal. Branch node (lives
+        // on an If view-model, not in the outer graph) → pull it out of
+        // whichever branch owns it.
+        if (SelectedGroup.Graph.Nodes.Contains(node))
+        {
+            SelectedGroup.Graph.RemoveNode(node);
+        }
+        else
+        {
+            foreach (var ifNode in SelectedGroup.Graph.Nodes.OfType<Salvo.App.ViewModels.Flow.IfElseNodeViewModel>())
+            {
+                if (ifNode.ThenNodes.Remove(node) || ifNode.ElseNodes.Remove(node)) break;
+            }
+        }
         PersistConfig();
     }
 

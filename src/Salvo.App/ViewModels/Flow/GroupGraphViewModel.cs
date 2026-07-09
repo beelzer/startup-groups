@@ -73,6 +73,7 @@ public sealed partial class GroupGraphViewModel : ObservableObject
         {
             vm.Edges.Add(EdgeViewModel.FromModel(e));
         }
+        vm.CollapseBranches();
         vm.RebuildStages();
         return vm;
     }
@@ -81,9 +82,149 @@ public sealed partial class GroupGraphViewModel : ObservableObject
     {
         group.Nodes.Clear();
         group.Edges.Clear();
-        foreach (var n in Nodes) group.Nodes.Add(n.ToModel());
-        foreach (var e in Edges) group.Edges.Add(e.ToModel());
+
+        // Emit every outer node, plus the branch payload hanging off each
+        // If node (which the outer graph stores opaquely on the If VM).
+        foreach (var n in Nodes)
+        {
+            group.Nodes.Add(n.ToModel());
+            if (n is IfElseNodeViewModel ifVm)
+            {
+                foreach (var bn in ifVm.ThenNodes) group.Nodes.Add(bn.ToModel());
+                foreach (var bn in ifVm.ElseNodes) group.Nodes.Add(bn.ToModel());
+            }
+        }
+
+        // Expand each If's opaque outer edge (If → join) into two labeled
+        // branch chains that reconverge at the join, so the orchestrator
+        // sees the flat then/else-labeled graph it executes.
+        foreach (var e in Edges)
+        {
+            if (NodeById(e.From) is IfElseNodeViewModel ifVm && string.IsNullOrEmpty(e.Label))
+            {
+                ExpandBranch(group, ifVm, "then", ifVm.ThenNodes, joinId: e.To);
+                ExpandBranch(group, ifVm, "else", ifVm.ElseNodes, joinId: e.To);
+            }
+            else
+            {
+                group.Edges.Add(e.ToModel());
+            }
+        }
+
+        // Leaf If nodes have no outer outgoing edge; their branches still
+        // need emitting (chains that simply terminate — no join).
+        foreach (var ifVm in Nodes.OfType<IfElseNodeViewModel>())
+        {
+            if (Edges.All(e => e.From != ifVm.Id))
+            {
+                ExpandBranch(group, ifVm, "then", ifVm.ThenNodes, joinId: null);
+                ExpandBranch(group, ifVm, "else", ifVm.ElseNodes, joinId: null);
+            }
+        }
     }
+
+    /// <summary>
+    /// Emit the flat edge chain for one branch of an If node:
+    /// <c>If -[label]-> b0 -[label]-> b1 ... -[label]-> join</c>. Every
+    /// edge carries the branch label so the load-time
+    /// <see cref="CollapseBranches"/> can invert it unambiguously; the
+    /// orchestrator ignores the label on non-If sources (they fire all
+    /// outgoing regardless), so labelling the interior edges is safe.
+    /// An empty branch with a join emits a single <c>If -[label]-> join</c>
+    /// edge; an empty branch with no join emits nothing.
+    /// </summary>
+    private static void ExpandBranch(Group group, IfElseNodeViewModel ifVm, string label,
+        IReadOnlyList<NodeViewModel> branchNodes, string? joinId)
+    {
+        var prevId = ifVm.Id;
+        foreach (var bn in branchNodes)
+        {
+            group.Edges.Add(new Edge { Id = Guid.NewGuid().ToString(), From = prevId, To = bn.Id, Label = label });
+            prevId = bn.Id;
+        }
+        if (!string.IsNullOrEmpty(joinId))
+        {
+            group.Edges.Add(new Edge { Id = Guid.NewGuid().ToString(), From = prevId, To = joinId, Label = label });
+        }
+    }
+
+    /// <summary>
+    /// Inverse of the <see cref="WriteTo"/> branch expansion. For each If
+    /// node, lift its then/else-labeled edge chains out of the flat graph
+    /// into the If VM's <see cref="IfElseNodeViewModel.ThenNodes"/> /
+    /// <see cref="IfElseNodeViewModel.ElseNodes"/> collections, leaving the
+    /// If as a single opaque node connected directly to the branches'
+    /// join (if any). Runs once on load.
+    /// </summary>
+    public void CollapseBranches()
+    {
+        foreach (var ifVm in Nodes.OfType<IfElseNodeViewModel>().ToList())
+        {
+            var thenPath = FollowLabeledChain(ifVm.Id, "then");
+            var elsePath = FollowLabeledChain(ifVm.Id, "else");
+
+            // Reconvergence: if both chains end at the same node, that node
+            // is the join and stays in the outer graph. Otherwise the
+            // branches are leaves and every chained node belongs to them.
+            string? joinId = thenPath.Count > 0 && elsePath.Count > 0 && thenPath[^1] == elsePath[^1]
+                ? thenPath[^1]
+                : null;
+
+            var thenIds = joinId is null ? thenPath : thenPath.Take(thenPath.Count - 1).ToList();
+            var elseIds = joinId is null ? elsePath : elsePath.Take(elsePath.Count - 1).ToList();
+
+            MoveIntoBranch(ifVm.ThenNodes, thenIds);
+            MoveIntoBranch(ifVm.ElseNodes, elseIds);
+
+            // Drop the labeled edges that made up the branches, then
+            // reconnect the If straight to the join so the outer chain
+            // stays linear.
+            var branchIds = new HashSet<string>(thenIds.Concat(elseIds)) { ifVm.Id };
+            foreach (var dead in Edges.Where(e =>
+                         (e.Label == "then" || e.Label == "else") && branchIds.Contains(e.From)).ToList())
+            {
+                Edges.Remove(dead);
+            }
+            if (joinId is not null)
+            {
+                Edges.Add(new EdgeViewModel { Id = Guid.NewGuid().ToString(), From = ifVm.Id, To = joinId });
+            }
+        }
+    }
+
+    /// <summary>
+    /// Walk a labelled chain starting at <paramref name="startId"/>,
+    /// following the single out-edge carrying <paramref name="label"/> at
+    /// each step, and return the ordered list of visited target node ids.
+    /// The guard bounds it to the node count so a malformed cyclic graph
+    /// can't spin forever.
+    /// </summary>
+    private List<string> FollowLabeledChain(string startId, string label)
+    {
+        var path = new List<string>();
+        var currentFrom = startId;
+        for (var guard = 0; guard <= Nodes.Count; guard++)
+        {
+            var edge = Edges.FirstOrDefault(e => e.From == currentFrom && e.Label == label);
+            if (edge is null) break;
+            path.Add(edge.To);
+            currentFrom = edge.To;
+        }
+        return path;
+    }
+
+    private void MoveIntoBranch(ObservableCollection<NodeViewModel> branch, IReadOnlyList<string> ids)
+    {
+        foreach (var id in ids)
+        {
+            var node = Nodes.FirstOrDefault(n => n.Id == id);
+            if (node is null) continue;
+            Nodes.Remove(node);
+            branch.Add(node);
+        }
+    }
+
+    private NodeViewModel? NodeById(string id) => Nodes.FirstOrDefault(n => n.Id == id);
 
     // ---- Editing -----------------------------------------------------
 

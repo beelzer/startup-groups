@@ -45,6 +45,12 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
 
     private readonly string _connectionString;
     private readonly ILogger<SqliteLaunchBenchmarkStore> _logger;
+    // Self-initializing: the ctor kicks off schema creation on a background
+    // thread; every public Save/Get awaits this Task before opening its own
+    // connection. Lets DI resolution stay non-blocking on the cold path.
+    // SQLite native dll load + first OpenAsync() is ~50-200ms cold and used
+    // to be sync-blocked from the Host setup.
+    private readonly Task _initTask;
 
     public SqliteLaunchBenchmarkStore(string? databasePath = null, ILogger<SqliteLaunchBenchmarkStore>? logger = null)
     {
@@ -56,9 +62,17 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
             Cache = SqliteCacheMode.Shared,
         }.ToString();
         _logger = logger ?? NullLogger<SqliteLaunchBenchmarkStore>.Instance;
+        _initTask = Task.Run(() => InitializeCoreAsync(CancellationToken.None));
     }
 
-    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Public initialise hook kept for explicit fire-and-await use cases
+    /// (tests, re-init after a corruption recovery). Returns the same
+    /// task the constructor started, so subsequent calls are free.
+    /// </summary>
+    public Task InitializeAsync(CancellationToken cancellationToken = default) => _initTask;
+
+    private async Task InitializeCoreAsync(CancellationToken cancellationToken)
     {
         var dir = Path.GetDirectoryName(new SqliteConnectionStringBuilder(_connectionString).DataSource);
         if (!string.IsNullOrEmpty(dir))
@@ -77,6 +91,7 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
     public async Task SaveAsync(LaunchMetrics metrics, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(metrics);
+        await _initTask.ConfigureAwait(false);
 
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
@@ -126,6 +141,7 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
         {
             return Array.Empty<LaunchMetrics>();
         }
+        await _initTask.ConfigureAwait(false);
 
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
@@ -144,6 +160,7 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
 
     public async Task<IReadOnlyList<LaunchMetrics>> GetAllSinceAsync(DateTimeOffset sinceUtc, CancellationToken cancellationToken = default)
     {
+        await _initTask.ConfigureAwait(false);
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using var command = connection.CreateCommand();
@@ -160,6 +177,7 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
     public async Task<bool> HasReadyLaunchSinceBootAsync(string appId, DateTimeOffset bootEpochUtc, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(appId);
+        await _initTask.ConfigureAwait(false);
 
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
@@ -184,6 +202,7 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
         ArgumentNullException.ThrowIfNull(paths);
         var distinct = paths.Where(p => !string.IsNullOrEmpty(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         if (distinct.Count == 0) return;
+        await _initTask.ConfigureAwait(false);
 
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
@@ -206,6 +225,7 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
 
     public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<string>>> GetResourcesSinceAsync(DateTimeOffset sinceUtc, CancellationToken cancellationToken = default)
     {
+        await _initTask.ConfigureAwait(false);
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using var command = connection.CreateCommand();

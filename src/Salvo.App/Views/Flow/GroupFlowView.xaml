@@ -7,6 +7,7 @@
              xmlns:conv="clr-namespace:Salvo.App.Converters"
              xmlns:loc="clr-namespace:Salvo.App.Localization"
              AllowDrop="True"
+             PreviewDragOver="Root_OnPreviewDragOver"
              DragOver="UserControl_OnDragOver"
              Drop="UserControl_OnDrop">
     <UserControl.Resources>
@@ -58,22 +59,17 @@
             </Style.Triggers>
         </Style>
 
-        <!-- StartNode row: small accent banner so the user can see "this is where it starts" -->
+        <!-- StartNode row: tiny accent pill, no helper sentence (the
+             top-of-list position already implies "things start here"). -->
         <DataTemplate DataType="{x:Type fvm:StartNodeViewModel}">
-            <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="0,0,0,1"
-                    Padding="16,8">
-                <StackPanel Orientation="Horizontal">
-                    <Border Background="{DynamicResource AccentFillColorDefaultBrush}"
-                            CornerRadius="10" Padding="10,2">
-                        <TextBlock Text="START"
-                                   FontWeight="SemiBold" FontSize="11"
-                                   Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
-                    </Border>
-                    <TextBlock Text="Run order begins here"
-                               Margin="10,0,0,0" VerticalAlignment="Center"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                </StackPanel>
+            <Border Padding="16,4">
+                <Border Background="{DynamicResource AccentFillColorDefaultBrush}"
+                        CornerRadius="8" Padding="8,1"
+                        HorizontalAlignment="Left">
+                    <TextBlock Text="START"
+                               FontWeight="SemiBold" FontSize="10"
+                               Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                </Border>
             </Border>
         </DataTemplate>
 
@@ -186,6 +182,7 @@
                         <TextBlock Text="Wait" FontWeight="SemiBold" VerticalAlignment="Center" />
                         <ui:NumberBox Value="{Binding DurationSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                       Minimum="0" Maximum="3600"
+                                      AllowDrop="False"
                                       Width="90" Margin="10,0,0,0" />
                         <TextBlock Text="seconds before the next item runs"
                                    Margin="8,0,0,0" VerticalAlignment="Center"
@@ -199,29 +196,192 @@
             </Border>
         </DataTemplate>
 
-        <!-- IfElseNode row (condition editor inline) -->
+        <!-- Compact always-visible "+ add" pill used inside If branches.
+             Unlike InsertBelowButton it's not hover-gated — a branch needs
+             a discoverable way to add its first step. -->
+        <Style x:Key="BranchAddButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Margin" Value="0,6,0,2" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="11"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Reusable per-branch add menu. Excludes "If / Else" — nested
+             branches aren't supported in the Simple view yet. -->
+        <ContextMenu x:Key="BranchKindMenu" x:Shared="False" Placement="Bottom">
+            <MenuItem Header="App" Tag="App" Click="BranchAddMenu_OnClick">
+                <MenuItem.Icon><ui:SymbolIcon Symbol="Apps24" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Wait" Tag="Wait" Click="BranchAddMenu_OnClick">
+                <MenuItem.Icon><ui:SymbolIcon Symbol="Timer24" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Start service" Tag="ServiceStart" Click="BranchAddMenu_OnClick">
+                <MenuItem.Icon><ui:SymbolIcon Symbol="Play24" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Stop service" Tag="ServiceStop" Click="BranchAddMenu_OnClick">
+                <MenuItem.Icon><ui:SymbolIcon Symbol="Stop24" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Run command" Tag="RunCommand" Click="BranchAddMenu_OnClick">
+                <MenuItem.Icon><ui:SymbolIcon Symbol="WindowConsole20" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Call group" Tag="GroupCall" Click="BranchAddMenu_OnClick">
+                <MenuItem.Icon><ui:SymbolIcon Symbol="FolderArrowRight24" /></MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+
+        <!-- Branch body: the "Then" / "Else" section shared shape. The
+             DataContext is the IfElseNodeViewModel; ContentControl.Content
+             is bound per-use to ThenNodes / ElseNodes via the host. -->
+
+        <!-- IfElseNode row: condition header + Then / Else branch bodies.
+             The If is a single opaque node in the outer chain; each branch
+             holds its own linear sequence of child nodes, expanded into
+             then/else-labeled edges on save (GroupGraphViewModel.WriteTo).
+             Node rows inside a branch reuse the per-type node templates. -->
         <DataTemplate DataType="{x:Type fvm:IfElseNodeViewModel}">
-            <Border Style="{StaticResource ControlRowBorder}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <ui:SymbolIcon Grid.Column="0" Symbol="BranchFork24" FontSize="20"
-                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
-                                   VerticalAlignment="Center" Margin="0,0,12,0" />
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="If" FontWeight="SemiBold" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding Condition.DisplayName}"
-                                   Margin="8,0,0,0" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    </StackPanel>
-                    <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
-                               Appearance="Transparent"
-                               Command="{Binding DataContext.RemoveNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                               CommandParameter="{Binding}" />
-                </Grid>
+            <Border Style="{StaticResource NodeRowBase}" Padding="16,10">
+                <StackPanel>
+                    <!-- Condition header -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Grid.Column="0" Symbol="BranchFork24" FontSize="20"
+                                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                       VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <Grid Grid.Column="1" Margin="0,0,8,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="If" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <ComboBox Grid.Column="1" Width="160" Margin="10,0,0,0" VerticalAlignment="Center"
+                                      AllowDrop="False"
+                                      SelectedValuePath="Tag"
+                                      SelectedValue="{Binding ConditionKind, Mode=TwoWay}"
+                                      DropDownClosed="ConditionKind_OnClosed">
+                                <ComboBoxItem Tag="serviceRunning">Service running</ComboBoxItem>
+                                <ComboBoxItem Tag="fileExists">File exists</ComboBoxItem>
+                                <ComboBoxItem Tag="processRunning">Process running</ComboBoxItem>
+                            </ComboBox>
+                            <ui:TextBox Grid.Column="2" Margin="10,0,0,0" VerticalAlignment="Center"
+                                        AllowDrop="False"
+                                        PlaceholderText="{Binding Condition.ValueLabel}"
+                                        Text="{Binding Condition.Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        LostFocus="Condition_OnChanged" />
+                        </Grid>
+                        <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
+                                   Appearance="Transparent"
+                                   Command="{Binding DataContext.RemoveNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   CommandParameter="{Binding}" />
+                    </Grid>
+
+                    <!-- Then branch (drop target for dragged nodes) -->
+                    <Border BorderBrush="{DynamicResource AccentFillColorDefaultBrush}"
+                            BorderThickness="3,0,0,0" Margin="8,8,0,0" Padding="12,4,0,4"
+                            Tag="then" AllowDrop="True"
+                            DragOver="Branch_OnDragOver" DragLeave="Branch_OnDragLeave" Drop="Branch_OnDrop">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ThenIsDropTarget}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource AccentFillColorTertiaryBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel>
+                            <TextBlock Text="Then" FontWeight="SemiBold" FontSize="12"
+                                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                            <ItemsControl ItemsSource="{Binding ThenNodes}" Margin="0,4,0,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><StackPanel Orientation="Vertical" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                            <TextBlock Text="Nothing here yet — add a step."
+                                       FontSize="11" FontStyle="Italic"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                       Visibility="{Binding ThenIsEmpty, Converter={StaticResource BoolToVisibility}}" />
+                            <Button Style="{StaticResource BranchAddButton}"
+                                    Tag="then"
+                                    ContextMenu="{StaticResource BranchKindMenu}"
+                                    Click="BranchAdd_OnClick">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="Add24" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBlock Text="Add to Then" Margin="4,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Else branch (drop target for dragged nodes) -->
+                    <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="3,0,0,0" Margin="8,6,0,0" Padding="12,4,0,4"
+                            Tag="else" AllowDrop="True"
+                            DragOver="Branch_OnDragOver" DragLeave="Branch_OnDragLeave" Drop="Branch_OnDrop">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ElseIsDropTarget}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource AccentFillColorTertiaryBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel>
+                            <TextBlock Text="Else" FontWeight="SemiBold" FontSize="12"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <ItemsControl ItemsSource="{Binding ElseNodes}" Margin="0,4,0,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><StackPanel Orientation="Vertical" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                            <TextBlock Text="Nothing here yet — add a step."
+                                       FontSize="11" FontStyle="Italic"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                       Visibility="{Binding ElseIsEmpty, Converter={StaticResource BoolToVisibility}}" />
+                            <Button Style="{StaticResource BranchAddButton}"
+                                    Tag="else"
+                                    ContextMenu="{StaticResource BranchKindMenu}"
+                                    Click="BranchAdd_OnClick">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="Add24" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBlock Text="Add to Else" Margin="4,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
             </Border>
         </DataTemplate>
 
@@ -240,6 +400,7 @@
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="Start service" FontWeight="SemiBold" VerticalAlignment="Center" />
                         <TextBox Text="{Binding ServiceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 AllowDrop="False"
                                  Width="220" Margin="10,0,0,0" />
                     </StackPanel>
                     <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
@@ -265,6 +426,7 @@
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="Stop service" FontWeight="SemiBold" VerticalAlignment="Center" />
                         <TextBox Text="{Binding ServiceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 AllowDrop="False"
                                  Width="220" Margin="10,0,0,0" />
                     </StackPanel>
                     <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
@@ -295,6 +457,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="Run" FontWeight="SemiBold" VerticalAlignment="Center" />
                         <ComboBox Grid.Column="1" Width="110" Margin="10,0,0,0"
+                                  AllowDrop="False"
                                   SelectedValue="{Binding Interpreter, Mode=TwoWay}"
                                   SelectedValuePath="Tag">
                             <ComboBoxItem Tag="shell">Shell</ComboBoxItem>
@@ -302,9 +465,10 @@
                             <ComboBoxItem Tag="direct">Direct</ComboBoxItem>
                         </ComboBox>
                         <TextBox Grid.Column="2"
+                                 AllowDrop="False"
                                  Text="{Binding Command, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  FontFamily="Consolas"
-                                 Margin="10,0,0,0" />
+                                 Margin="10,0,16,0" />
                     </Grid>
                     <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
                                Appearance="Transparent"
@@ -344,7 +508,10 @@
 
         <!-- Per-stage "+ Insert below" affordance shown after every stage.
              Tag carries the stage so the Click handler in code-behind can
-             route to MainWindowViewModel.InsertNodeAfterStage(stage, kind). -->
+             route to MainWindowViewModel.InsertNodeAfterStage(stage, kind).
+             Hidden until the parent stage StackPanel is hovered, so the
+             resting view stays clean. Hit-testing follows opacity so a
+             phantom click can't land on the invisible button. -->
         <Style x:Key="InsertBelowButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
@@ -354,8 +521,9 @@
             <Setter Property="FontSize" Value="11" />
             <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Opacity" Value="0.55" />
-            <Setter Property="Margin" Value="0,6,0,2" />
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Margin" Value="0,2" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -370,6 +538,10 @@
                 </Setter.Value>
             </Setter>
             <Style.Triggers>
+                <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=StackPanel}}" Value="True">
+                    <Setter Property="Opacity" Value="0.7" />
+                    <Setter Property="IsHitTestVisible" Value="True" />
+                </DataTrigger>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Opacity" Value="1" />
                     <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
@@ -399,46 +571,44 @@
                         </ItemsControl.ItemsPanel>
                     </ItemsControl>
 
-                    <!-- Parallel stage: indented wrapper with header + sub-rows -->
+                    <!-- Parallel stage: indented accent bracket with a
+                         compact "Run in parallel (N items)" header.
+                         "Make sequential" lives in the right-click menu
+                         on the block (was an inline button — moving it
+                         to a right-click reduces visual chrome without
+                         losing the action). -->
                     <Border Visibility="{Binding IsParallel, Converter={StaticResource BoolToVisibility}}"
                             BorderBrush="{DynamicResource AccentFillColorDefaultBrush}"
                             BorderThickness="3,0,0,0"
                             Margin="16,4,0,4">
+                        <Border.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Make sequential"
+                                          Command="{Binding DataContext.MakeStageSequentialCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                          CommandParameter="{Binding}">
+                                    <MenuItem.Icon><ui:SymbolIcon Symbol="ArrowSort24" /></MenuItem.Icon>
+                                </MenuItem>
+                            </ContextMenu>
+                        </Border.ContextMenu>
                         <StackPanel>
-                            <Grid Margin="14,8,16,6">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <ui:SymbolIcon Symbol="Flash24" FontSize="14"
-                                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
-                                                   VerticalAlignment="Center" />
-                                    <TextBlock Text="Run in parallel"
-                                               Margin="6,0,0,0"
-                                               FontSize="12"
-                                               FontWeight="SemiBold"
+                            <StackPanel Orientation="Horizontal" Margin="14,8,16,6"
+                                        VerticalAlignment="Center"
+                                        ToolTip="Right-click for options">
+                                <ui:SymbolIcon Symbol="Flash24" FontSize="14"
                                                Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
                                                VerticalAlignment="Center" />
-                                    <TextBlock Text="{Binding Nodes.Count, StringFormat=({0} items)}"
-                                               Margin="6,0,0,0"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                               VerticalAlignment="Center" />
-                                </StackPanel>
-                                <ui:Button Grid.Column="1"
-                                           Appearance="Transparent"
-                                           Padding="8,2"
-                                           FontSize="11"
-                                           ToolTip="Convert this parallel block into a sequential chain"
-                                           Command="{Binding DataContext.MakeStageSequentialCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                           CommandParameter="{Binding}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon Symbol="ArrowSort24" FontSize="12" VerticalAlignment="Center" />
-                                        <TextBlock Text="Make sequential" Margin="6,0,0,0" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </ui:Button>
-                            </Grid>
+                                <TextBlock Text="Run in parallel"
+                                           Margin="6,0,0,0"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Nodes.Count, StringFormat=({0} items)}"
+                                           Margin="6,0,0,0"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
                             <ItemsControl ItemsSource="{Binding Nodes}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
@@ -491,88 +661,18 @@
         </DataTemplate>
     </UserControl.Resources>
 
+    <!-- Vertical list of stages. The Rectangle overlay sibling is the
+         single global insertion-line indicator; we move it to the
+         closest snap point during drag from code-behind, so the user
+         sees one stable bar instead of competing per-stage bars. The
+         StackPanel-around-ItemsControl pattern lets us pin a single
+         always-visible trailing "+ Add item" affordance below the
+         stages, since the per-stage inserts are now hover-only. -->
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <!-- Toolbar: Add node menu -->
-        <Border Grid.Row="0"
-                Background="{DynamicResource LayerFillColorDefaultBrush}"
-                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                BorderThickness="0,0,0,1"
-                Padding="16,10">
-            <ui:DropDownButton Content="Add item"
-                               Icon="{ui:SymbolIcon Add24}"
-                               Appearance="Primary"
-                               HorizontalAlignment="Left">
-                <ui:DropDownButton.Flyout>
-                    <ContextMenu>
-                        <MenuItem Header="App"
-                                  Command="{Binding AddNodeCommand}"
-                                  CommandParameter="App">
-                            <MenuItem.Icon>
-                                <ui:SymbolIcon Symbol="Apps24" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="Wait"
-                                  Command="{Binding AddNodeCommand}"
-                                  CommandParameter="Wait">
-                            <MenuItem.Icon>
-                                <ui:SymbolIcon Symbol="Timer24" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="If / Else"
-                                  Command="{Binding AddNodeCommand}"
-                                  CommandParameter="IfElse">
-                            <MenuItem.Icon>
-                                <ui:SymbolIcon Symbol="BranchFork24" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <Separator />
-                        <MenuItem Header="Start service"
-                                  Command="{Binding AddNodeCommand}"
-                                  CommandParameter="ServiceStart">
-                            <MenuItem.Icon>
-                                <ui:SymbolIcon Symbol="Play24" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="Stop service"
-                                  Command="{Binding AddNodeCommand}"
-                                  CommandParameter="ServiceStop">
-                            <MenuItem.Icon>
-                                <ui:SymbolIcon Symbol="Stop24" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="Run command"
-                                  Command="{Binding AddNodeCommand}"
-                                  CommandParameter="RunCommand">
-                            <MenuItem.Icon>
-                                <ui:SymbolIcon Symbol="WindowConsole20" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <Separator />
-                        <MenuItem Header="Call group"
-                                  Command="{Binding AddNodeCommand}"
-                                  CommandParameter="GroupCall">
-                            <MenuItem.Icon>
-                                <ui:SymbolIcon Symbol="FolderArrowRight24" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                    </ContextMenu>
-                </ui:DropDownButton.Flyout>
-            </ui:DropDownButton>
-        </Border>
-
-        <!-- Vertical list of stages. The Rectangle overlay sibling is the
-             single global insertion-line indicator; we move it to the
-             closest snap point during drag from code-behind, so the user
-             sees one stable bar instead of competing per-stage bars. -->
-        <Grid Grid.Row="1">
-            <ScrollViewer x:Name="StageScroller"
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer x:Name="StageScroller"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
                 <ItemsControl x:Name="StageList"
                               ItemsSource="{Binding SelectedGroup.Graph.Stages}"
                               HorizontalAlignment="Stretch"
@@ -583,9 +683,69 @@
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                 </ItemsControl>
-            </ScrollViewer>
 
-            <Rectangle x:Name="InsertionLine"
+                <!-- Trailing always-visible add affordance. Routed through
+                     the same per-kind context menu as the in-list inserts
+                     so the user has a single mental model for "what can
+                     I add". -->
+                <Button x:Name="TrailingAddButton"
+                        Click="TrailingAdd_OnClick"
+                        Margin="0,8,0,16"
+                        HorizontalAlignment="Center"
+                        Cursor="Hand"
+                        Background="Transparent"
+                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        FontSize="11"
+                        Padding="12,6">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border CornerRadius="13"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Add24" FontSize="11" VerticalAlignment="Center" />
+                        <TextBlock Text="Add item" Margin="6,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Button.ContextMenu>
+                        <ContextMenu Placement="Bottom">
+                            <MenuItem Header="App" Tag="App" Click="TrailingAddMenu_OnClick">
+                                <MenuItem.Icon><ui:SymbolIcon Symbol="Apps24" /></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Wait" Tag="Wait" Click="TrailingAddMenu_OnClick">
+                                <MenuItem.Icon><ui:SymbolIcon Symbol="Timer24" /></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="If / Else" Tag="IfElse" Click="TrailingAddMenu_OnClick">
+                                <MenuItem.Icon><ui:SymbolIcon Symbol="BranchFork24" /></MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="Start service" Tag="ServiceStart" Click="TrailingAddMenu_OnClick">
+                                <MenuItem.Icon><ui:SymbolIcon Symbol="Play24" /></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Stop service" Tag="ServiceStop" Click="TrailingAddMenu_OnClick">
+                                <MenuItem.Icon><ui:SymbolIcon Symbol="Stop24" /></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Run command" Tag="RunCommand" Click="TrailingAddMenu_OnClick">
+                                <MenuItem.Icon><ui:SymbolIcon Symbol="WindowConsole20" /></MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="Call group" Tag="GroupCall" Click="TrailingAddMenu_OnClick">
+                                <MenuItem.Icon><ui:SymbolIcon Symbol="FolderArrowRight24" /></MenuItem.Icon>
+                            </MenuItem>
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Rectangle x:Name="InsertionLine"
                        Height="3"
                        Margin="20,0"
                        VerticalAlignment="Top"
@@ -594,10 +754,9 @@
                        RadiusX="2" RadiusY="2"
                        Visibility="Collapsed"
                        IsHitTestVisible="False">
-                <Rectangle.RenderTransform>
-                    <TranslateTransform x:Name="InsertionLineTransform" />
-                </Rectangle.RenderTransform>
-            </Rectangle>
-        </Grid>
+            <Rectangle.RenderTransform>
+                <TranslateTransform x:Name="InsertionLineTransform" />
+            </Rectangle.RenderTransform>
+        </Rectangle>
     </Grid>
 </UserControl>

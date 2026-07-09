@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Salvo.Core.Models.Flow;
 
@@ -110,7 +111,62 @@ public sealed partial class IfElseNodeViewModel : NodeViewModel
 {
     [ObservableProperty] private FlowConditionViewModel _condition = new ServiceRunningConditionViewModel();
 
+    /// <summary>
+    /// Nodes that run (in order) when the condition holds — the "then"
+    /// branch. Stored on the If node itself: the outer graph treats the
+    /// If as a single opaque node, and these are expanded into the flat
+    /// <c>then</c>-labeled edge chain the orchestrator executes on save
+    /// (see <see cref="GroupGraphViewModel.WriteTo"/>). Linear only for
+    /// now — no parallel stages inside a branch.
+    /// </summary>
+    public ObservableCollection<NodeViewModel> ThenNodes { get; } = [];
+
+    /// <summary>Nodes that run when the condition does not hold.</summary>
+    public ObservableCollection<NodeViewModel> ElseNodes { get; } = [];
+
+    /// <summary>Empty-state flags so the view can prompt "add a step".</summary>
+    public bool ThenIsEmpty => ThenNodes.Count == 0;
+    public bool ElseIsEmpty => ElseNodes.Count == 0;
+
+    /// <summary>Drag-hover highlight flags for the branch drop targets.</summary>
+    [ObservableProperty] private bool _thenIsDropTarget;
+    [ObservableProperty] private bool _elseIsDropTarget;
+
+    public IfElseNodeViewModel()
+    {
+        ThenNodes.CollectionChanged += (_, _) => OnPropertyChanged(nameof(ThenIsEmpty));
+        ElseNodes.CollectionChanged += (_, _) => OnPropertyChanged(nameof(ElseIsEmpty));
+    }
+
+    /// <summary>
+    /// The condition's kind, bound to the type picker in the card. Setting
+    /// it swaps <see cref="Condition"/> to a fresh view-model of that kind,
+    /// carrying the current value across so switching type doesn't wipe a
+    /// half-typed operand.
+    /// </summary>
+    public string ConditionKind
+    {
+        get => Condition.Kind;
+        set
+        {
+            if (value == Condition.Kind) return;
+            var carried = Condition.Value;
+            Condition = value switch
+            {
+                "fileExists" => new FileExistsConditionViewModel { Path = carried },
+                "processRunning" => new ProcessRunningConditionViewModel { ProcessName = carried },
+                _ => new ServiceRunningConditionViewModel { ServiceName = carried },
+            };
+            OnPropertyChanged(nameof(ConditionKind));
+        }
+    }
+
     public override string Kind => "IfElse";
+
+    // ToModel emits only the condition-bearing IfElseNode. The branch
+    // node payload + then/else edges are emitted by
+    // GroupGraphViewModel.WriteTo, which has the edge context needed to
+    // wire the branches back into the flat graph.
     public override Node ToModel() => new IfElseNode { Id = Id, Position = CurrentPosition(), Condition = Condition.ToModel() };
 }
 

@@ -48,15 +48,19 @@ public partial class AddAppPickerViewModel : ObservableObject
 
     public ICollectionView AppsView { get; }
 
+    /// <summary>
+    /// Per-source-type filter chips (Desktop, Store, Shell, Scoop,
+    /// Service), rebuilt from the loaded apps. Toggling one shows/hides
+    /// that source in the list.
+    /// </summary>
+    public ObservableCollection<SourceFilterViewModel> SourceFilters { get; } = [];
+
+    private readonly Dictionary<InstalledAppSource, SourceFilterViewModel> _sourceFilterBySource = [];
+
     [ObservableProperty] private string _searchText = string.Empty;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string _statusMessage = string.Empty;
     [ObservableProperty] private InstalledAppViewModel? _highlightedApp;
-
-    partial void OnHighlightedAppChanged(InstalledAppViewModel? value)
-    {
-        EditSelectedCommand.NotifyCanExecuteChanged();
-    }
 
     public PickerAction Result { get; private set; } = PickerAction.Cancel;
 
@@ -68,7 +72,9 @@ public partial class AddAppPickerViewModel : ObservableObject
     public IReadOnlyList<InstalledApp> GetCheckedModels() =>
         Apps.Where(a => a.IsChecked).Select(a => a.Model).ToList();
 
-    public InstalledApp? GetHighlightedModel() => HighlightedApp?.Model;
+    /// <summary>The single ticked app when exactly one is checked; otherwise null.</summary>
+    public InstalledApp? GetSingleCheckedModel() =>
+        CheckedCount == 1 ? Apps.First(a => a.IsChecked).Model : null;
 
     partial void OnSearchTextChanged(string value)
     {
@@ -78,12 +84,69 @@ public partial class AddAppPickerViewModel : ObservableObject
     private bool FilterApp(object obj)
     {
         if (obj is not InstalledAppViewModel vm) return false;
+
+        // Source-type chip: hide apps whose source is toggled off.
+        if (_sourceFilterBySource.TryGetValue(vm.Source, out var sourceFilter) && !sourceFilter.IsEnabled)
+        {
+            return false;
+        }
+
         if (string.IsNullOrWhiteSpace(SearchText)) return true;
 
         var query = SearchText.Trim();
         return vm.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
             || (vm.ExecutablePath?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false);
     }
+
+    /// <summary>
+    /// Rebuild the source-type filter chips from the currently loaded apps.
+    /// Only sources that actually returned apps get a chip, each labelled
+    /// with its count; all start enabled.
+    /// </summary>
+    private void BuildSourceFilters()
+    {
+        foreach (var existing in SourceFilters)
+        {
+            existing.PropertyChanged -= OnSourceFilterChanged;
+        }
+        SourceFilters.Clear();
+        _sourceFilterBySource.Clear();
+
+        foreach (var group in Apps.GroupBy(a => a.Source).OrderBy(g => SourceOrder(g.Key)))
+        {
+            var filter = new SourceFilterViewModel(group.Key, SourceLabel(group.Key), group.Count());
+            filter.PropertyChanged += OnSourceFilterChanged;
+            SourceFilters.Add(filter);
+            _sourceFilterBySource[group.Key] = filter;
+        }
+    }
+
+    private void OnSourceFilterChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SourceFilterViewModel.IsEnabled))
+        {
+            AppsView.Refresh();
+        }
+    }
+
+    private static string SourceLabel(InstalledAppSource source) => source switch
+    {
+        InstalledAppSource.Uwp => Strings.AddAppPicker_SourceStore,
+        InstalledAppSource.Desktop => Strings.AddAppPicker_SourceDesktop,
+        InstalledAppSource.Service => Strings.AddAppPicker_SourceService,
+        InstalledAppSource.Scoop => Strings.AddAppPicker_SourceScoop,
+        _ => Strings.AddAppPicker_SourceShell,
+    };
+
+    private static int SourceOrder(InstalledAppSource source) => source switch
+    {
+        InstalledAppSource.Desktop => 0,
+        InstalledAppSource.Uwp => 1,
+        InstalledAppSource.Other => 2,
+        InstalledAppSource.Scoop => 3,
+        InstalledAppSource.Service => 4,
+        _ => 5,
+    };
 
     [RelayCommand]
     public async Task LoadAsync()
@@ -110,6 +173,7 @@ public partial class AddAppPickerViewModel : ObservableObject
                 newItems.Add(vm);
             }
 
+            BuildSourceFilters();
             StatusMessage = $"Found {Apps.Count} installed apps";
             StartIconLoading(newItems, token);
         }
@@ -169,6 +233,7 @@ public partial class AddAppPickerViewModel : ObservableObject
             OnPropertyChanged(nameof(CheckedCount));
             OnPropertyChanged(nameof(CheckedCountText));
             AddSelectedCommand.NotifyCanExecuteChanged();
+            EditSelectedCommand.NotifyCanExecuteChanged();
         }
     }
 
@@ -188,7 +253,7 @@ public partial class AddAppPickerViewModel : ObservableObject
         RequestClose?.Invoke(this, true);
     }
 
-    private bool CanEditSelected() => HighlightedApp is not null;
+    private bool CanEditSelected() => CheckedCount == 1;
 
     [RelayCommand]
     private void AddBlank()
