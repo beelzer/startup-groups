@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Salvo.Core.Launch;
 using Salvo.Core.Models;
@@ -78,6 +79,60 @@ public sealed class ReadinessDetectorTests
         // probe's catch block can lag behind DetectAsync's return.
         await slow.Completed.WaitAsync(TimeSpan.FromSeconds(2));
         slow.WasCancelled.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DetectAsync_DoesNotReportExitedEarly_WhenRootPidNeverResolves()
+    {
+        // Regression: a shell launch resolves its PID asynchronously. Until it
+        // lands, the process tree enumerates empty — which must NOT be read as
+        // ExitedEarly at the 1s grace mark, or every slow-to-appear app is
+        // falsely aborted. With no PID ever resolved and no probe firing, the
+        // honest outcome is TimedOut, not ExitedEarly.
+        var probes = new IReadinessProbe[]
+        {
+            new FakeProbe(ReadinessSignal.MainWindowVisible, TimeSpan.FromSeconds(30), fires: false),
+        };
+        var detector = new ReadinessDetector(probes);
+
+        using var session = LaunchSession.Begin(); // RootPid stays null
+        var ctx = MakeContext(session);
+
+        // Timeout comfortably past the 1s early-exit grace, so the buggy path
+        // would already have returned ExitedEarly.
+        var result = await detector.DetectAsync(ctx, TimeSpan.FromMilliseconds(1500));
+
+        result.Outcome.Should().Be(LaunchOutcome.TimedOut);
+    }
+
+    [Fact]
+    public async Task DetectAsync_ReportsExitedEarly_WhenResolvedPidTreeIsDead()
+    {
+        // Complement to the null-PID case: once a PID HAS resolved and its tree
+        // is dead, ExitedEarly is still correct (an attached process that
+        // crashed within the grace window). Guards the RootPid gate from
+        // suppressing legitimate early-exit detection.
+        using var dead = Process.Start(new ProcessStartInfo("cmd.exe", "/c exit")
+        {
+            CreateNoWindow = true,
+            UseShellExecute = false,
+        })!;
+        dead.WaitForExit();
+
+        var probes = new IReadinessProbe[]
+        {
+            new FakeProbe(ReadinessSignal.MainWindowVisible, TimeSpan.FromSeconds(30), fires: false),
+        };
+        var detector = new ReadinessDetector(probes);
+
+        using var session = LaunchSession.Begin();
+        session.RecordPidResolved(dead.Id);
+        var ctx = MakeContext(session);
+
+        var result = await detector.DetectAsync(ctx, TimeSpan.FromSeconds(3));
+
+        result.Outcome.Should().Be(LaunchOutcome.ExitedEarly);
+        result.Signal.Should().Be(ReadinessSignal.EarlyExit);
     }
 
     private static ProbeContext MakeContext(LaunchSession session) =>

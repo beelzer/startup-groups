@@ -106,7 +106,16 @@ public sealed class ReadinessDetector
             await Task.Delay(EarlyExitGrace, cancellationToken).ConfigureAwait(false);
             while (!cancellationToken.IsCancellationRequested)
             {
-                if (!context.Session.IsTreeAlive())
+                // Only conclude ExitedEarly once a PID has actually resolved and
+                // the tree is then dead. Shell launches resolve their PID
+                // asynchronously (up to PidResolveDeadline); until then the tree
+                // enumerates empty, and reading that as "exited" falsely aborts
+                // every slow-to-appear app at the 1s grace mark. Attached-process
+                // launches set RootPid synchronously, so a genuine crash within
+                // the grace window is still caught here. A shell launch whose
+                // process never resolves now falls through to TimedOut, which is
+                // honest — the two are indistinguishable without a PID.
+                if (context.Session.RootPid is not null && !context.Session.IsTreeAlive())
                 {
                     return new ReadinessResult(LaunchOutcome.ExitedEarly, ReadinessSignal.EarlyExit, DateTimeOffset.UtcNow);
                 }

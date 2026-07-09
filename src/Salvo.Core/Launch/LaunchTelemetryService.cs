@@ -47,6 +47,7 @@ public sealed class LaunchTelemetryService : ILaunchTelemetryService
         ArgumentNullException.ThrowIfNull(app);
 
         var session = LaunchSession.Begin(_logger);
+        var usedInspectorPath = false;
         if (process is not null)
         {
             try
@@ -60,10 +61,11 @@ public sealed class LaunchTelemetryService : ILaunchTelemetryService
         }
         else if (_inspector is not null && _matchers is not null)
         {
+            usedInspectorPath = true;
             _ = Task.Run(() => ResolvePidAsync(app, session));
         }
 
-        return Task.Run(() => ObserveAsync(app, resolvedPath, groupId, session));
+        return Task.Run(() => ObserveAsync(app, resolvedPath, groupId, session, usedInspectorPath));
     }
 
     private async Task ResolvePidAsync(AppEntry app, LaunchSession session)
@@ -96,7 +98,7 @@ public sealed class LaunchTelemetryService : ILaunchTelemetryService
         }
     }
 
-    private async Task<LaunchMetrics> ObserveAsync(AppEntry app, string? resolvedPath, string? groupId, LaunchSession session)
+    private async Task<LaunchMetrics> ObserveAsync(AppEntry app, string? resolvedPath, string? groupId, LaunchSession session, bool usedInspectorPath)
     {
         var appId = AppIdentity.ComputeAppId(resolvedPath, app.Name);
         try
@@ -106,6 +108,17 @@ public sealed class LaunchTelemetryService : ILaunchTelemetryService
 
             var context = new ProbeContext(session, app, resolvedPath, _logger);
             var result = await _detector.DetectAsync(context, _timeout).ConfigureAwait(false);
+
+            // On the shell/inspector path the PID resolves asynchronously; if it
+            // never resolved, no probe could observe the process and the outcome
+            // is a genuine resolution failure, not a timeout. Reclassify to the
+            // purpose-built PidNotFound (only when we didn't otherwise reach
+            // Ready) so telemetry distinguishes "couldn't find it" from "found
+            // it but it never signalled readiness".
+            if (usedInspectorPath && session.RootPid is null && result.Outcome != LaunchOutcome.Ready)
+            {
+                result = result with { Outcome = LaunchOutcome.PidNotFound };
+            }
 
             var metrics = BuildMetrics(app, resolvedPath, groupId, appId, isCold, session, result);
             await _store.SaveAsync(metrics).ConfigureAwait(false);

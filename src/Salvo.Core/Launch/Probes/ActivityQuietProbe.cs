@@ -84,6 +84,15 @@ public sealed class ActivityQuietProbe : IReadinessProbe
                     }
                 }
             }
+            else if (!observedAny)
+            {
+                // A tick where no PID could be sampled (transient churn, all
+                // descendants briefly unsampleable) breaks quiet continuity:
+                // the window must only accrue across consecutive confirmed-quiet
+                // ticks, otherwise a real activity burst landing on an unsampled
+                // tick could be skipped and the probe fire 'quiet' prematurely.
+                quietSince = null;
+            }
 
             lastTickAt = now;
 
