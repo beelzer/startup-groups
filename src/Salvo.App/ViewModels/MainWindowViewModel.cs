@@ -511,18 +511,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void PersistSettings(Action<AppSettings> mutate)
     {
-        var clone = new AppSettings
-        {
-            Theme = _settings.Current.Theme,
-            MinimizeToTrayOnClose = _settings.Current.MinimizeToTrayOnClose,
-            ShowNotifications = _settings.Current.ShowNotifications,
-            AppsViewMode = _settings.Current.AppsViewMode,
-            UiCulture = _settings.Current.UiCulture,
-            AlwaysRunAsAdmin = _settings.Current.AlwaysRunAsAdmin,
-            WarnWhenElevatedAppsPresent = _settings.Current.WarnWhenElevatedAppsPresent,
-            UpdateChannel = _settings.Current.UpdateChannel,
-            ShowMainWindowOnLaunch = _settings.Current.ShowMainWindowOnLaunch,
-        };
+        var clone = _settings.Current.Clone();
         mutate(clone);
         _settings.Save(clone);
     }

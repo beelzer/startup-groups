@@ -43,6 +43,25 @@ public sealed class AppSettings
     /// in addition to the tray icon. When false, the app starts tray-only.
     /// </summary>
     public bool ShowMainWindowOnLaunch { get; set; } = true;
+
+    /// <summary>
+    /// Deep-copies every field. This is the single source of truth for
+    /// duplicating settings before a mutate-and-save; callers must never
+    /// hand-roll a per-field copy (partial copies silently drop whichever
+    /// field the author forgot, resetting it to its default on save).
+    /// </summary>
+    public AppSettings Clone() => new()
+    {
+        Theme = Theme,
+        MinimizeToTrayOnClose = MinimizeToTrayOnClose,
+        ShowNotifications = ShowNotifications,
+        AppsViewMode = AppsViewMode,
+        UiCulture = UiCulture,
+        AlwaysRunAsAdmin = AlwaysRunAsAdmin,
+        WarnWhenElevatedAppsPresent = WarnWhenElevatedAppsPresent,
+        UpdateChannel = UpdateChannel,
+        ShowMainWindowOnLaunch = ShowMainWindowOnLaunch,
+    };
 }
 
 public interface ISettingsStore

@@ -27,7 +27,7 @@ public sealed class LanguageService : ILanguageService
 
     public void SetLanguage(SupportedLanguage language)
     {
-        var clone = CloneSettings(_settings.Current);
+        var clone = _settings.Current.Clone();
         clone.UiCulture = language.CultureName;
         _settings.Save(clone);
 
@@ -50,14 +50,6 @@ public sealed class LanguageService : ILanguageService
             return null;
         }
     }
-
-    private static AppSettings CloneSettings(AppSettings source) => new()
-    {
-        Theme = source.Theme,
-        MinimizeToTrayOnClose = source.MinimizeToTrayOnClose,
-        ShowNotifications = source.ShowNotifications,
-        UiCulture = source.UiCulture,
-    };
 }
 
 public interface ILanguageService
