@@ -981,14 +981,17 @@ public partial class MainWindowViewModel : ObservableObject
     /// </summary>
     private Salvo.App.ViewModels.Flow.NodeViewModel? CreateNode(string kind) => kind switch
     {
-        "App" => BuildAppNodeViaEditor(),
-        "Wait" => new Salvo.App.ViewModels.Flow.WaitNodeViewModel { Id = Guid.NewGuid().ToString(), DurationSeconds = 5 },
-        "IfElse" => new Salvo.App.ViewModels.Flow.IfElseNodeViewModel { Id = Guid.NewGuid().ToString() },
-        "ServiceStart" => new Salvo.App.ViewModels.Flow.ServiceStartNodeViewModel { Id = Guid.NewGuid().ToString() },
-        "ServiceStop" => new Salvo.App.ViewModels.Flow.ServiceStopNodeViewModel { Id = Guid.NewGuid().ToString() },
-        "RunCommand" => new Salvo.App.ViewModels.Flow.RunCommandNodeViewModel { Id = Guid.NewGuid().ToString() },
-        "GroupCall" => new Salvo.App.ViewModels.Flow.GroupCallNodeViewModel { Id = Guid.NewGuid().ToString() },
-        _ => null,
+        // App may still return null (the picker/editor was cancelled); every
+        // other kind returns a node. An unrecognized kind is a programming
+        // error (typo'd Tag), so fail loudly rather than silently no-op.
+        Salvo.App.ViewModels.Flow.NodeKinds.App => BuildAppNodeViaEditor(),
+        Salvo.App.ViewModels.Flow.NodeKinds.Wait => new Salvo.App.ViewModels.Flow.WaitNodeViewModel { Id = Guid.NewGuid().ToString(), DurationSeconds = 5 },
+        Salvo.App.ViewModels.Flow.NodeKinds.IfElse => new Salvo.App.ViewModels.Flow.IfElseNodeViewModel { Id = Guid.NewGuid().ToString() },
+        Salvo.App.ViewModels.Flow.NodeKinds.ServiceStart => new Salvo.App.ViewModels.Flow.ServiceStartNodeViewModel { Id = Guid.NewGuid().ToString() },
+        Salvo.App.ViewModels.Flow.NodeKinds.ServiceStop => new Salvo.App.ViewModels.Flow.ServiceStopNodeViewModel { Id = Guid.NewGuid().ToString() },
+        Salvo.App.ViewModels.Flow.NodeKinds.RunCommand => new Salvo.App.ViewModels.Flow.RunCommandNodeViewModel { Id = Guid.NewGuid().ToString() },
+        Salvo.App.ViewModels.Flow.NodeKinds.GroupCall => new Salvo.App.ViewModels.Flow.GroupCallNodeViewModel { Id = Guid.NewGuid().ToString() },
+        _ => throw new ArgumentException($"Unknown node kind '{kind}'", nameof(kind)),
     };
 
     [RelayCommand]
@@ -998,7 +1001,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         // "App" goes through the installed-app / service scanner, which can
         // return several apps at once; each is appended to the chain end.
-        if (kind == "App")
+        if (kind == Salvo.App.ViewModels.Flow.NodeKinds.App)
         {
             var appNodes = PickAppNodes();
             foreach (var n in appNodes) AppendAppNode(SelectedGroup, n.App);
@@ -1124,7 +1127,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         // "App" opens the scanner (possibly several apps); chain them in
         // sequence starting right after the target stage.
-        if (kind == "App")
+        if (kind == Salvo.App.ViewModels.Flow.NodeKinds.App)
         {
             var appNodes = PickAppNodes();
             Salvo.App.ViewModels.Flow.NodeViewModel? prev = null;
@@ -1165,10 +1168,10 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (SelectedGroup is null || ifNode is null || string.IsNullOrEmpty(kind)) return;
 
-        var target = string.Equals(branch, "else", StringComparison.Ordinal) ? ifNode.ElseNodes : ifNode.ThenNodes;
+        var target = string.Equals(branch, Salvo.App.ViewModels.Flow.NodeBranches.Else, StringComparison.Ordinal) ? ifNode.ElseNodes : ifNode.ThenNodes;
 
         // "App" opens the scanner; add every chosen app to the branch.
-        if (kind == "App")
+        if (kind == Salvo.App.ViewModels.Flow.NodeKinds.App)
         {
             var appNodes = PickAppNodes();
             foreach (var n in appNodes) target.Add(n);
@@ -1212,7 +1215,7 @@ public partial class MainWindowViewModel : ObservableObject
             return;   // unknown origin
         }
 
-        var target = string.Equals(branch, "else", StringComparison.Ordinal) ? ifNode.ElseNodes : ifNode.ThenNodes;
+        var target = string.Equals(branch, Salvo.App.ViewModels.Flow.NodeBranches.Else, StringComparison.Ordinal) ? ifNode.ElseNodes : ifNode.ThenNodes;
         if (!target.Contains(dragged)) target.Add(dragged);
         PersistConfig();
     }

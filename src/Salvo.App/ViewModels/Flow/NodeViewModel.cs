@@ -5,6 +5,32 @@ using Salvo.Core.Models.Flow;
 namespace Salvo.App.ViewModels.Flow;
 
 /// <summary>
+/// The node-kind discriminator vocabulary, shared by the concrete node
+/// view-models' <see cref="NodeViewModel.Kind"/> overrides and the CreateNode
+/// factory switch (and mirrored, as string literals, by the XAML add-menu
+/// Tags). Keeping the C# side on one set of consts means a typo can't silently
+/// fall through the factory's default.
+/// </summary>
+public static class NodeKinds
+{
+    public const string Start = "Start";
+    public const string App = "App";
+    public const string Wait = "Wait";
+    public const string IfElse = "IfElse";
+    public const string ServiceStart = "ServiceStart";
+    public const string ServiceStop = "ServiceStop";
+    public const string RunCommand = "RunCommand";
+    public const string GroupCall = "GroupCall";
+}
+
+/// <summary>Branch labels for <see cref="IfElseNodeViewModel"/> edges.</summary>
+public static class NodeBranches
+{
+    public const string Then = "then";
+    public const string Else = "else";
+}
+
+/// <summary>
 /// Base for every node card in the Simple view (and node body in the
 /// future Flow view). Holds the stable graph identity plus the X/Y
 /// position used only by the Flow view; the Simple view computes its
@@ -87,7 +113,7 @@ public abstract partial class NodeViewModel : ObservableObject
 
 public sealed partial class StartNodeViewModel : NodeViewModel
 {
-    public override string Kind => "Start";
+    public override string Kind => NodeKinds.Start;
     public override Node ToModel() => new StartNode { Id = Id, Position = CurrentPosition() };
 }
 
@@ -95,7 +121,7 @@ public sealed partial class AppNodeViewModel : NodeViewModel
 {
     public AppEntryViewModel App { get; set; } = new();
 
-    public override string Kind => "App";
+    public override string Kind => NodeKinds.App;
     public override Node ToModel() => new AppNode { Id = Id, Position = CurrentPosition(), App = App.ToModel() };
 }
 
@@ -103,7 +129,7 @@ public sealed partial class WaitNodeViewModel : NodeViewModel
 {
     [ObservableProperty] private int _durationSeconds;
 
-    public override string Kind => "Wait";
+    public override string Kind => NodeKinds.Wait;
     public override Node ToModel() => new WaitNode { Id = Id, Position = CurrentPosition(), DurationSeconds = DurationSeconds };
 }
 
@@ -161,7 +187,7 @@ public sealed partial class IfElseNodeViewModel : NodeViewModel
         }
     }
 
-    public override string Kind => "IfElse";
+    public override string Kind => NodeKinds.IfElse;
 
     // ToModel emits only the condition-bearing IfElseNode. The branch
     // node payload + then/else edges are emitted by
@@ -174,7 +200,7 @@ public sealed partial class ServiceStartNodeViewModel : NodeViewModel
 {
     [ObservableProperty] private string _serviceName = string.Empty;
 
-    public override string Kind => "ServiceStart";
+    public override string Kind => NodeKinds.ServiceStart;
     public override Node ToModel() => new ServiceStartNode { Id = Id, Position = CurrentPosition(), ServiceName = ServiceName };
 }
 
@@ -182,7 +208,7 @@ public sealed partial class ServiceStopNodeViewModel : NodeViewModel
 {
     [ObservableProperty] private string _serviceName = string.Empty;
 
-    public override string Kind => "ServiceStop";
+    public override string Kind => NodeKinds.ServiceStop;
     public override Node ToModel() => new ServiceStopNode { Id = Id, Position = CurrentPosition(), ServiceName = ServiceName };
 }
 
@@ -192,7 +218,7 @@ public sealed partial class RunCommandNodeViewModel : NodeViewModel
     [ObservableProperty] private string _interpreter = "shell";
     [ObservableProperty] private string? _workingDirectory;
 
-    public override string Kind => "RunCommand";
+    public override string Kind => NodeKinds.RunCommand;
     public override Node ToModel() => new RunCommandNode
     {
         Id = Id, Position = CurrentPosition(),
@@ -204,6 +230,6 @@ public sealed partial class GroupCallNodeViewModel : NodeViewModel
 {
     [ObservableProperty] private string _groupId = string.Empty;
 
-    public override string Kind => "GroupCall";
+    public override string Kind => NodeKinds.GroupCall;
     public override Node ToModel() => new GroupCallNode { Id = Id, Position = CurrentPosition(), GroupId = GroupId };
 }
