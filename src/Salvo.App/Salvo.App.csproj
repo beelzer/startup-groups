@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
-    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Salvo.App</RootNamespace>
@@ -75,7 +74,7 @@
        with the App, so overlap is fine (Copy uses SkipUnchangedFiles). -->
   <Target Name="CopyElevatorOutput" AfterTargets="Build">
     <PropertyGroup>
-      <_ElevatorOutputDir>$(MSBuildThisFileDirectory)..\Salvo.Elevator\bin\$(Configuration)\net10.0-windows\</_ElevatorOutputDir>
+      <_ElevatorOutputDir>$(MSBuildThisFileDirectory)..\Salvo.Elevator\bin\$(Configuration)\net10.0-windows10.0.19041.0\</_ElevatorOutputDir>
     </PropertyGroup>
     <ItemGroup>
       <_ElevatorFiles Include="$(_ElevatorOutputDir)**\*.*"

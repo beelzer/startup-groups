@@ -7,9 +7,18 @@
     <AnalysisLevel>latest</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <Deterministic>true</Deterministic>
+    <!-- Normalizes embedded source paths on CI so builds are reproducible;
+         conditioned on the runner so local builds keep full paths for debugging. -->
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <!-- Single Win10 floor (1809 / MSIX minimum) shared by every project, so
+         CA1416 has one consistent platform baseline instead of Core defaulting
+         lower than the WPF app. -->
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
     <Product>Salvo</Product>
     <Company>Salvo</Company>
-    <Copyright>Copyright (c) $([System.DateTime]::UtcNow.Year)</Copyright>
+    <!-- Fixed year (not UtcNow.Year) so the emitted assembly is source-determined,
+         honoring Deterministic=true. -->
+    <Copyright>Copyright (c) 2025 Salvo</Copyright>
     <Version>0.2.14</Version>
     <InformationalVersion>$(Version)</InformationalVersion>
     <AppId>salvo</AppId>
