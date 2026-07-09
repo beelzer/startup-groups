@@ -150,20 +150,30 @@ public sealed class MsixUpdateService : IUpdateService
         _logger.LogInformation("MSIX self-update operation completed.");
     }
 
-    private static bool IsNewer(string latest, string current)
+    internal static bool IsNewer(string latest, string current)
     {
-        // Plain Version compare keeps us out of the SemVer prerelease
-        // tagging weeds — MSIX builds are always release-tagged (no
-        // -canary.N suffix), so the W.X.Y form parses cleanly via Version.
-        if (!Version.TryParse(NormaliseTo3Part(latest), out var l)) return false;
-        if (!Version.TryParse(NormaliseTo3Part(current), out var c)) return false;
-        return l.CompareTo(c) > 0;
+        // Compare only Major.Minor.Build. GitHub release tags are natively
+        // 4-part (e.g. "0.2.14.0") while CurrentVersion is the trimmed 3-part
+        // form ("0.2.14"), and Version.CompareTo treats an unset 4th component
+        // (-1) as less than an explicit 0 — so "0.2.14.0" would compare as
+        // newer than the identical installed "0.2.14", surfacing a perpetual,
+        // unclearable "update available". Truncating both to 3 components
+        // (stripping any -canary.N prerelease suffix first) removes that.
+        if (!Version.TryParse(StripPrerelease(latest), out var l)) return false;
+        if (!Version.TryParse(StripPrerelease(current), out var c)) return false;
+        return ToMajorMinorBuild(l).CompareTo(ToMajorMinorBuild(c)) > 0;
     }
 
-    private static string NormaliseTo3Part(string version)
+    private static Version ToMajorMinorBuild(Version v) =>
+        // Build is -1 when the source string had only two components ("0.2");
+        // clamp so the 3-arg Version ctor (which rejects negatives) is safe.
+        new(v.Major, v.Minor, v.Build < 0 ? 0 : v.Build);
+
+    private static string StripPrerelease(string version)
     {
-        // Tag names may be "0.2.14" or "0.2.14.0"; either parses as Version
-        // but we strip any prerelease suffix the upstream tag might carry.
+        // Strip any prerelease suffix (e.g. "-canary.3") the upstream tag
+        // might carry so the numeric core parses via Version; component-count
+        // normalisation happens in IsNewer.
         var dash = version.IndexOf('-');
         return dash >= 0 ? version[..dash] : version;
     }

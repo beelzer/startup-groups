@@ -16,6 +16,9 @@
     <StartupObject>Salvo.App.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Salvo.App.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="Assets\tray-light.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
