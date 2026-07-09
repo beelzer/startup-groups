@@ -316,4 +316,17 @@ public static class Strings
     public static string Settings_AdminMode_AlwaysRunHint_Active => Get(nameof(Settings_AdminMode_AlwaysRunHint_Active));
     public static string Settings_AdminMode_WarnLabel => Get(nameof(Settings_AdminMode_WarnLabel));
     public static string Settings_AdminMode_WarnHint => Get(nameof(Settings_AdminMode_WarnHint));
+
+    // Restart-as-admin dialog
+    public static string Dialog_RestartAsAdmin_Title => Get(nameof(Dialog_RestartAsAdmin_Title));
+    public static string Dialog_RestartAsAdmin_PathError => Get(nameof(Dialog_RestartAsAdmin_PathError));
+
+    // Flow-editor node labels (used in the remove-node confirm dialog)
+    public static string Flow_NodeLabel_WaitFormat => Get(nameof(Flow_NodeLabel_WaitFormat));
+    public static string Flow_NodeLabel_IfElse => Get(nameof(Flow_NodeLabel_IfElse));
+    public static string Flow_NodeLabel_StartFormat => Get(nameof(Flow_NodeLabel_StartFormat));
+    public static string Flow_NodeLabel_StopFormat => Get(nameof(Flow_NodeLabel_StopFormat));
+    public static string Flow_NodeLabel_RunFormat => Get(nameof(Flow_NodeLabel_RunFormat));
+    public static string Flow_NodeLabel_GroupCall => Get(nameof(Flow_NodeLabel_GroupCall));
+    public static string Flow_NodeLabel_Fallback => Get(nameof(Flow_NodeLabel_Fallback));
 }

@@ -339,4 +339,13 @@ Run elevated now?</value></data>
   <data name="Settings_AdminMode_AlwaysRunHint_Active" xml:space="preserve"><value>The app will relaunch with UAC on startup; also applies to auto-start.</value></data>
   <data name="Settings_AdminMode_WarnLabel" xml:space="preserve"><value>Warn about elevated applications</value></data>
   <data name="Settings_AdminMode_WarnHint" xml:space="preserve"><value>Show a warning when interacting with apps that are running with higher privileges.</value></data>
+  <data name="Dialog_RestartAsAdmin_Title" xml:space="preserve"><value>Restart as administrator</value></data>
+  <data name="Dialog_RestartAsAdmin_PathError" xml:space="preserve"><value>Could not resolve executable path.</value></data>
+  <data name="Flow_NodeLabel_WaitFormat" xml:space="preserve"><value>Wait {0}s</value></data>
+  <data name="Flow_NodeLabel_IfElse" xml:space="preserve"><value>If / Else</value></data>
+  <data name="Flow_NodeLabel_StartFormat" xml:space="preserve"><value>Start {0}</value></data>
+  <data name="Flow_NodeLabel_StopFormat" xml:space="preserve"><value>Stop {0}</value></data>
+  <data name="Flow_NodeLabel_RunFormat" xml:space="preserve"><value>Run: {0}</value></data>
+  <data name="Flow_NodeLabel_GroupCall" xml:space="preserve"><value>Group call</value></data>
+  <data name="Flow_NodeLabel_Fallback" xml:space="preserve"><value>node</value></data>
 </root>

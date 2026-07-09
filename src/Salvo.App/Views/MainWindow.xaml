@@ -150,12 +150,23 @@
                                                        FontSize="12"
                                                        VerticalAlignment="Center"
                                                        Foreground="{DynamicResource SystemFillColorCautionBrush}" />
-                                        <TextBlock x:Name="PillText"
+                                        <!-- Two live-localized TextBlocks toggled by the DataTrigger below.
+                                             A Binding/loc:Translate can't live in a trigger Setter.Value, so a
+                                             single x:Static-set label would freeze at load-time culture and go
+                                             stale on a live language switch. -->
+                                        <TextBlock x:Name="PillTextRecommended"
                                                    Text="{loc:Translate Admin_Pill_Recommended}"
                                                    Margin="6,0,0,0"
                                                    FontSize="{StaticResource FontSizeCaption}"
                                                    VerticalAlignment="Center"
                                                    Foreground="{DynamicResource SystemFillColorCautionBrush}" />
+                                        <TextBlock x:Name="PillTextActive"
+                                                   Text="{loc:Translate Admin_Pill_Active}"
+                                                   Margin="6,0,0,0"
+                                                   FontSize="{StaticResource FontSizeCaption}"
+                                                   VerticalAlignment="Center"
+                                                   Visibility="Collapsed"
+                                                   Foreground="{DynamicResource SystemFillColorSuccessBrush}" />
                                     </StackPanel>
                                 </Border>
                                 <ControlTemplate.Triggers>
@@ -166,8 +177,8 @@
                                         <Setter TargetName="PillBorder" Property="Background" Value="{DynamicResource SystemFillColorSuccessBackgroundBrush}" />
                                         <Setter TargetName="PillIcon" Property="Symbol" Value="ShieldCheckmark24" />
                                         <Setter TargetName="PillIcon" Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
-                                        <Setter TargetName="PillText" Property="Text" Value="{x:Static res:Strings.Admin_Pill_Active}" />
-                                        <Setter TargetName="PillText" Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                        <Setter TargetName="PillTextRecommended" Property="Visibility" Value="Collapsed" />
+                                        <Setter TargetName="PillTextActive" Property="Visibility" Value="Visible" />
                                     </DataTrigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>

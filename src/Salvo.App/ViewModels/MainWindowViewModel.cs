@@ -481,7 +481,7 @@ public partial class MainWindowViewModel : ObservableObject
         var exePath = Environment.ProcessPath;
         if (string.IsNullOrEmpty(exePath))
         {
-            _ = _dialogs.ShowErrorAsync("Restart as administrator", "Could not resolve executable path.");
+            _ = _dialogs.ShowErrorAsync(Strings.Dialog_RestartAsAdmin_Title, Strings.Dialog_RestartAsAdmin_PathError);
             return;
         }
 
@@ -505,7 +505,7 @@ public partial class MainWindowViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to relaunch as administrator");
-            _ = _dialogs.ShowErrorAsync("Restart as administrator", ex.Message);
+            _ = _dialogs.ShowErrorAsync(Strings.Dialog_RestartAsAdmin_Title, ex.Message);
         }
     }
 
@@ -1270,16 +1270,18 @@ public partial class MainWindowViewModel : ObservableObject
         if (node is null || SelectedGroup is null) return;
         if (node is Salvo.App.ViewModels.Flow.StartNodeViewModel) return; // never remove Start
 
+        // Structural fragments are localized; the interpolated user data
+        // (app name, service name, command) is left as-is.
         var label = node switch
         {
             Salvo.App.ViewModels.Flow.AppNodeViewModel a => a.App.Name,
-            Salvo.App.ViewModels.Flow.WaitNodeViewModel w => $"Wait {w.DurationSeconds}s",
-            Salvo.App.ViewModels.Flow.IfElseNodeViewModel => "If / Else",
-            Salvo.App.ViewModels.Flow.ServiceStartNodeViewModel s => $"Start {s.ServiceName}",
-            Salvo.App.ViewModels.Flow.ServiceStopNodeViewModel s => $"Stop {s.ServiceName}",
-            Salvo.App.ViewModels.Flow.RunCommandNodeViewModel c => $"Run: {c.Command}",
-            Salvo.App.ViewModels.Flow.GroupCallNodeViewModel => "Group call",
-            _ => "node",
+            Salvo.App.ViewModels.Flow.WaitNodeViewModel w => string.Format(CultureInfo.CurrentUICulture, Strings.Flow_NodeLabel_WaitFormat, w.DurationSeconds),
+            Salvo.App.ViewModels.Flow.IfElseNodeViewModel => Strings.Flow_NodeLabel_IfElse,
+            Salvo.App.ViewModels.Flow.ServiceStartNodeViewModel s => string.Format(CultureInfo.CurrentUICulture, Strings.Flow_NodeLabel_StartFormat, s.ServiceName),
+            Salvo.App.ViewModels.Flow.ServiceStopNodeViewModel s => string.Format(CultureInfo.CurrentUICulture, Strings.Flow_NodeLabel_StopFormat, s.ServiceName),
+            Salvo.App.ViewModels.Flow.RunCommandNodeViewModel c => string.Format(CultureInfo.CurrentUICulture, Strings.Flow_NodeLabel_RunFormat, c.Command),
+            Salvo.App.ViewModels.Flow.GroupCallNodeViewModel => Strings.Flow_NodeLabel_GroupCall,
+            _ => Strings.Flow_NodeLabel_Fallback,
         };
         if (!await _dialogs.ConfirmAsync(
             Strings.Dialog_RemoveApp_Title,
