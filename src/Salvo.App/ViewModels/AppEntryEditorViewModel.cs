@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Salvo.App.Services;
@@ -33,6 +34,9 @@ public partial class AppEntryEditorViewModel : ObservableObject
     [ObservableProperty] private string? _workingDirectory;
     [ObservableProperty] private int _delayAfterSeconds;
     [ObservableProperty] private bool _enabled = true;
+
+    /// <summary>Icon extracted from the current target, shown in the editor header.</summary>
+    [ObservableProperty] private BitmapSource? _icon;
 
     public bool IsNew { get; set; } = true;
 
@@ -89,9 +93,34 @@ public partial class AppEntryEditorViewModel : ObservableObject
         OnPropertyChanged(nameof(IsExecutable));
         OnPropertyChanged(nameof(IsService));
         RefreshSuggestions();
+        RefreshIcon();
     }
 
-    partial void OnPathChanged(string? value) => RefreshSuggestions();
+    partial void OnPathChanged(string? value)
+    {
+        RefreshSuggestions();
+        RefreshIcon();
+    }
+
+    // Pull the target's icon for the header preview. Runs on the UI thread
+    // (STA), which the shell icon extractor requires; best-effort, so a
+    // missing/odd target just shows no icon.
+    private void RefreshIcon()
+    {
+        if (Kind != AppKind.Executable || string.IsNullOrWhiteSpace(Path))
+        {
+            Icon = null;
+            return;
+        }
+        try
+        {
+            Icon = ShellIconExtractor.GetImage(Path, 48);
+        }
+        catch
+        {
+            Icon = null;
+        }
+    }
     partial void OnServiceChanged(string? value) => RefreshSuggestions();
     partial void OnArgsChanged(string? value)
     {

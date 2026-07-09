@@ -16,6 +16,7 @@
                  WindowCornerPreference="Round">
     <Window.Resources>
         <conv:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+        <conv:NullToVisibilityConverter x:Key="NotNullToVisibility" Invert="True" />
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -26,7 +27,22 @@
 
         <Border Grid.Row="1" Padding="{StaticResource DialogPadding}">
             <StackPanel>
-                <TextBlock Text="{loc:Translate AppEditor_Heading}" Style="{StaticResource AppH2}" Margin="0,0,0,16" />
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="{loc:Translate AppEditor_Heading}" Style="{StaticResource AppH2}" VerticalAlignment="Center" />
+                    <Border Grid.Column="1" Width="40" Height="40" VerticalAlignment="Center"
+                            CornerRadius="{StaticResource RadiusSm}"
+                            SnapsToDevicePixels="True"
+                            RenderOptions.BitmapScalingMode="HighQuality"
+                            Visibility="{Binding Icon, Converter={StaticResource NotNullToVisibility}}">
+                        <Border.Background>
+                            <ImageBrush ImageSource="{Binding Icon}" Stretch="Uniform" />
+                        </Border.Background>
+                    </Border>
+                </Grid>
 
                 <TextBlock Text="{loc:Translate AppEditor_Name_Label}" Style="{StaticResource AppMuted}" Margin="0,0,0,6" />
                 <ui:TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,14" />
@@ -41,18 +57,18 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <ui:TextBox Grid.Column="0" Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}" />
-                        <ui:Button Grid.Column="1" Content="{loc:Translate Action_Browse}" Icon="{ui:SymbolIcon FolderOpen24}" Margin="8,0,0,0" Command="{Binding BrowseExecutableCommand}" />
+                        <ui:TextBox x:Name="TargetBox" Grid.Column="0" Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}" />
+                        <ui:Button Grid.Column="1" Content="{loc:Translate Action_Browse}" Icon="{ui:SymbolIcon FolderOpen24}" Margin="8,0,0,0" Height="{Binding ActualHeight, ElementName=TargetBox}" VerticalAlignment="Center" Command="{Binding BrowseExecutableCommand}" />
                     </Grid>
 
                     <TextBlock Text="{loc:Translate AppEditor_Arguments_Label}" Style="{StaticResource AppMuted}" Margin="0,0,0,6" />
-                    <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{StaticResource RadiusSm}"
-                            Padding="6,4"
-                            Background="{DynamicResource ControlFillColorDefaultBrush}"
-                            MinHeight="36"
-                            Margin="0,0,0,8">
+                    <Grid x:Name="ArgumentsRoot" Margin="0,0,0,8">
+                        <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource RadiusXs}"
+                                Padding="10,5"
+                                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                MinHeight="32">
                         <ItemsControl ItemsSource="{Binding ArgumentChips}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -72,6 +88,14 @@
                                                  Background="Transparent"
                                                  FontFamily="Consolas"
                                                  FontSize="{StaticResource FontSizeMuted}">
+                                            <TextBox.Template>
+                                                <ControlTemplate TargetType="TextBox">
+                                                    <ScrollViewer x:Name="PART_ContentHost"
+                                                                  Focusable="False"
+                                                                  HorizontalScrollBarVisibility="Hidden"
+                                                                  VerticalScrollBarVisibility="Hidden" />
+                                                </ControlTemplate>
+                                            </TextBox.Template>
                                             <TextBox.InputBindings>
                                                 <KeyBinding Key="Enter" Command="{Binding CommitArgumentInputCommand}" />
                                                 <KeyBinding Key="Tab" Command="{Binding CommitArgumentInputCommand}" />
@@ -147,6 +171,14 @@
                                                      IsVisibleChanged="ChipEditBox_IsVisibleChanged"
                                                      Loaded="ChipEditBox_Loaded"
                                                      LostFocus="ChipEditBox_LostFocus">
+                                                <TextBox.Template>
+                                                    <ControlTemplate TargetType="TextBox">
+                                                        <ScrollViewer x:Name="PART_ContentHost"
+                                                                      Focusable="False"
+                                                                      HorizontalScrollBarVisibility="Hidden"
+                                                                      VerticalScrollBarVisibility="Hidden" />
+                                                    </ControlTemplate>
+                                                </TextBox.Template>
                                                 <TextBox.Style>
                                                     <Style TargetType="TextBox">
                                                         <Setter Property="Visibility" Value="Collapsed" />
@@ -167,7 +199,23 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                    </Border>
+                        </Border>
+                        <!-- Accent underline on focus, matching the ui:TextBox look. -->
+                        <Border Height="2" VerticalAlignment="Bottom" Margin="1,0,1,0"
+                                CornerRadius="0,0,3,3"
+                                Background="{DynamicResource AccentFillColorDefaultBrush}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=ArgumentsRoot}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                        </Border>
+                    </Grid>
 
                     <StackPanel Visibility="{Binding HasSuggestions, Converter={StaticResource BoolToVisibility}}" Margin="0,0,0,14">
                         <TextBlock Text="{loc:Translate AppEditor_SuggestedArguments_Label}" Style="{StaticResource AppMuted}" Margin="0,2,0,6" />
@@ -242,8 +290,8 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <ui:TextBox Grid.Column="0" Text="{Binding WorkingDirectory, UpdateSourceTrigger=PropertyChanged}" />
-                        <ui:Button Grid.Column="1" Content="{loc:Translate Action_Browse}" Icon="{ui:SymbolIcon FolderOpen24}" Margin="8,0,0,0" Command="{Binding BrowseWorkingDirectoryCommand}" />
+                        <ui:TextBox x:Name="WorkingDirBox" Grid.Column="0" Text="{Binding WorkingDirectory, UpdateSourceTrigger=PropertyChanged}" />
+                        <ui:Button Grid.Column="1" Content="{loc:Translate Action_Browse}" Icon="{ui:SymbolIcon FolderOpen24}" Margin="8,0,0,0" Height="{Binding ActualHeight, ElementName=WorkingDirBox}" VerticalAlignment="Center" Command="{Binding BrowseWorkingDirectoryCommand}" />
                     </Grid>
                 </StackPanel>
 
