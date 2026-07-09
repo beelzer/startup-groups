@@ -65,12 +65,6 @@ public sealed class AppOrchestrator : IAppOrchestrator
         return result;
     }
 
-    public OperationResult LaunchApp(AppEntry app, string? groupId)
-    {
-        var (result, _) = LaunchAppCore(app, groupId);
-        return result;
-    }
-
     private (OperationResult Result, Task<LaunchMetrics>? Observation) LaunchAppCore(AppEntry app, string? groupId)
     {
         if (!app.Enabled)

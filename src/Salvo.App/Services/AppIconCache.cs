@@ -18,10 +18,4 @@ internal static class AppIconCache
         _cache[source] = bmp;
         return bmp;
     }
-
-    public static void Set(string source, BitmapSource? bitmap)
-    {
-        if (string.IsNullOrWhiteSpace(source)) return;
-        _cache[source] = bitmap;
-    }
 }

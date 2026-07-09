@@ -22,19 +22,12 @@ namespace Salvo.App.Views;
 
 public partial class MainWindow : FluentWindow
 {
-    private const string AppRowDragFormat = "Salvo.AppRow";
     private const string GroupRowDragFormat = "Salvo.GroupRow";
     private readonly MainWindowViewModel _viewModel;
     private bool _indicatorSettled;
-    private Point _dragStart;
-    private AppEntryViewModel? _dragSource;
-    private Border? _dragSourceRow;
-    private Border? _activeDropRow;
-    private int? _activeAppInsertAt;
     private GroupViewModel? _groupDragSource;
     private System.Windows.Controls.ListViewItem? _groupDragSourceItem;
     private Point _groupDragStart;
-    private System.Windows.Controls.ListViewItem? _activeGroupDropItem;
     private int? _activeGroupInsertAt;
     private DragGhostAdorner? _dragGhost;
     private AdornerLayer? _dragGhostLayer;
@@ -262,7 +255,7 @@ public partial class MainWindow : FluentWindow
 
     protected override void OnClosing(CancelEventArgs e)
     {
-        if (_viewModel.MinimizeToTrayOnClose && Application.Current.Windows.Count > 0)
+        if (_viewModel.MinimizeToTrayOnClose)
         {
             e.Cancel = true;
             Hide();
@@ -270,199 +263,6 @@ public partial class MainWindow : FluentWindow
         }
 
         base.OnClosing(e);
-    }
-
-    private void Row_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (sender is not Border row || row.Tag is not AppEntryViewModel app) return;
-        if (IsInsideButton(e.OriginalSource as DependencyObject, row)) return;
-
-        _dragStart = e.GetPosition(this);
-        _dragSource = app;
-        _dragSourceRow = row;
-    }
-
-    private static bool IsInsideButton(DependencyObject? element, DependencyObject row)
-    {
-        while (element is not null && !ReferenceEquals(element, row))
-        {
-            if (element is ButtonBase) return true;
-            element = VisualTreeHelper.GetParent(element);
-        }
-        return false;
-    }
-
-    private void Row_PreviewMouseMove(object sender, MouseEventArgs e)
-    {
-        if (e.LeftButton != MouseButtonState.Pressed || _dragSource is null || _dragSourceRow is null)
-            return;
-
-        var current = e.GetPosition(this);
-        if (Math.Abs(current.X - _dragStart.X) < SystemParameters.MinimumHorizontalDragDistance &&
-            Math.Abs(current.Y - _dragStart.Y) < SystemParameters.MinimumVerticalDragDistance)
-            return;
-
-        var data = new DataObject(AppRowDragFormat, _dragSource);
-        var grabPoint = e.GetPosition(_dragSourceRow);
-        ShowDragGhost(_dragSourceRow, grabPoint);
-
-        var itemsControl = FindAncestor<ItemsControl>(_dragSourceRow);
-        var apps = _viewModel.SelectedGroup?.Apps.ToList();
-        if (itemsControl is not null && apps is not null)
-        {
-            BeginReorderPreview(
-                apps.Count,
-                apps.IndexOf(_dragSource),
-                i => itemsControl.ItemContainerGenerator.ContainerFromIndex(i) is { } container
-                    ? FindVisualChild<Border>(container, "RowRoot")
-                    : null);
-        }
-
-        try
-        {
-            DragDrop.DoDragDrop(_dragSourceRow, data, DragDropEffects.Move);
-        }
-        finally
-        {
-            HideDragGhost();
-            EndReorderPreview();
-            ClearAppDropIndicator();
-            _activeAppInsertAt = null;
-            _dragSource = null;
-            _dragSourceRow = null;
-        }
-    }
-
-    private void Row_DragOver(object sender, DragEventArgs e)
-    {
-        if (sender is not Border anchor || !e.Data.GetDataPresent(AppRowDragFormat))
-        {
-            e.Effects = DragDropEffects.None;
-            e.Handled = true;
-            return;
-        }
-
-        UpdateDragGhost(e.GetPosition(this));
-
-        var (target, isBelow) = ResolveAppDropTarget(anchor, e.GetPosition(anchor));
-        if (target is null)
-        {
-            ClearAppDropIndicator();
-            e.Effects = DragDropEffects.Move;
-            e.Handled = true;
-            return;
-        }
-
-        // Slide siblings out of the way so the gap shows where the ghost would land; the static
-        // drop bar is redundant while the preview is live.
-        if (target.Tag is AppEntryViewModel targetApp && _viewModel.SelectedGroup?.Apps.ToList() is { } apps)
-        {
-            var targetIdx = apps.IndexOf(targetApp);
-            if (targetIdx >= 0)
-            {
-                var insertAt = isBelow ? targetIdx + 1 : targetIdx;
-                _activeAppInsertAt = insertAt;
-                UpdateReorderPreview(insertAt);
-            }
-        }
-
-        e.Effects = DragDropEffects.Move;
-        e.Handled = true;
-    }
-
-    private void Row_DragLeave(object sender, DragEventArgs e)
-    {
-        // Intentional no-op: clearing on DragLeave causes flicker between adjacent rows'
-        // DragOver events. Indicators are cleared when another row takes over (see DragOver)
-        // and when the drag ends (finally-block in PreviewMouseMove).
-    }
-
-    private void Row_Drop(object sender, DragEventArgs e)
-    {
-        if (e.Data.GetData(AppRowDragFormat) is not AppEntryViewModel source ||
-            _viewModel.SelectedGroup is null)
-        {
-            return;
-        }
-
-        ClearAppDropIndicator();
-        CommitAppReorder(source);
-        e.Handled = true;
-    }
-
-    // Fallback for drops that land in an empty gap created by the reorder preview (e.g. the top
-    // slot when rows above the source have slid down). The per-Border Row_Drop doesn't fire there
-    // because no row's hit region covers the cursor.
-    private void AppsContainer_Drop(object sender, DragEventArgs e)
-    {
-        if (e.Handled) return;
-        if (e.Data.GetData(AppRowDragFormat) is not AppEntryViewModel source) return;
-        if (_viewModel.SelectedGroup is null) return;
-
-        ClearAppDropIndicator();
-        CommitAppReorder(source);
-        e.Handled = true;
-    }
-
-    private void AppsContainer_DragOver(object sender, DragEventArgs e)
-    {
-        if (e.Handled || !e.Data.GetDataPresent(AppRowDragFormat)) return;
-        e.Effects = DragDropEffects.Move;
-        e.Handled = true;
-    }
-
-    private void CommitAppReorder(AppEntryViewModel source)
-    {
-        if (_viewModel.SelectedGroup?.Apps.ToList() is not { } apps) return;
-
-        // Prefer the insertion index computed during DragOver — it's correct even when the preview
-        // has translated rows out from under the cursor at drop time.
-        if (_activeAppInsertAt is not int insertAt) return;
-
-        var sourceIdx = apps.IndexOf(source);
-        if (sourceIdx >= 0 && sourceIdx < insertAt) insertAt--;
-
-        _viewModel.ReorderApp(source, insertAt);
-    }
-
-    // Walks the ItemsControl hosting `anchor` and picks a single drop target per gap: the first
-    // row whose midpoint is below the cursor gets a top-edge indicator; if the cursor is past
-    // every midpoint, the last row gets a bottom-edge indicator (insert-at-end).
-    private (Border? Row, bool IsBelow) ResolveAppDropTarget(Border anchor, Point cursorInAnchor)
-    {
-        if (_viewModel.SelectedGroup?.Apps is not { Count: > 0 } apps) return (null, false);
-
-        var itemsControl = FindAncestor<ItemsControl>(anchor);
-        if (itemsControl is null) return (null, false);
-
-        var cursorInList = anchor.TranslatePoint(cursorInAnchor, itemsControl);
-        Border? last = null;
-
-        for (var i = 0; i < apps.Count; i++)
-        {
-            var container = itemsControl.ItemContainerGenerator.ContainerFromIndex(i);
-            if (container is null) continue;
-            var rowBorder = FindVisualChild<Border>(container, "RowRoot");
-            if (rowBorder is null) continue;
-            last = rowBorder;
-
-            var topLeft = rowBorder.TranslatePoint(new Point(0, 0), itemsControl);
-            var mid = topLeft.Y + rowBorder.ActualHeight / 2;
-            if (cursorInList.Y < mid)
-            {
-                return (rowBorder, false);
-            }
-        }
-
-        return (last, true);
-    }
-
-    private void ClearAppDropIndicator()
-    {
-        if (_activeDropRow is null) return;
-        SetDropVisible(_activeDropRow, above: true, visible: false);
-        SetDropVisible(_activeDropRow, above: false, visible: false);
-        _activeDropRow = null;
     }
 
     // Attaches a translucent ghost of `source` to the window's AdornerLayer and seeds its initial
@@ -590,26 +390,6 @@ public partial class MainWindow : FluentWindow
         _previewRowHeight = 0;
     }
 
-    private static void SetDropVisible(Border row, bool above, bool visible)
-    {
-        var name = above ? "DropAbove" : "DropBelow";
-        if (row.FindName(name) is System.Windows.Shapes.Rectangle r)
-        {
-            r.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-        }
-        else if (row.Child is Grid wrapper)
-        {
-            foreach (var child in wrapper.Children)
-            {
-                if (child is System.Windows.Shapes.Rectangle rect && rect.Name == name)
-                {
-                    rect.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-                    return;
-                }
-            }
-        }
-    }
-
     private void GroupsList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         var item = FindAncestor<System.Windows.Controls.ListViewItem>(e.OriginalSource as DependencyObject);
@@ -655,7 +435,6 @@ public partial class MainWindow : FluentWindow
         {
             HideDragGhost();
             EndReorderPreview();
-            ClearGroupDropIndicator();
             _activeGroupInsertAt = null;
             _groupDragSource = null;
             _groupDragSourceItem = null;
@@ -676,7 +455,6 @@ public partial class MainWindow : FluentWindow
         var (item, isBelow) = ResolveGroupDropTarget(e);
         if (item is null)
         {
-            ClearGroupDropIndicator();
             e.Effects = DragDropEffects.Move;
             e.Handled = true;
             return;
@@ -726,8 +504,6 @@ public partial class MainWindow : FluentWindow
 
     private void GroupsList_Drop(object sender, DragEventArgs e)
     {
-        ClearGroupDropIndicator();
-
         if (e.Data.GetData(GroupRowDragFormat) is not GroupViewModel source) return;
 
         // Prefer the insertion index captured during DragOver; re-resolving at drop time would
@@ -744,23 +520,6 @@ public partial class MainWindow : FluentWindow
 
         _viewModel.ReorderGroup(source, insertAt);
         e.Handled = true;
-    }
-
-    private void ClearGroupDropIndicator()
-    {
-        if (_activeGroupDropItem is null) return;
-        SetGroupDropVisible(_activeGroupDropItem, above: true, visible: false);
-        SetGroupDropVisible(_activeGroupDropItem, above: false, visible: false);
-        _activeGroupDropItem = null;
-    }
-
-    private static void SetGroupDropVisible(System.Windows.Controls.ListViewItem item, bool above, bool visible)
-    {
-        var name = above ? "GroupDropAbove" : "GroupDropBelow";
-        if (FindVisualChild<System.Windows.Shapes.Rectangle>(item, name) is { } rect)
-        {
-            rect.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-        }
     }
 
     private static T? FindVisualChild<T>(DependencyObject parent, string name) where T : FrameworkElement

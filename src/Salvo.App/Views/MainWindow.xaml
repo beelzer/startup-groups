@@ -405,21 +405,6 @@
                                                 <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="{StaticResource RadiusSm}" Padding="{TemplateBinding Padding}">
                                                     <ContentPresenter />
                                                 </Border>
-                                                <!-- Drop indicators sit at the item's outer edges (outside padding), so the bar lands in the 4px gap between items. Only one of these is ever visible across the whole list during a drag. -->
-                                                <Rectangle x:Name="GroupDropAbove"
-                                                           VerticalAlignment="Top"
-                                                           Height="2"
-                                                           Margin="4,0,4,0"
-                                                           Fill="{DynamicResource AccentFillColorDefaultBrush}"
-                                                           Visibility="Collapsed"
-                                                           IsHitTestVisible="False" />
-                                                <Rectangle x:Name="GroupDropBelow"
-                                                           VerticalAlignment="Bottom"
-                                                           Height="2"
-                                                           Margin="4,0,4,0"
-                                                           Fill="{DynamicResource AccentFillColorDefaultBrush}"
-                                                           Visibility="Collapsed"
-                                                           IsHitTestVisible="False" />
                                             </Grid>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">

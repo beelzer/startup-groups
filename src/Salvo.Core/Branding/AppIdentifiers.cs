@@ -6,7 +6,6 @@ public static class AppIdentifiers
     public const string TrayCommandLineFlag = "--tray";
 
     public const string ElevatorExecutableName = "Salvo.Elevator.exe";
-    public const string MainExecutableName = "Salvo.exe";
 
     public const string AssetsFolderName = "Assets";
     public const string TrayIconLightFileName = "tray-light.ico";

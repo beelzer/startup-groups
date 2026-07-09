@@ -348,39 +348,6 @@ public partial class AppEntryEditorViewModel : ObservableObject
         return false;
     }
 
-    private static string RemoveFlag(string args, string flag)
-    {
-        if (string.IsNullOrWhiteSpace(args)) return args;
-        var rawArgTokens = SplitTokens(args);
-        var normalizedArgTokens = rawArgTokens.Select(NormalizeToken).ToList();
-        var flagTokens = SplitTokens(flag).Select(NormalizeToken).ToList();
-        for (var i = 0; i + flagTokens.Count <= normalizedArgTokens.Count; i++)
-        {
-            if (normalizedArgTokens.Skip(i).Take(flagTokens.Count).SequenceEqual(flagTokens, StringComparer.OrdinalIgnoreCase))
-            {
-                var removeCount = flagTokens.Count;
-                var lastMatchedRaw = StripQuotes(rawArgTokens[i + removeCount - 1]);
-                if (flagTokens.Count == 1 && !lastMatchedRaw.Contains('='))
-                {
-                    var nextIdx = i + removeCount;
-                    if (nextIdx < rawArgTokens.Count)
-                    {
-                        var next = normalizedArgTokens[nextIdx];
-                        if (!string.IsNullOrEmpty(next)
-                            && !next.StartsWith("-", StringComparison.Ordinal)
-                            && !next.StartsWith("/", StringComparison.Ordinal))
-                        {
-                            removeCount++;
-                        }
-                    }
-                }
-                rawArgTokens.RemoveRange(i, removeCount);
-                return string.Join(' ', rawArgTokens);
-            }
-        }
-        return args;
-    }
-
     private static string NormalizeToken(string token)
     {
         var t = StripQuotes(token);

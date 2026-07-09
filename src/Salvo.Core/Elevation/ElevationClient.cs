@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
-using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -19,16 +18,6 @@ public sealed class ElevationClient : IElevationClient
     {
         _elevatorExecutablePath = elevatorExecutablePath;
         _logger = logger ?? NullLogger<ElevationClient>.Instance;
-    }
-
-    public bool IsElevated
-    {
-        get
-        {
-            using var identity = WindowsIdentity.GetCurrent();
-            var principal = new WindowsPrincipal(identity);
-            return principal.IsInRole(WindowsBuiltInRole.Administrator);
-        }
     }
 
     public Task<bool> InvokeAsync(ElevationRequest request, CancellationToken cancellationToken = default)

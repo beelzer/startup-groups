@@ -868,63 +868,6 @@ public partial class MainWindowViewModel : ObservableObject
         PersistConfig();
     }
 
-    [RelayCommand]
-    private void AddApp()
-    {
-        if (SelectedGroup is null) return;
-
-        var picker = _serviceProvider.GetRequiredService<AddAppPickerViewModel>();
-        var pickerWindow = new AddAppPickerWindow(picker);
-        pickerWindow.ShowDialog();
-
-        switch (picker.Result)
-        {
-            case PickerAction.AddSelected:
-                AddInstalledApps(picker.GetCheckedModels());
-                break;
-            case PickerAction.EditSelected:
-                var target = picker.GetSingleCheckedModel();
-                if (target is not null)
-                {
-                    AddAppWithEditor(editor => editor.LoadFromInstalled(target));
-                }
-                break;
-            case PickerAction.AddBlank:
-                AddAppWithEditor(_ => { });
-                break;
-        }
-    }
-
-    private void AddInstalledApps(IReadOnlyList<InstalledApp> installed)
-    {
-        if (SelectedGroup is null || installed.Count == 0) return;
-
-        AppEntryViewModel? last = null;
-        foreach (var item in installed)
-        {
-            var isService = item.Source == InstalledAppSource.Service;
-            var app = new AppEntryViewModel
-            {
-                Name = item.Name,
-                Kind = isService ? AppKind.Service : AppKind.Executable,
-                Path = isService ? null : item.Launch,
-                Service = isService ? item.ServiceName : null,
-                Enabled = true
-            };
-            AppendAppNode(SelectedGroup, app);
-            last = app;
-        }
-
-        if (last is not null)
-        {
-            SelectedApp = last;
-        }
-
-        RefreshRunningStates();
-        AppIconLoader.LoadFor(SelectedGroup.Apps);
-        PersistConfig();
-    }
-
     /// <summary>
     /// Add a new <see cref="Salvo.App.ViewModels.Flow.AppNodeViewModel"/> to the group's graph,
     /// running after every current leaf (node with no outgoing edges) —
@@ -962,29 +905,6 @@ public partial class MainWindowViewModel : ObservableObject
         return newNode;
     }
 
-    private void AddAppWithEditor(Action<AppEntryEditorViewModel> configure)
-    {
-        if (SelectedGroup is null) return;
-
-        var editor = _serviceProvider.GetRequiredService<AppEntryEditorViewModel>();
-        editor.IsNew = true;
-        configure(editor);
-
-        var window = new AppEntryEditorWindow(editor);
-        if (window.ShowDialog() != true)
-        {
-            return;
-        }
-
-        var app = new AppEntryViewModel();
-        editor.ApplyTo(app);
-        AppendAppNode(SelectedGroup, app);
-        SelectedApp = app;
-        RefreshRunningStates();
-        AppIconLoader.LoadFor([app]);
-        PersistConfig();
-    }
-
     [RelayCommand]
     private void EditApp(AppEntryViewModel? app)
     {
@@ -1001,28 +921,6 @@ public partial class MainWindowViewModel : ObservableObject
         PersistConfig();
     }
 
-    [RelayCommand]
-    private async Task RemoveAppAsync(AppEntryViewModel? app)
-    {
-        if (app is null || SelectedGroup is null) return;
-
-        if (!await _dialogs.ConfirmAsync(
-            Strings.Dialog_RemoveApp_Title,
-            string.Format(CultureInfo.CurrentUICulture, Strings.Dialog_RemoveApp_MessageFormat, app.Name, SelectedGroup.Name)))
-        {
-            return;
-        }
-
-        var node = SelectedGroup.Graph.Nodes
-            .OfType<Salvo.App.ViewModels.Flow.AppNodeViewModel>()
-            .FirstOrDefault(n => ReferenceEquals(n.App, app));
-        if (node is not null)
-        {
-            SelectedGroup.Graph.RemoveNode(node);
-        }
-        PersistConfig();
-    }
-
     public void ReorderGroup(GroupViewModel source, int targetIndex)
     {
         var srcIdx = Groups.IndexOf(source);
@@ -1033,18 +931,6 @@ public partial class MainWindowViewModel : ObservableObject
 
         Groups.Move(srcIdx, clamped);
         PersistConfig();
-    }
-
-    /// <summary>
-    /// Legacy linear-reorder hook. The flow editor handles drag-reorder
-    /// directly through stage drop targets now; kept as a no-op so the
-    /// old MainWindow drag handlers (queued for removal with the apps
-    /// list area) don't NRE while the graph editor takes over.
-    /// </summary>
-    public void ReorderApp(AppEntryViewModel source, int targetIndex)
-    {
-        _ = source;
-        _ = targetIndex;
     }
 
     // ---- Flow editor commands -----------------------------------------
