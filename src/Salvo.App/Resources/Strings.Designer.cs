@@ -317,6 +317,9 @@ public static class Strings
     public static string Settings_AdminMode_WarnLabel => Get(nameof(Settings_AdminMode_WarnLabel));
     public static string Settings_AdminMode_WarnHint => Get(nameof(Settings_AdminMode_WarnHint));
 
+    // Elevation failure
+    public static string Dialog_Elevation_FailedFormat => Get(nameof(Dialog_Elevation_FailedFormat));
+
     // Restart-as-admin dialog
     public static string Dialog_RestartAsAdmin_Title => Get(nameof(Dialog_RestartAsAdmin_Title));
     public static string Dialog_RestartAsAdmin_PathError => Get(nameof(Dialog_RestartAsAdmin_PathError));

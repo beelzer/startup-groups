@@ -68,19 +68,30 @@ public sealed class ElevationClient : IElevationClient
 
             return WaitAsync(process, cancellationToken);
         }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            // ERROR_CANCELLED — the user declined the UAC prompt. Expected, not an error.
+            _logger.LogInformation("Elevation declined by user (UAC cancelled)");
+            return Task.FromResult(false);
+        }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "User cancelled elevation or helper failed to start");
+            _logger.LogError(ex, "Elevator helper failed to start");
             return Task.FromResult(false);
         }
     }
 
-    private static async Task<bool> WaitAsync(Process process, CancellationToken cancellationToken)
+    private async Task<bool> WaitAsync(Process process, CancellationToken cancellationToken)
     {
         try
         {
             await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-            return process.ExitCode == 0;
+            if (process.ExitCode != 0)
+            {
+                _logger.LogError("Elevator exited with code {ExitCode}", process.ExitCode);
+                return false;
+            }
+            return true;
         }
         catch (OperationCanceledException)
         {

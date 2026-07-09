@@ -1360,11 +1360,20 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        await _elevation.InvokeAsync(new ElevationRequest
+        var elevated = await _elevation.InvokeAsync(new ElevationRequest
         {
             Action = action,
             ServiceNames = services
         }).ConfigureAwait(true);
+
+        if (!elevated)
+        {
+            // The elevated helper declined/failed (details land in its log);
+            // tell the user rather than silently doing nothing.
+            _ = _dialogs.ShowErrorAsync(
+                Strings.Dialog_AdministratorRequired_Title,
+                string.Format(CultureInfo.CurrentUICulture, Strings.Dialog_Elevation_FailedFormat, string.Join(", ", services)));
+        }
     }
 
     private static string Slugify(string input)
