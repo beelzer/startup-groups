@@ -14,7 +14,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Salvo.App\Salvo.App.csproj" />
-    <ProjectReference Include="..\..\src\StartupGroups.Installer.UI\StartupGroups.Installer.UI.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
