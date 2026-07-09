@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Versioning;
-using System.Threading;
 using System.Windows.Threading;
 using Salvo.App.ViewModels;
 using Salvo.Core.Models;
@@ -17,37 +15,12 @@ internal static class AppIconLoader
     {
         var targets = apps
             .Where(a => a.Icon is null)
-            .Select(a => (vm: a, source: ResolveSource(a)))
-            .Where(t => !string.IsNullOrWhiteSpace(t.source))
+            .Select(a => (Vm: a, Source: ResolveSource(a)))
+            .Where(t => !string.IsNullOrWhiteSpace(t.Source))
+            .Select(t => (t.Vm, t.Source!))
             .ToList();
 
-        if (targets.Count == 0) return;
-
-        var dispatcher = Dispatcher.CurrentDispatcher;
-        var thread = new Thread(() =>
-        {
-            foreach (var (vm, source) in targets)
-            {
-                try
-                {
-                    var icon = AppIconCache.Get(source!);
-                    if (icon is not null)
-                    {
-                        dispatcher.BeginInvoke(() => vm.Icon = icon, DispatcherPriority.Background);
-                    }
-                }
-                catch
-                {
-                }
-            }
-        })
-        {
-            IsBackground = true,
-            Name = "AppIcon-STA",
-            Priority = ThreadPriority.BelowNormal
-        };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
+        IconLoad.Start(Dispatcher.CurrentDispatcher, targets, static (vm, icon) => vm.Icon = icon, "AppIcon-STA");
     }
 
     public static string? ResolveSource(AppEntryViewModel vm)

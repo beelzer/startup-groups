@@ -478,25 +478,14 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (IsRunningAsAdmin) return;
 
-        var exePath = Environment.ProcessPath;
-        if (string.IsNullOrEmpty(exePath))
-        {
-            _ = _dialogs.ShowErrorAsync(Strings.Dialog_RestartAsAdmin_Title, Strings.Dialog_RestartAsAdmin_PathError);
-            return;
-        }
-
-        var psi = new ProcessStartInfo
-        {
-            FileName = exePath,
-            UseShellExecute = true,
-            Verb = "runas",
-            WorkingDirectory = Path.GetDirectoryName(exePath) ?? string.Empty,
-        };
-
         try
         {
-            Process.Start(psi);
-            Application.Current.Shutdown();
+            // No args forwarded here (unlike App startup, which forwards the
+            // original args + skip-elevate guard flag).
+            if (!ProcessElevation.RelaunchSelfAsAdmin(string.Empty))
+            {
+                _ = _dialogs.ShowErrorAsync(Strings.Dialog_RestartAsAdmin_Title, Strings.Dialog_RestartAsAdmin_PathError);
+            }
         }
         catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {

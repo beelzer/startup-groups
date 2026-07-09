@@ -13,37 +13,12 @@ internal static class WindowsStartupIconLoader
     {
         var targets = entries
             .Where(e => e.Icon is null)
-            .Select(e => (vm: e, source: ResolveSource(e.Model)))
-            .Where(t => !string.IsNullOrWhiteSpace(t.source))
+            .Select(e => (Vm: e, Source: ResolveSource(e.Model)))
+            .Where(t => !string.IsNullOrWhiteSpace(t.Source))
+            .Select(t => (t.Vm, t.Source!))
             .ToList();
 
-        if (targets.Count == 0) return;
-
-        var dispatcher = Dispatcher.CurrentDispatcher;
-        var thread = new Thread(() =>
-        {
-            foreach (var (vm, source) in targets)
-            {
-                try
-                {
-                    var icon = AppIconCache.Get(source!);
-                    if (icon is not null)
-                    {
-                        dispatcher.BeginInvoke(() => vm.Icon = icon, DispatcherPriority.Background);
-                    }
-                }
-                catch
-                {
-                }
-            }
-        })
-        {
-            IsBackground = true,
-            Name = "StartupIcon-STA",
-            Priority = ThreadPriority.BelowNormal
-        };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
+        IconLoad.Start(Dispatcher.CurrentDispatcher, targets, static (vm, icon) => vm.Icon = icon, "StartupIcon-STA");
     }
 
     private static string? ResolveSource(WindowsStartupEntry entry) => entry.Source switch

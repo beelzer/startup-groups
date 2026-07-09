@@ -53,10 +53,7 @@ public partial class AppEntryViewModel : ObservableObject
         _ => string.Empty,
     };
 
-    private static string FormatDuration(TimeSpan d) =>
-        d.TotalMilliseconds < 1000
-            ? $"{d.TotalMilliseconds:F0}ms"
-            : string.Create(CultureInfo.InvariantCulture, $"{d.TotalSeconds:F1}s");
+    private static string FormatDuration(TimeSpan d) => DurationFormat.Human(d);
 
     private static string FormatTooltip(LaunchMetrics m)
     {

@@ -369,24 +369,8 @@ public partial class App : Application
                 return false;
             }
 
-            var exePath = Environment.ProcessPath;
-            if (string.IsNullOrEmpty(exePath))
-            {
-                return false;
-            }
-
             var forwarded = string.Join(' ', args.Concat(new[] { SkipElevateFlag }));
-            var psi = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = exePath,
-                Arguments = forwarded,
-                UseShellExecute = true,
-                Verb = "runas",
-                WorkingDirectory = Path.GetDirectoryName(exePath) ?? string.Empty,
-            };
-            System.Diagnostics.Process.Start(psi);
-            Shutdown();
-            return true;
+            return ProcessElevation.RelaunchSelfAsAdmin(forwarded);
         }
         catch (System.ComponentModel.Win32Exception)
         {

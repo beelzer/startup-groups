@@ -246,35 +246,10 @@ public partial class BenchmarksViewModel : ObservableObject
     {
         var targets = summaries
             .Where(s => s.Icon is null && !string.IsNullOrWhiteSpace(s.IconSource))
-            .Select(s => (vm: s, source: s.IconSource!))
+            .Select(s => (s, s.IconSource!))
             .ToList();
-        if (targets.Count == 0) return;
 
-        var dispatcher = _dispatcher;
-        var thread = new Thread(() =>
-        {
-            foreach (var (vm, source) in targets)
-            {
-                try
-                {
-                    var icon = AppIconCache.Get(source);
-                    if (icon is not null)
-                    {
-                        dispatcher.BeginInvoke(() => vm.Icon = icon, DispatcherPriority.Background);
-                    }
-                }
-                catch
-                {
-                }
-            }
-        })
-        {
-            IsBackground = true,
-            Name = "BenchmarkIcon-STA",
-            Priority = ThreadPriority.BelowNormal,
-        };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
+        IconLoad.Start(_dispatcher, targets, static (vm, icon) => vm.Icon = icon, "BenchmarkIcon-STA");
     }
 
     private static readonly TimeSpan RunClusterGap = BenchmarkPolicy.RunClusterGap;
@@ -323,8 +298,6 @@ public partial class BenchmarksViewModel : ObservableObject
         var median = sorted.Length % 2 == 0
             ? TimeSpan.FromTicks((sorted[mid - 1].Ticks + sorted[mid].Ticks) / 2)
             : sorted[mid];
-        return median.TotalMilliseconds < 1000
-            ? $"{median.TotalMilliseconds:F0}ms"
-            : string.Create(CultureInfo.InvariantCulture, $"{median.TotalSeconds:F2}s");
+        return DurationFormat.Human(median);
     }
 }
