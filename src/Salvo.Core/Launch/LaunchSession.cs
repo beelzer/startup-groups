@@ -100,7 +100,38 @@ public sealed class LaunchSession : IDisposable
         }
     }
 
+    // Every readiness probe re-enumerates the descendant PID set each poll, and
+    // several probes poll near-simultaneously. A short TTL lets those overlapping
+    // reads share one process-tree walk. The staleness (≤ TTL) is negligible for
+    // liveness/quiet detection.
+    private const long PidCacheTtlMs = 200;
+    private readonly object _pidCacheLock = new();
+    private IReadOnlyList<int>? _cachedPids;
+    private long _cachedPidsAtMs = long.MinValue;
+
     public IReadOnlyList<int> EnumerateDescendantPids()
+    {
+        var now = Environment.TickCount64;
+        lock (_pidCacheLock)
+        {
+            if (_cachedPids is not null && now - _cachedPidsAtMs < PidCacheTtlMs)
+            {
+                return _cachedPids;
+            }
+        }
+
+        var fresh = EnumerateDescendantPidsUncached();
+
+        lock (_pidCacheLock)
+        {
+            _cachedPids = fresh;
+            _cachedPidsAtMs = now;
+        }
+
+        return fresh;
+    }
+
+    private IReadOnlyList<int> EnumerateDescendantPidsUncached()
     {
         int? root;
         bool jobAssigned;

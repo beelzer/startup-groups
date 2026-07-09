@@ -13,11 +13,16 @@ public sealed class CompositeInstalledAppsProvider : IInstalledAppsProvider
 
     public async Task<IReadOnlyList<InstalledApp>> EnumerateAsync(CancellationToken cancellationToken = default)
     {
-        var combined = new List<InstalledApp>();
-        foreach (var provider in _providers)
+        // The wired providers (shell COM enumeration, service enumeration, Scoop
+        // filesystem scan) are independent, so run them concurrently rather than
+        // letting their latencies add up on the app-picker path. Cancellation is
+        // propagated into each provider.
+        var results = await Task.WhenAll(
+            _providers.Select(p => p.EnumerateAsync(cancellationToken))).ConfigureAwait(false);
+
+        var combined = new List<InstalledApp>(results.Sum(r => r.Count));
+        foreach (var items in results)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var items = await provider.EnumerateAsync(cancellationToken).ConfigureAwait(false);
             combined.AddRange(items);
         }
 

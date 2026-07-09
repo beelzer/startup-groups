@@ -712,22 +712,65 @@ public partial class MainWindowViewModel : ObservableObject
         });
     }
 
+    private int _refreshInFlight;
+
     private void RefreshRunningStates()
     {
-        foreach (var group in Groups)
+        // Snapshot (app, model, current-state) on the UI thread, run the process-
+        // table queries off it, then marshal the booleans back — the 3s tick must
+        // not block the UI with O(apps x processes) IsRunning work. A re-entrancy
+        // guard skips a tick while a prior sweep is still running.
+        if (System.Threading.Interlocked.Exchange(ref _refreshInFlight, 1) == 1)
         {
-            foreach (var app in group.Apps)
+            return;
+        }
+
+        var targets = Groups
+            .SelectMany(g => g.Apps)
+            .Select(app => (App: app, Model: app.ToModel(), Current: app.IsRunning))
+            .ToList();
+
+        if (targets.Count == 0)
+        {
+            System.Threading.Interlocked.Exchange(ref _refreshInFlight, 0);
+            return;
+        }
+
+        _ = Task.Run(() =>
+        {
+            var states = new List<(AppEntryViewModel App, bool IsRunning)>(targets.Count);
+            foreach (var (app, model, current) in targets)
             {
+                bool running;
                 try
                 {
-                    app.IsRunning = _orchestrator.IsRunning(app.ToModel());
+                    running = _orchestrator.IsRunning(model);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Failed to query running state for {App}", app.Name);
+                    running = current;
                 }
+                states.Add((app, running));
             }
-        }
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher is null)
+            {
+                foreach (var (app, running) in states) app.IsRunning = running;
+                System.Threading.Interlocked.Exchange(ref _refreshInFlight, 0);
+                return;
+            }
+
+            dispatcher.Invoke(() =>
+            {
+                foreach (var (app, running) in states)
+                {
+                    app.IsRunning = running;
+                }
+            });
+            System.Threading.Interlocked.Exchange(ref _refreshInFlight, 0);
+        });
     }
 
     public void PersistConfigPublic() => PersistConfig();
