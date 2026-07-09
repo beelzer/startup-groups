@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Salvo.Core.Branding;
+using Salvo.Core.Services;
 using Velopack;
 using Velopack.Sources;
 
@@ -94,8 +95,8 @@ public sealed class VelopackUpdateService : IUpdateService
             Credentials = null,
         };
         var client = new HttpClient(handler);
-        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Salvo", AppBranding.Version));
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
+        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(AppBranding.AppName, AppBranding.Version));
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(GitHubApi.AcceptMediaType));
         client.Timeout = TimeSpan.FromSeconds(15);
         return client;
     }
@@ -230,7 +231,7 @@ public sealed class VelopackUpdateService : IUpdateService
         {
             var repoUri = new Uri(AppBranding.SupportUrl);
             var repoPath = repoUri.AbsolutePath.Trim('/');
-            var url = $"https://api.github.com/repos/{repoPath}/releases/tags/v{version}";
+            var url = GitHubApi.ReleasesUrl(repoPath, $"/tags/v{version}");
 
             using var response = await ReleaseBodyClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)

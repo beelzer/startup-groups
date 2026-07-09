@@ -67,11 +67,13 @@ internal sealed class CachelessGithubSource : GithubSource
         else
         {
             var repoPath = RepoUri.AbsolutePath.Trim('/');
-            var url = $"https://api.github.com/repos/{repoPath}/releases/latest";
+            var url = GitHubApi.ReleasesUrl(repoPath, "/latest");
 
             var headers = new Dictionary<string, string>
             {
-                ["Accept"] = "application/vnd.github.v3+json",
+                ["Accept"] = GitHubApi.AcceptMediaType,
+                // Intentionally "Velopack" (not AppName) — this is the Velopack
+                // download source's own UA, distinct from our update services'.
                 ["User-Agent"] = "Velopack",
             };
             if (!string.IsNullOrEmpty(AccessToken))

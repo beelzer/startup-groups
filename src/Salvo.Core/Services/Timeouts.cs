@@ -39,7 +39,4 @@ public static class Timeouts
     public static readonly TimeSpan ReadinessDefault = TimeSpan.FromSeconds(30);
     public static readonly TimeSpan PidResolveDeadline = TimeSpan.FromSeconds(5);
     public static readonly TimeSpan PidResolvePoll = TimeSpan.FromMilliseconds(200);
-
-    // Network calls
-    public static readonly TimeSpan UpdateCheckerHttp = TimeSpan.FromSeconds(8);
 }

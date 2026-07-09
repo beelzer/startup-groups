@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Salvo.Core.Branding;
+using Salvo.Core.Services;
 using Windows.ApplicationModel;
 using Windows.Foundation;
 using Windows.Management.Deployment;
@@ -182,7 +183,7 @@ public sealed class MsixUpdateService : IUpdateService
     {
         var repoUri = new Uri(AppBranding.SupportUrl);
         var repoPath = repoUri.AbsolutePath.Trim('/');
-        var url = $"https://api.github.com/repos/{repoPath}/releases/latest";
+        var url = GitHubApi.ReleasesUrl(repoPath, "/latest");
 
         using var response = await ReleaseClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
@@ -206,8 +207,8 @@ public sealed class MsixUpdateService : IUpdateService
             Credentials = null,
         };
         var client = new HttpClient(handler);
-        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Salvo", AppBranding.Version));
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
+        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(AppBranding.AppName, AppBranding.Version));
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(GitHubApi.AcceptMediaType));
         client.Timeout = TimeSpan.FromSeconds(15);
         return client;
     }
