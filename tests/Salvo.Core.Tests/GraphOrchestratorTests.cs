@@ -158,6 +158,130 @@ public sealed class GraphOrchestratorTests
     }
 
     [Fact]
+    public async Task ExecuteGraph_IfElse_FiresElseBranch_WhenConditionFalse()
+    {
+        using var temp = new TempDir();
+        var pThen = temp.CreateFile("then.exe");
+        var pElse = temp.CreateFile("else.exe");
+
+        var orchestrator = BuildOrchestrator(out _, out var inspector, out var launcher);
+        inspector.RunningByExe["then"] = false;
+        inspector.RunningByExe["else"] = false;
+        launcher.LaunchResult = (true, "Launched");
+
+        // Condition points at a file that does NOT exist → else branch taken.
+        var start = new StartNode { Id = "s" };
+        var ifElse = new IfElseNode
+        {
+            Id = "if",
+            Condition = new FileExistsCondition { Path = Path.Combine(temp.Root, "missing.flag") },
+        };
+        var then = new AppNode { Id = "t", App = new AppEntry { Name = "then", Path = pThen } };
+        var els = new AppNode { Id = "e", App = new AppEntry { Name = "else", Path = pElse } };
+        var group = new Group
+        {
+            Id = "g",
+            Nodes = [start, ifElse, then, els],
+            Edges =
+            [
+                new Edge { Id = "e1", From = "s", To = "if" },
+                new Edge { Id = "e2", From = "if", To = "t", Label = "then" },
+                new Edge { Id = "e3", From = "if", To = "e", Label = "else" },
+            ],
+        };
+
+        var results = await orchestrator.LaunchGroupAsync(group);
+
+        launcher.CallCount.Should().Be(1);
+        results.Select(r => r.Source?.Name).Should().Contain("else");
+        results.Select(r => r.Source?.Name).Should().NotContain("then");
+    }
+
+    [Fact]
+    public async Task ExecuteGraph_ServiceStartAndStop_InvokeTheController()
+    {
+        var orchestrator = BuildOrchestrator(out var services, out _, out _);
+        services.States["Svc"] = ServiceState.Stopped;
+
+        var start = new StartNode { Id = "s" };
+        var svcStart = new ServiceStartNode { Id = "start", ServiceName = "Svc" };
+        var group = new Group
+        {
+            Id = "g",
+            Nodes = [start, svcStart],
+            Edges = [new Edge { Id = "e1", From = "s", To = "start" }],
+        };
+
+        await orchestrator.LaunchGroupAsync(group);
+        services.Started.Should().Contain("Svc");
+
+        // Now a stop node against a running service.
+        services.States["Svc"] = ServiceState.Running;
+        var stopStart = new StartNode { Id = "s2" };
+        var svcStop = new ServiceStopNode { Id = "stop", ServiceName = "Svc" };
+        var stopGroup = new Group
+        {
+            Id = "g2",
+            Nodes = [stopStart, svcStop],
+            Edges = [new Edge { Id = "e2", From = "s2", To = "stop" }],
+        };
+
+        await orchestrator.LaunchGroupAsync(stopGroup);
+        services.Stopped.Should().Contain("Svc");
+    }
+
+    [Fact]
+    public async Task ExecuteGraph_RunCommand_MapsExitCodeToResult()
+    {
+        var orchestrator = BuildOrchestrator(out _, out _, out _);
+
+        var start = new StartNode { Id = "s" };
+        var ok = new RunCommandNode { Id = "ok", Command = "exit 0", Interpreter = "shell" };
+        var fail = new RunCommandNode { Id = "fail", Command = "exit 3", Interpreter = "shell" };
+        var group = new Group
+        {
+            Id = "g",
+            Nodes = [start, ok, fail],
+            Edges =
+            [
+                new Edge { Id = "e1", From = "s", To = "ok" },
+                new Edge { Id = "e2", From = "s", To = "fail" },
+            ],
+        };
+
+        var results = await orchestrator.LaunchGroupAsync(group);
+
+        results.Should().Contain(r => r.Message == "Exit 0" && r.Status == OperationStatus.Succeeded);
+        results.Should().Contain(r => r.Message == "Exit 3" && r.Status == OperationStatus.Failed);
+    }
+
+    [Fact]
+    public async Task LaunchGroupAsync_PreCancelledToken_ThrowsAndLaunchesNothing()
+    {
+        using var temp = new TempDir();
+        var p1 = temp.CreateFile("one.exe");
+
+        var orchestrator = BuildOrchestrator(out _, out var inspector, out var launcher);
+        inspector.RunningByExe["one"] = false;
+
+        var start = new StartNode { Id = "s" };
+        var appOne = new AppNode { Id = "a1", App = new AppEntry { Name = "one", Path = p1 } };
+        var group = new Group
+        {
+            Id = "g",
+            Nodes = [start, appOne],
+            Edges = [new Edge { Id = "e1", From = "s", To = "a1" }],
+        };
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var act = async () => await orchestrator.LaunchGroupAsync(group, cts.Token);
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        launcher.CallCount.Should().Be(0);
+    }
+
+    [Fact]
     public async Task ExecuteGraph_RunCommand_UnwindsPromptly_OnCancellation()
     {
         // Before the fix, RunCommand did a blocking WaitForExit(60_000) and only
@@ -206,15 +330,19 @@ public sealed class GraphOrchestratorTests
     private sealed class FakeServices : IServiceController
     {
         public Dictionary<string, ServiceState> States { get; } = new();
+        public List<string> Started { get; } = [];
+        public List<string> Stopped { get; } = [];
         public ServiceState QueryStatus(string serviceName) =>
             States.TryGetValue(serviceName, out var s) ? s : ServiceState.NotFound;
         public bool TryStart(string serviceName, TimeSpan timeout, out string message)
         {
+            Started.Add(serviceName);
             message = "Started";
             return true;
         }
         public bool TryStop(string serviceName, TimeSpan timeout, out string message)
         {
+            Stopped.Add(serviceName);
             message = "Stopped";
             return true;
         }

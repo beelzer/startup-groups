@@ -262,18 +262,18 @@ public sealed class WindowsStartupService : IWindowsStartupService
             return true;
         }
 
-        var raw = approvedKey.GetValue(name);
-        if (raw is not byte[] bytes || bytes.Length == 0)
-        {
-            return true;
-        }
-
-        // Byte 0 low bit: 0 = enabled, 1 = disabled.
-        // Windows uses 0x02 for enabled and 0x03 for disabled.
-        return (bytes[0] & 0x01) == 0;
+        return ParseApprovedEnabled(approvedKey.GetValue(name) as byte[]);
     }
 
-    private static byte[] BuildApprovedValue(bool enabled)
+    /// <summary>
+    /// Decodes a StartupApproved blob's enabled bit. Byte 0 low bit: 0 = enabled,
+    /// 1 = disabled (Windows writes 0x02 enabled / 0x03 disabled). A missing or
+    /// empty blob is treated as enabled, matching Explorer's default.
+    /// </summary>
+    internal static bool ParseApprovedEnabled(byte[]? bytes) =>
+        bytes is not { Length: > 0 } || (bytes[0] & 0x01) == 0;
+
+    internal static byte[] BuildApprovedValue(bool enabled)
     {
         var value = new byte[12];
         value[0] = enabled ? (byte)0x02 : (byte)0x03;

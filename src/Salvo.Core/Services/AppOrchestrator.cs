@@ -539,7 +539,7 @@ public sealed class AppOrchestrator : IAppOrchestrator
         return Environment.CurrentDirectory;
     }
 
-    private static (string FileName, string Arguments) ParseDirect(string command)
+    internal static (string FileName, string Arguments) ParseDirect(string command)
     {
         var trimmed = command.Trim();
         if (trimmed.Length == 0) return ("cmd.exe", "/c ");

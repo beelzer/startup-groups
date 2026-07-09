@@ -135,8 +135,38 @@ public sealed class ReadinessDetectorTests
         result.Signal.Should().Be(ReadinessSignal.EarlyExit);
     }
 
+    [Fact]
+    public async Task DetectAsync_ProbeThrows_IsSwallowed_AndTimesOut()
+    {
+        // A throwing probe must not surface its exception; DetectAsync treats it
+        // as Unknown. With a sub-grace timeout the early-exit watcher is cancelled
+        // inside its 1s grace delay (so it can't win with ExitedEarly), leaving
+        // TimedOut as the outcome.
+        var probes = new IReadinessProbe[] { new ThrowingProbe(ReadinessSignal.MainWindowVisible) };
+        var detector = new ReadinessDetector(probes);
+
+        using var session = LaunchSession.Begin();
+        var ctx = MakeContext(session);
+
+        var result = await detector.DetectAsync(ctx, TimeSpan.FromMilliseconds(250));
+
+        result.Outcome.Should().Be(LaunchOutcome.TimedOut);
+    }
+
     private static ProbeContext MakeContext(LaunchSession session) =>
         new(session, new AppEntry { Name = "Test", Path = @"C:\test.exe" }, @"C:\test.exe", NullLogger.Instance);
+
+    private sealed class ThrowingProbe(ReadinessSignal signal) : IReadinessProbe
+    {
+        public ReadinessSignal Signal { get; } = signal;
+        public bool AppliesTo(ProbeContext context) => true;
+
+        public async Task<bool> RunAsync(ProbeContext context, CancellationToken cancellationToken)
+        {
+            await Task.Yield();
+            throw new InvalidOperationException("probe boom");
+        }
+    }
 
     private sealed class FakeProbe : IReadinessProbe
     {
