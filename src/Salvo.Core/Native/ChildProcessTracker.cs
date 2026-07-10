@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
@@ -16,6 +15,14 @@ internal sealed class ChildProcessTracker : IDisposable
 
     public bool IsActive => _jobHandle != IntPtr.Zero;
 
+    // The job is deliberately created with NO limit flags. In particular,
+    // JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK must never be set here: its
+    // semantics are that every child of a job member is created OUTSIDE the
+    // job, which reduces EnumerateDescendantPids to "the root pid" and blinds
+    // readiness/telemetry to the real app behind launcher stubs. Children
+    // staying in the job has no side effects — we set no KILL_ON_JOB_CLOSE,
+    // and nested jobs are supported on our OS floor, so apps that create
+    // their own jobs still work.
     public ChildProcessTracker(ILogger? logger = null)
     {
         _logger = logger ?? NullLogger.Instance;
@@ -24,10 +31,7 @@ internal sealed class ChildProcessTracker : IDisposable
         {
             var err = Marshal.GetLastWin32Error();
             _logger.LogDebug("CreateJobObjectW failed: Win32={Error}", err);
-            return;
         }
-
-        TryConfigureBreakawayOk();
     }
 
     public bool TryAssign(IntPtr processHandle)
@@ -100,37 +104,6 @@ internal sealed class ChildProcessTracker : IDisposable
             {
                 Marshal.FreeHGlobal(buffer);
             }
-        }
-    }
-
-    private void TryConfigureBreakawayOk()
-    {
-        var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION
-        {
-            BasicLimitInformation = new JOBOBJECT_BASIC_LIMIT_INFORMATION
-            {
-                LimitFlags = JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK,
-            },
-        };
-
-        var size = Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>();
-        var buffer = Marshal.AllocHGlobal(size);
-        try
-        {
-            Marshal.StructureToPtr(info, buffer, fDeleteOld: false);
-            if (!SetInformationJobObject(_jobHandle, JobObjectExtendedLimitInformation, buffer, (uint)size))
-            {
-                var err = Marshal.GetLastWin32Error();
-                _logger.LogDebug("SetInformationJobObject failed: Win32={Error}", err);
-            }
-        }
-        catch (Win32Exception ex)
-        {
-            _logger.LogDebug(ex, "SetInformationJobObject threw");
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(buffer);
         }
     }
 
