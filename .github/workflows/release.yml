@@ -10,6 +10,15 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
+    # Secret-presence flags MUST live at job level: a step-level `if:` cannot
+    # see env vars defined in that same step's `env:` block, so the previous
+    # `if: env.MSIX_SIGNING_CERT_BASE64 != ''` pattern evaluated false forever
+    # and the signing/Store/winget steps silently skipped. See
+    # https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions
+    env:
+      HAS_SIGNING_CERT: ${{ secrets.MSIX_SIGNING_CERT_BASE64 != '' }}
+      HAS_STORE_PUBLISHER: ${{ secrets.MSIX_STORE_PUBLISHER != '' }}
+      HAS_WINGET_TOKEN: ${{ secrets.WINGET_RELEASER_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -94,7 +103,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          $existing = gh api "repos/${{ github.repository }}/releases" `
+          # --paginate: past ~30 releases (canary creates one per push to
+          # main) the release-drafter draft sinks below page 1 and an
+          # unpaginated list misses it, making `vpk upload` hard-fail.
+          $existing = gh api --paginate "repos/${{ github.repository }}/releases" `
             --jq ".[] | select(.tag_name == ""${{ github.ref_name }}"") | .id"
           if ($existing) {
             foreach ($id in $existing) {
@@ -132,7 +144,7 @@ jobs:
       # Real users get a working install path the moment the cert lands.
 
       - name: Decode MSIX signing cert (if available)
-        if: env.MSIX_SIGNING_CERT_BASE64 != ''
+        if: env.HAS_SIGNING_CERT == 'true'
         env:
           MSIX_SIGNING_CERT_BASE64: ${{ secrets.MSIX_SIGNING_CERT_BASE64 }}
         id: cert
@@ -209,7 +221,7 @@ jobs:
       # binary intended for Store submission stays visibly distinct from
       # the sideload binary on the release page.
       - name: Build MSIX (Store variant)
-        if: env.MSIX_STORE_PUBLISHER != ''
+        if: env.HAS_STORE_PUBLISHER == 'true'
         env:
           MSIX_STORE_PUBLISHER: ${{ secrets.MSIX_STORE_PUBLISHER }}
         shell: pwsh
@@ -222,32 +234,13 @@ jobs:
             -OutputPath $output
 
       - name: Upload Store MSIX as artifact
-        if: env.MSIX_STORE_PUBLISHER != ''
-        env:
-          MSIX_STORE_PUBLISHER: ${{ secrets.MSIX_STORE_PUBLISHER }}
+        if: env.HAS_STORE_PUBLISHER == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: Salvo-msix-store
           path: artifacts/msix-store/*.msix
           if-no-files-found: error
           retention-days: 30
-
-      # ---- winget submission ----
-      # Auto-PRs a manifest update to microsoft/winget-pkgs on every signed
-      # release. Skips when WINGET_RELEASER_TOKEN is not set so unsigned
-      # development releases don't try to submit. Identifier must match the
-      # one registered in winget-pkgs (Publisher.AppName); placeholder
-      # below until reservation confirms the canonical name.
-      - name: Submit to winget
-        if: env.WINGET_RELEASER_TOKEN != '' && env.MSIX_SIGNING_CERT_BASE64 != ''
-        env:
-          WINGET_RELEASER_TOKEN: ${{ secrets.WINGET_RELEASER_TOKEN }}
-          MSIX_SIGNING_CERT_BASE64: ${{ secrets.MSIX_SIGNING_CERT_BASE64 }}
-        uses: vedantmgoyal9/winget-releaser@v2
-        with:
-          identifier: Salvo.Salvo
-          installers-regex: '\.msix$'
-          token: ${{ secrets.WINGET_RELEASER_TOKEN }}
 
       # vpk creates the release as a draft. Publish it with auto-generated
       # notes from PRs/commits since the previous tag.
@@ -266,3 +259,20 @@ jobs:
           gh release edit "${{ github.ref_name }}" `
             --draft=false `
             --notes-file $notesFile
+
+      # ---- winget submission ----
+      # Auto-PRs a manifest update to microsoft/winget-pkgs on every signed
+      # release. Skips when WINGET_RELEASER_TOKEN is not set so unsigned
+      # development releases don't try to submit. Identifier must match the
+      # one registered in winget-pkgs (Publisher.AppName); placeholder
+      # below until reservation confirms the canonical name.
+      # MUST run after the draft→published flip above: drafts are invisible
+      # to the tag-lookup API winget-releaser uses, and their asset URLs are
+      # not public.
+      - name: Submit to winget
+        if: env.HAS_WINGET_TOKEN == 'true' && env.HAS_SIGNING_CERT == 'true'
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: Salvo.Salvo
+          installers-regex: '\.msix$'
+          token: ${{ secrets.WINGET_RELEASER_TOKEN }}

@@ -37,6 +37,10 @@
     Publisher CN= value baked into the manifest. Default
     "CN=SalvoDev". Override to match your Partner Center publisher
     ID (Store builds) or your sideload signing cert subject.
+.PARAMETER StageDir
+    Staging layout directory. Default: artifacts/msix-stage. Override when
+    the default is locked — e.g. a dev-mode loose-layout registration
+    (Add-AppxPackage -Register) points Windows at the default path.
 #>
 param(
     [string]$Configuration = 'Release',
@@ -44,16 +48,30 @@ param(
     [string]$OutputPath = '',
     [string]$CertPath = '',
     [string]$CertPassword = '',
-    [string]$Publisher = 'CN=SalvoDev'
+    [string]$Publisher = 'CN=SalvoDev',
+    [string]$StageDir = ''
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Fail fast on a signing misconfiguration instead of silently producing an
+# unsigned package: a password with no (or a nonexistent) cert means the
+# caller *intended* to sign — refusing here surfaces CI secret/wiring bugs
+# at build time rather than at a user's failed install.
+if ($CertPassword -and -not $CertPath) {
+    throw '-CertPassword was supplied without -CertPath. Refusing to build what would silently be an unsigned package.'
+}
+if ($CertPath -and -not (Test-Path $CertPath)) {
+    throw "-CertPath '$CertPath' does not exist."
+}
+
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot  = Resolve-Path (Join-Path $ScriptDir '..\..')
 $AppProj   = Join-Path $RepoRoot 'src\Salvo.App\Salvo.App.csproj'
+$ElevatorProj = Join-Path $RepoRoot 'src\Salvo.Elevator\Salvo.Elevator.csproj'
 $Manifest  = Join-Path $ScriptDir 'Package.appxmanifest'
 $ImagesDir = Join-Path $ScriptDir 'Images'
-$StageDir  = Join-Path $RepoRoot 'artifacts\msix-stage'
+if (-not $StageDir) { $StageDir = Join-Path $RepoRoot 'artifacts\msix-stage' }
 $OutputDir = Join-Path $RepoRoot 'artifacts\msix'
 
 # --- Resolve version ---
@@ -90,7 +108,16 @@ $signTool = Join-Path $sdkBin 'SignTool.exe'
 Write-Host "Using SDK tools at $sdkBin" -ForegroundColor DarkGray
 
 # --- Clean staging + output dirs ---
-if (Test-Path $StageDir)  { Remove-Item -Recurse -Force $StageDir }
+if (Test-Path $StageDir) {
+    try {
+        Remove-Item -Recurse -Force $StageDir -ErrorAction Stop
+    } catch {
+        throw ("Cannot clean staging dir '$StageDir' ($($_.Exception.Message)). " +
+               'If a dev-mode loose-layout package is registered from it ' +
+               '(Get-AppxPackage *Salvo* shows this path as InstallLocation), ' +
+               'pass -StageDir to build into a different directory.')
+    }
+}
 New-Item -ItemType Directory -Path $StageDir -Force | Out-Null
 New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 
@@ -118,6 +145,25 @@ dotnet publish $AppProj `
     -o $StageDir -nologo -v minimal
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed (exit $LASTEXITCODE)." }
 
+# --- Publish the elevated helper into the same layout ---
+# Salvo.Elevator MUST ship inside the package: ElevationPaths.ResolveElevatorPath
+# looks for Salvo.Elevator.exe beside Salvo.exe, and without it every elevated
+# operation (service control, machine-scope Run keys) breaks for MSIX installs.
+# The App project's CopyElevatorOutput target only copies into *build* output,
+# which does not flow into `dotnet publish` output — so publish it explicitly,
+# mirroring the Velopack publish steps in ci.yml/release.yml. Shared runtime
+# files overwrite with identical content (same SDK, same runtime pack).
+Write-Host "Publishing Salvo.Elevator ($Configuration, win-x64)..." -ForegroundColor Cyan
+dotnet publish $ElevatorProj `
+    -c $Configuration -r win-x64 --self-contained true `
+    -p:PublishSingleFile=false `
+    -p:PublishTrimmed=false `
+    -o $StageDir -nologo -v minimal
+if ($LASTEXITCODE -ne 0) { throw "dotnet publish (Elevator) failed (exit $LASTEXITCODE)." }
+if (-not (Test-Path (Join-Path $StageDir 'Salvo.Elevator.exe'))) {
+    throw 'Salvo.Elevator.exe missing from staging layout after publish.'
+}
+
 # --- Copy manifest + images into the staging layout ---
 Write-Host 'Staging manifest + visual assets...' -ForegroundColor Cyan
 $stagedManifest = Join-Path $StageDir 'AppxManifest.xml'
@@ -127,7 +173,6 @@ Copy-Item $Manifest $stagedManifest
 # requested values so the same manifest source can produce sideload + Store
 # variants from one build pipeline.
 [xml]$xml = Get-Content $stagedManifest
-$ns = 'http://schemas.microsoft.com/appx/manifest/foundation/windows10'
 $identity = $xml.Package.Identity
 $identity.Version = $Version
 $identity.Publisher = $Publisher
