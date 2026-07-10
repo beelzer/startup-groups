@@ -481,7 +481,8 @@ public partial class MainWindowViewModel : ObservableObject
         try
         {
             // No args forwarded here (unlike App startup, which forwards the
-            // original args + skip-elevate guard flag).
+            // original launch args); ProcessElevation appends the relaunch
+            // flag itself.
             if (!ProcessElevation.RelaunchSelfAsAdmin(string.Empty))
             {
                 _ = _dialogs.ShowErrorAsync(Strings.Dialog_RestartAsAdmin_Title, Strings.Dialog_RestartAsAdmin_PathError);

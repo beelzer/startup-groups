@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using Salvo.Core.Branding;
 
 namespace Salvo.App.Services;
 
@@ -9,8 +10,8 @@ namespace Salvo.App.Services;
 /// Shared self-relaunch-as-administrator core, previously duplicated (and
 /// diverged) between App startup and the settings view-model. Only the shared
 /// mechanism lives here — building the runas ProcessStartInfo, starting it, and
-/// shutting this instance down. Gating (elevation state, settings, skip flag)
-/// and error handling stay with each caller, which want different behavior.
+/// shutting this instance down. Gating (elevation state, settings) and error
+/// handling stay with each caller, which want different behavior.
 /// </summary>
 internal static class ProcessElevation
 {
@@ -27,6 +28,17 @@ internal static class ProcessElevation
         if (string.IsNullOrEmpty(exePath))
         {
             return false;
+        }
+
+        // Always mark the child as a deliberate relaunch: it must skip the
+        // AlwaysRunAsAdmin auto-elevate check (no relaunch loop) and wait for
+        // this instance's single-instance mutex instead of treating the
+        // handoff as a duplicate launch.
+        if (!arguments.Contains(AppIdentifiers.SkipElevateRelaunchFlag, StringComparison.OrdinalIgnoreCase))
+        {
+            arguments = string.IsNullOrWhiteSpace(arguments)
+                ? AppIdentifiers.SkipElevateRelaunchFlag
+                : arguments + " " + AppIdentifiers.SkipElevateRelaunchFlag;
         }
 
         var psi = new ProcessStartInfo

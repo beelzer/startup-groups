@@ -31,25 +31,16 @@ public partial class App : Application
     public static IServiceProvider Services =>
         ((App)Current)._host!.Services;
 
-    private const string SkipElevateFlag = "--no-elevate-relaunch";
-
     protected override void OnStartup(StartupEventArgs e)
     {
         StartupTimer.Mark("OnStartup entered");
         base.OnStartup(e);
 
-        // Pin the AUMID before any window is created so Windows associates the
-        // running process with the pinned shortcut's identity. Otherwise the
-        // taskbar treats them as separate apps and silently uses a stale icon.
-        TrySetAppUserModelId();
-
         AppPaths.EnsureUserDirectories();
 
-        if (TryRelaunchAsAdminIfConfigured(e.Args))
-        {
-            return;
-        }
-
+        // Serilog FIRST: the AUMID pin and elevation-relaunch helpers below
+        // log their failures, and a not-yet-configured Log.Logger silently
+        // drops exactly the diagnostics those failure paths exist to leave.
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Information()
             .WriteTo.Debug()
@@ -60,6 +51,16 @@ public partial class App : Application
                 shared: true)
             .CreateLogger();
         StartupTimer.Mark("Serilog configured");
+
+        // Pin the AUMID before any window is created so Windows associates the
+        // running process with the pinned shortcut's identity. Otherwise the
+        // taskbar treats them as separate apps and silently uses a stale icon.
+        TrySetAppUserModelId();
+
+        if (TryRelaunchAsAdminIfConfigured(e.Args))
+        {
+            return;
+        }
 
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
         {
@@ -115,16 +116,26 @@ public partial class App : Application
         _trayViewModel.Initialize();
         StartupTimer.Mark("Tray initialized");
 
+        // Service show-requests from second launches: a duplicate launch
+        // signals the single-instance event and exits; we surface the main
+        // window in response. Callback arrives on a pool thread.
+        SingleInstance.ListenForShowRequests(() =>
+            Dispatcher.BeginInvoke(() => _trayViewModel?.ShowMainWindowCommand.Execute(null)));
+
         // Surface the main window unless the user has explicitly opted into
-        // tray-only startup. Always surface after an update restart even if
-        // they've opted out — they need to see the new version. The bundle
-        // BA's Launch button passes --show-main-window to force the issue
-        // when the user explicitly clicks Launch.
+        // tray-only startup, or this launch came from the logon task — its
+        // --tray flag means "start in the tray" regardless of the setting.
+        // Always surface after an update restart even if they've opted out —
+        // they need to see the new version — and when --show-main-window
+        // explicitly forces it (the installer's Launch button).
         var restartedAfterUpdate = e.Args.Any(a =>
             string.Equals(a, VelopackUpdateService.RestartedAfterUpdateArg, StringComparison.OrdinalIgnoreCase));
         var forceShowMainWindow = e.Args.Any(a =>
             string.Equals(a, ShowMainWindowArg, StringComparison.OrdinalIgnoreCase));
-        var shouldShowOnLaunch = settings.Current.ShowMainWindowOnLaunch || restartedAfterUpdate || forceShowMainWindow;
+        var trayOnly = e.Args.Any(a =>
+            string.Equals(a, AppIdentifiers.TrayCommandLineFlag, StringComparison.OrdinalIgnoreCase));
+        var shouldShowOnLaunch =
+            (settings.Current.ShowMainWindowOnLaunch && !trayOnly) || restartedAfterUpdate || forceShowMainWindow;
         if (shouldShowOnLaunch)
         {
             _trayViewModel.ShowMainWindowCommand.Execute(null);
@@ -259,6 +270,9 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        // Stop servicing show-requests before tearing anything else down so a
+        // racing second launch can't invoke into a disposing app.
+        SingleInstance.Release();
         _trayViewModel?.Dispose();
         if (_host is not null)
         {
@@ -329,7 +343,11 @@ public partial class App : Application
         services.AddTransient<RegistryRunValueEditorViewModel>();
         services.AddTransient<UpdateFlyoutViewModel>();
 
-        services.AddSingleton<MainWindow>();
+        // Transient, NOT singleton: TrayViewModel.ShowMainWindow recreates the
+        // window after it closes (MinimizeToTrayOnClose off closes it for
+        // real), and Show() on an already-closed Window throws
+        // InvalidOperationException — which would strand the app in the tray.
+        services.AddTransient<MainWindow>();
     }
 
     [System.Runtime.InteropServices.DllImport("shell32.dll", PreserveSig = false)]
@@ -351,7 +369,7 @@ public partial class App : Application
 
     private bool TryRelaunchAsAdminIfConfigured(string[] args)
     {
-        if (args.Any(a => string.Equals(a, SkipElevateFlag, StringComparison.OrdinalIgnoreCase)))
+        if (args.Any(a => string.Equals(a, AppIdentifiers.SkipElevateRelaunchFlag, StringComparison.OrdinalIgnoreCase)))
         {
             return false;
         }
@@ -369,7 +387,9 @@ public partial class App : Application
                 return false;
             }
 
-            var forwarded = string.Join(' ', args.Concat(new[] { SkipElevateFlag }));
+            // ProcessElevation appends the skip-elevate flag itself; just
+            // forward the original args.
+            var forwarded = string.Join(' ', args);
             return ProcessElevation.RelaunchSelfAsAdmin(forwarded);
         }
         catch (System.ComponentModel.Win32Exception)

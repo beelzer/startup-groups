@@ -19,6 +19,9 @@ public static class Timeouts
     public static readonly TimeSpan HostShutdownGrace = TimeSpan.FromSeconds(2);
     public static readonly TimeSpan StatusRefreshInterval = TimeSpan.FromSeconds(3);
     public static readonly TimeSpan AutoStartDelay = TimeSpan.FromSeconds(5);
+    // How long a deliberate relaunch (elevation, post-update restart) waits
+    // for its predecessor to exit and release the single-instance mutex.
+    public static readonly TimeSpan SingleInstanceHandoffWait = TimeSpan.FromSeconds(10);
 
     // Process control
     public static readonly TimeSpan ProcessKillGrace = TimeSpan.FromSeconds(5);

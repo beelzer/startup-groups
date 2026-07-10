@@ -9,6 +9,17 @@ public static class AppIdentifiers
     // parses it back. Kept in one place so the two sides can't drift.
     public const string PayloadCommandLineFlag = "--payload";
 
+    // Passed by ProcessElevation on any self-relaunch so the child skips the
+    // AlwaysRunAsAdmin auto-elevate check (avoiding a relaunch loop) and knows
+    // to wait for its predecessor's single-instance mutex instead of bailing.
+    public const string SkipElevateRelaunchFlag = "--no-elevate-relaunch";
+
+    // Single-instance coordination. Local\ (per-session) namespace: two
+    // different users on one machine each get their own instance; a second
+    // launch in the same session signals the show-event and exits.
+    public const string SingleInstanceMutexName = @"Local\Salvo.SingleInstance";
+    public const string SingleInstanceShowEventName = @"Local\Salvo.ShowMainWindow";
+
     public const string ElevatorExecutableName = "Salvo.Elevator.exe";
 
     public const string AssetsFolderName = "Assets";
