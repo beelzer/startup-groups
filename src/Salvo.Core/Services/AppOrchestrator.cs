@@ -185,27 +185,39 @@ public sealed class AppOrchestrator : IAppOrchestrator
             FlowMigration.Migrate(group);
         }
 
-        return await ExecuteGraphAsync(group, cancellationToken).ConfigureAwait(false);
+        // Task.Run: each node body runs synchronously up to its first await
+        // (Process.Start, service WaitForStatus up to 20s), so without this
+        // hop the graph's "parallel" fan-out serializes on the caller's
+        // thread — which for WPF commands is the dispatcher.
+        return await Task.Run(
+            () => ExecuteGraphAsync(group, cancellationToken, new HashSet<string>()),
+            cancellationToken).ConfigureAwait(false);
     }
 
     public Task<IReadOnlyList<OperationResult>> StopGroupAsync(Group group, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(group);
 
-        // Stop only touches AppNode entries; control-flow nodes (Wait,
-        // If/Else, Start) have nothing to stop. Order doesn't matter
-        // here — just stop everything once.
-        var apps = group.Nodes.OfType<AppNode>().Select(n => n.App).ToList();
-        var results = new List<OperationResult>(apps.Count);
-        foreach (var app in apps)
+        // Task.Run: StopApp blocks (service WaitForStatus up to 20s, process
+        // kill grace 5s per app) and WPF commands await this straight off the
+        // dispatcher — the loop must not run on the caller's thread.
+        return Task.Run<IReadOnlyList<OperationResult>>(() =>
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var result = StopApp(app);
-            results.Add(result);
-            _logger.LogInformation("Stop {AppName}: {Status} - {Message}", app.Name, result.Status, result.Message);
-        }
+            // Stop only touches AppNode entries; control-flow nodes (Wait,
+            // If/Else, Start) have nothing to stop. Order doesn't matter
+            // here — just stop everything once.
+            var apps = group.Nodes.OfType<AppNode>().Select(n => n.App).ToList();
+            var results = new List<OperationResult>(apps.Count);
+            foreach (var app in apps)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var result = StopApp(app);
+                results.Add(result);
+                _logger.LogInformation("Stop {AppName}: {Status} - {Message}", app.Name, result.Status, result.Message);
+            }
 
-        return Task.FromResult<IReadOnlyList<OperationResult>>(results);
+            return (IReadOnlyList<OperationResult>)results;
+        }, cancellationToken);
     }
 
     /// <summary>
@@ -224,11 +236,6 @@ public sealed class AppOrchestrator : IAppOrchestrator
     /// - <see cref="IfElseNode"/> evaluates its condition and fires the
     ///   matching label ("then"/"else"); the unmatched label is skipped.
     /// </summary>
-    private Task<IReadOnlyList<OperationResult>> ExecuteGraphAsync(Group group, CancellationToken cancellationToken)
-    {
-        return ExecuteGraphAsync(group, cancellationToken, new HashSet<string>());
-    }
-
     private async Task<IReadOnlyList<OperationResult>> ExecuteGraphAsync(Group group, CancellationToken cancellationToken, HashSet<string> callChain)
     {
         if (group.Nodes.Count == 0)
@@ -238,12 +245,42 @@ public sealed class AppOrchestrator : IAppOrchestrator
 
         // Cycle detection: refuse to recurse back into a group we're
         // already inside (Boot Sequence → Group A → Boot Sequence …).
-        if (!string.IsNullOrEmpty(group.Id) && !callChain.Add(group.Id))
+        // The set models the ACTIVE call chain, not "groups ever visited":
+        // entries are removed on exit so a second, sequential call into the
+        // same group (Call A → Wait → Call A again) runs normally. Guarded
+        // by a lock — parallel branches resume on thread-pool continuations
+        // and can enter nested GroupCalls concurrently.
+        var trackInChain = !string.IsNullOrEmpty(group.Id);
+        if (trackInChain)
         {
-            _logger.LogWarning("Refusing recursive GroupCall into {GroupId}", group.Id);
-            return [];
+            lock (callChain)
+            {
+                if (!callChain.Add(group.Id))
+                {
+                    _logger.LogWarning("Refusing recursive GroupCall into {GroupId}", group.Id);
+                    return [];
+                }
+            }
         }
 
+        try
+        {
+            return await ExecuteGraphCoreAsync(group, cancellationToken, callChain).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (trackInChain)
+            {
+                lock (callChain)
+                {
+                    callChain.Remove(group.Id);
+                }
+            }
+        }
+    }
+
+    private async Task<IReadOnlyList<OperationResult>> ExecuteGraphCoreAsync(Group group, CancellationToken cancellationToken, HashSet<string> callChain)
+    {
         var nodeById = group.Nodes.ToDictionary(n => n.Id);
         var outgoing = group.Nodes.ToDictionary(n => n.Id, _ => new List<Edge>());
         var pendingIn = group.Nodes.ToDictionary(n => n.Id, _ => 0);

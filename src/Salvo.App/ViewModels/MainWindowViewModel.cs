@@ -849,12 +849,17 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        var group = new GroupViewModel
+        // Route through FromModel, NOT a bare constructor: FromModel seeds the
+        // Start node an empty graph needs. Without it the first added app gets
+        // no edges, ExecuteGraphAsync skips it as an orphan, and the group is
+        // persisted permanently broken (Apps stays empty, so the legacy
+        // migration never rescues it either).
+        var group = GroupViewModel.FromModel(new Group
         {
             Id = editor.Id,
             Name = string.IsNullOrWhiteSpace(editor.Name) ? editor.Id : editor.Name,
             Icon = editor.Icon
-        };
+        });
         Groups.Add(group);
         SelectedGroup = group;
         PersistConfig();
@@ -1324,11 +1329,24 @@ public partial class MainWindowViewModel : ObservableObject
         });
     }
 
-    private static void ApplyResults(GroupViewModel group, IReadOnlyList<OperationResult> results)
+    // internal for tests. Results arrive in COMPLETION order (parallel nodes
+    // append as they finish) and include non-app entries (services, commands,
+    // group calls) — so match rows by app identity, never by position.
+    internal static void ApplyResults(GroupViewModel group, IReadOnlyList<OperationResult> results)
     {
-        for (var i = 0; i < Math.Min(results.Count, group.Apps.Count); i++)
+        var appsById = group.Apps.ToLookup(a => a.ComputedAppId, StringComparer.Ordinal);
+        foreach (var result in results)
         {
-            group.Apps[i].LastStatus = results[i].Message;
+            if (result.Source is null)
+            {
+                continue;
+            }
+
+            var id = AppIdentity.ComputeAppId(result.Source.Path, result.Source.Name);
+            foreach (var app in appsById[id])
+            {
+                app.LastStatus = result.Message;
+            }
         }
     }
 

@@ -134,6 +134,52 @@ public sealed class GraphOrchestratorTests
     }
 
     [Fact]
+    public async Task ExecuteGraph_GroupCall_SequentialRepeatCall_RunsTargetTwice()
+    {
+        using var temp = new TempDirectory();
+        var pSub = temp.CreateFile("sub.exe");
+
+        var orchestrator = BuildOrchestrator(out _, out var inspector, out var launcher);
+        inspector.RunningByExe["sub"] = false;
+        launcher.LaunchResult = (true, "Launched");
+
+        var sub = new Group
+        {
+            Id = "sub",
+            Nodes =
+            [
+                new StartNode { Id = "ss" },
+                new AppNode { Id = "sa", App = new AppEntry { Name = "sub", Path = pSub } },
+            ],
+            Edges = [new Edge { Id = "se", From = "ss", To = "sa" }],
+        };
+        // Start → Call(sub) → Call(sub): the second call is sequential, not
+        // recursive — the chain has already exited "sub" by then. Before the
+        // fix, callChain never removed entries and dropped it as "recursive".
+        var boot = new Group
+        {
+            Id = "boot",
+            Nodes =
+            [
+                new StartNode { Id = "bs" },
+                new GroupCallNode { Id = "c1", GroupId = "sub" },
+                new GroupCallNode { Id = "c2", GroupId = "sub" },
+            ],
+            Edges =
+            [
+                new Edge { Id = "e1", From = "bs", To = "c1" },
+                new Edge { Id = "e2", From = "c1", To = "c2" },
+            ],
+        };
+        orchestrator.GroupResolver = id => id == "sub" ? sub : null;
+
+        var results = await orchestrator.LaunchGroupAsync(boot);
+
+        launcher.CallCount.Should().Be(2);
+        results.Should().HaveCount(2);
+    }
+
+    [Fact]
     public async Task ExecuteGraph_GroupCall_DetectsRecursion_AndRefusesToReenter()
     {
         var orchestrator = BuildOrchestrator(out _, out var _, out var launcher);
