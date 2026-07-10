@@ -115,8 +115,15 @@ public sealed class AppOrchestrator : IAppOrchestrator
 
         if (_launcher.TryStartAndCapture(app, resolved, out var process, out var launchMessage))
         {
-            var obs = _telemetry?.BeginObservation(app, resolved, groupId, process);
-            return (OperationResult.Success(launchMessage, app), obs);
+            // BeginObservation takes ownership of the process handle; with
+            // no telemetry registered nobody else will dispose it.
+            if (_telemetry is not null)
+            {
+                var obs = _telemetry.BeginObservation(app, resolved, groupId, process);
+                return (OperationResult.Success(launchMessage, app), obs);
+            }
+            process?.Dispose();
+            return (OperationResult.Success(launchMessage, app), null);
         }
 
         process?.Dispose();

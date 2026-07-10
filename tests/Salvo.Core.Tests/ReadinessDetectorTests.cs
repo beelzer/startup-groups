@@ -48,8 +48,10 @@ public sealed class ReadinessDetectorTests
     }
 
     [Fact]
-    public async Task DetectAsync_ReturnsTimedOut_WhenNoProbesApplicable()
+    public async Task DetectAsync_ReturnsUnknown_WhenNoProbesApplicable()
     {
+        // Nothing observed anything — a 0ms fake "timeout" would pollute
+        // benchmark aggregates; Unknown is the honest outcome.
         var probes = new IReadinessProbe[]
         {
             new FakeProbe(ReadinessSignal.MainWindowVisible, TimeSpan.FromMilliseconds(10), fires: true, applies: false),
@@ -60,7 +62,34 @@ public sealed class ReadinessDetectorTests
         var ctx = MakeContext(session);
         var result = await detector.DetectAsync(ctx, TimeSpan.FromMilliseconds(500));
 
-        result.Outcome.Should().Be(LaunchOutcome.TimedOut);
+        result.Outcome.Should().Be(LaunchOutcome.Unknown);
+        result.Signal.Should().Be(ReadinessSignal.None);
+    }
+
+    [Fact]
+    public async Task DetectAsync_ShortCircuitsToFailed_WhenAllProbesDefinitivelyFail()
+    {
+        // A known-dead target (e.g. a service that doesn't exist) must not
+        // poll out the whole readiness timeout: once every probe reports a
+        // definitive failure and there is no process tree left to watch,
+        // the detector returns Failed immediately.
+        var probes = new IReadinessProbe[]
+        {
+            new FailingProbe(ReadinessSignal.ServiceRunning, TimeSpan.FromMilliseconds(20)),
+        };
+        var detector = new ReadinessDetector(probes);
+
+        using var session = LaunchSession.Begin(); // RootPid stays null
+        var ctx = MakeContext(session);
+
+        var sw = Stopwatch.StartNew();
+        var result = await detector.DetectAsync(ctx, TimeSpan.FromSeconds(30));
+        sw.Stop();
+
+        result.Outcome.Should().Be(LaunchOutcome.Failed);
+        result.Signal.Should().Be(ReadinessSignal.None);
+        sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(10),
+            "the detector must not ride out the 30s timeout once the answer is definitive");
     }
 
     [Fact]
@@ -161,10 +190,22 @@ public sealed class ReadinessDetectorTests
         public ReadinessSignal Signal { get; } = signal;
         public bool AppliesTo(ProbeContext context) => true;
 
-        public async Task<bool> RunAsync(ProbeContext context, CancellationToken cancellationToken)
+        public async Task<ProbeOutcome> RunAsync(ProbeContext context, CancellationToken cancellationToken)
         {
             await Task.Yield();
             throw new InvalidOperationException("probe boom");
+        }
+    }
+
+    private sealed class FailingProbe(ReadinessSignal signal, TimeSpan delay) : IReadinessProbe
+    {
+        public ReadinessSignal Signal { get; } = signal;
+        public bool AppliesTo(ProbeContext context) => true;
+
+        public async Task<ProbeOutcome> RunAsync(ProbeContext context, CancellationToken cancellationToken)
+        {
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+            return ProbeOutcome.Failed;
         }
     }
 
@@ -189,17 +230,17 @@ public sealed class ReadinessDetectorTests
 
         public bool AppliesTo(ProbeContext context) => _applies;
 
-        public async Task<bool> RunAsync(ProbeContext context, CancellationToken cancellationToken)
+        public async Task<ProbeOutcome> RunAsync(ProbeContext context, CancellationToken cancellationToken)
         {
             try
             {
                 await Task.Delay(_delay, cancellationToken).ConfigureAwait(false);
-                return _fires;
+                return _fires ? ProbeOutcome.Fired : ProbeOutcome.GaveUp;
             }
             catch (OperationCanceledException)
             {
                 WasCancelled = true;
-                return false;
+                return ProbeOutcome.GaveUp;
             }
             finally
             {

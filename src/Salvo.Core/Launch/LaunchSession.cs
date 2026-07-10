@@ -35,7 +35,6 @@ public sealed class LaunchSession : IDisposable
     public DateTimeOffset? QuietAt { get { lock (_lock) return _quietAt; } }
     public DateTimeOffset? ReadyAt { get { lock (_lock) return _readyAt; } }
     public ReadinessSignal SignalFired { get { lock (_lock) return _signalFired; } }
-    public bool JobAssigned { get { lock (_lock) return _jobAssigned; } }
 
     private LaunchSession(Guid launchId, DateTimeOffset requestedAt, ILogger logger)
     {

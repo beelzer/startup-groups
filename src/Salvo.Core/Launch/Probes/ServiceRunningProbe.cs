@@ -22,7 +22,7 @@ public sealed class ServiceRunningProbe : IReadinessProbe
     public bool AppliesTo(ProbeContext context) =>
         context.App.Kind == AppKind.Service && !string.IsNullOrWhiteSpace(context.App.Service);
 
-    public async Task<bool> RunAsync(ProbeContext context, CancellationToken cancellationToken)
+    public async Task<ProbeOutcome> RunAsync(ProbeContext context, CancellationToken cancellationToken)
     {
         var serviceName = context.App.Service!;
         while (!cancellationToken.IsCancellationRequested)
@@ -31,12 +31,15 @@ public sealed class ServiceRunningProbe : IReadinessProbe
             if (state == ServiceState.Running)
             {
                 context.Logger.LogDebug("ServiceRunningProbe fired: service={Service}", serviceName);
-                return true;
+                return ProbeOutcome.Fired;
             }
             if (state == ServiceState.NotFound)
             {
+                // Definitive: a service that doesn't exist can never reach
+                // Running. Failed (not GaveUp) lets the detector stop
+                // waiting instead of polling out the whole timeout.
                 context.Logger.LogDebug("ServiceRunningProbe aborted: service not found {Service}", serviceName);
-                return false;
+                return ProbeOutcome.Failed;
             }
 
             try
@@ -45,9 +48,9 @@ public sealed class ServiceRunningProbe : IReadinessProbe
             }
             catch (OperationCanceledException)
             {
-                return false;
+                return ProbeOutcome.GaveUp;
             }
         }
-        return false;
+        return ProbeOutcome.GaveUp;
     }
 }

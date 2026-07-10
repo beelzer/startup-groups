@@ -16,6 +16,10 @@ public sealed class EtwResourceMonitor : IDisposable
     private readonly ILogger _logger;
     private readonly Queue<FileEvent> _events = new();
     private readonly object _lock = new();
+    // Serializes session start against Dispose: TryStart runs on a
+    // background task, and a Dispose racing past it would strand the
+    // *named* kernel ETW session beyond process scope.
+    private readonly object _lifecycleLock = new();
     private TraceEventSession? _session;
     private Task? _processingTask;
     private bool _disposed;
@@ -38,13 +42,21 @@ public sealed class EtwResourceMonitor : IDisposable
     {
         if (!IsActive || pids.Count == 0) return Array.Empty<string>();
 
+        // Push events still sitting in kernel buffers through to the
+        // dispatch callback before reading — without this, the tail of a
+        // short launch window is systematically missing.
+        try { _session?.Flush(); }
+        catch (Exception ex) { _logger.LogDebug(ex, "ETW flush failed"); }
+
         var distinct = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         lock (_lock)
         {
             foreach (var e in _events)
             {
                 if (e.At < from) continue;
-                if (e.At > to) break;
+                // No early break: the queue merges per-CPU buffers, so
+                // arrival order is not globally monotonic in event time.
+                if (e.At > to) continue;
                 if (pids.Contains(e.Pid) && !string.IsNullOrEmpty(e.Path))
                 {
                     distinct.Add(e.Path);
@@ -62,26 +74,32 @@ public sealed class EtwResourceMonitor : IDisposable
             return;
         }
 
-        try
+        lock (_lifecycleLock)
         {
-            _session = new TraceEventSession(SessionName)
+            if (_disposed) return;
+
+            try
             {
-                StopOnDispose = true,
-            };
-            _session.EnableKernelProvider(KernelTraceEventParser.Keywords.FileIOInit);
-            _session.Source.Kernel.FileIOCreate += OnFileIOCreate;
-            _processingTask = Task.Run(() =>
+                _session = new TraceEventSession(SessionName)
+                {
+                    StopOnDispose = true,
+                };
+                _session.EnableKernelProvider(KernelTraceEventParser.Keywords.FileIOInit);
+                _session.Source.Kernel.FileIOCreate += OnFileIOCreate;
+                var session = _session;
+                _processingTask = Task.Run(() =>
+                {
+                    try { session.Source.Process(); }
+                    catch (Exception ex) { _logger.LogWarning(ex, "ETW source processing stopped"); }
+                });
+                _logger.LogInformation("ETW resource monitor started");
+            }
+            catch (Exception ex)
             {
-                try { _session.Source.Process(); }
-                catch (Exception ex) { _logger.LogWarning(ex, "ETW source processing stopped"); }
-            });
-            _logger.LogInformation("ETW resource monitor started");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to start ETW resource monitor");
-            _session?.Dispose();
-            _session = null;
+                _logger.LogWarning(ex, "Failed to start ETW resource monitor");
+                _session?.Dispose();
+                _session = null;
+            }
         }
     }
 
@@ -92,20 +110,27 @@ public sealed class EtwResourceMonitor : IDisposable
         var pid = data.ProcessID;
         if (pid <= 0) return;
 
+        // Stamp with the event's own kernel timestamp, not dispatch-time
+        // UtcNow: events sit in kernel buffers before delivery, and a
+        // dispatch-time stamp pushes them past the query window's `to`.
+        var at = new DateTimeOffset(data.TimeStamp.ToUniversalTime(), TimeSpan.Zero);
         lock (_lock)
         {
-            _events.Enqueue(new FileEvent(pid, path, DateTimeOffset.UtcNow));
+            _events.Enqueue(new FileEvent(pid, path, at));
             while (_events.Count > MaxEvents) _events.Dequeue();
         }
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
-        try { _session?.Dispose(); }
-        catch (Exception ex) { _logger.LogDebug(ex, "ETW session dispose threw"); }
-        _session = null;
+        lock (_lifecycleLock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            try { _session?.Dispose(); }
+            catch (Exception ex) { _logger.LogDebug(ex, "ETW session dispose threw"); }
+            _session = null;
+        }
     }
 
     private readonly record struct FileEvent(int Pid, string Path, DateTimeOffset At);

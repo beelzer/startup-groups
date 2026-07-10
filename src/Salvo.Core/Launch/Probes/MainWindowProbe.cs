@@ -16,7 +16,7 @@ public sealed class MainWindowProbe : IReadinessProbe
 
     public bool AppliesTo(ProbeContext context) => context.App.Kind != AppKind.Service;
 
-    public async Task<bool> RunAsync(ProbeContext context, CancellationToken cancellationToken)
+    public async Task<ProbeOutcome> RunAsync(ProbeContext context, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -24,7 +24,7 @@ public sealed class MainWindowProbe : IReadinessProbe
             {
                 context.Session.TryMarkMainWindow(DateTimeOffset.UtcNow);
                 context.Logger.LogDebug("MainWindowProbe fired: hwnd={Hwnd} pid={Pid}", window.HWnd, window.Pid);
-                return true;
+                return ProbeOutcome.Fired;
             }
 
             try
@@ -33,10 +33,10 @@ public sealed class MainWindowProbe : IReadinessProbe
             }
             catch (OperationCanceledException)
             {
-                return false;
+                return ProbeOutcome.GaveUp;
             }
         }
-        return false;
+        return ProbeOutcome.GaveUp;
     }
 
     private static bool TryFindReadyWindow(ProbeContext context, out (IntPtr HWnd, int Pid) result)

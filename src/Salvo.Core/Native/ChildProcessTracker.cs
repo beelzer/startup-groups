@@ -9,11 +9,16 @@ namespace Salvo.Core.Native;
 [SupportedOSPlatform("windows")]
 internal sealed class ChildProcessTracker : IDisposable
 {
+    // Guards the job handle against the dispose race: a cancelled probe
+    // draining out can still call EnumerateDescendantPids while the
+    // session tears down, and querying a closed (OS-recyclable) handle
+    // is a check-then-use bug. All handle use happens under this lock.
+    private readonly object _lock = new();
     private readonly ILogger _logger;
     private IntPtr _jobHandle;
     private bool _disposed;
 
-    public bool IsActive => _jobHandle != IntPtr.Zero;
+    public bool IsActive { get { lock (_lock) return _jobHandle != IntPtr.Zero; } }
 
     // The job is deliberately created with NO limit flags. In particular,
     // JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK must never be set here: its
@@ -36,28 +41,34 @@ internal sealed class ChildProcessTracker : IDisposable
 
     public bool TryAssign(IntPtr processHandle)
     {
-        if (!IsActive || processHandle == IntPtr.Zero)
+        lock (_lock)
         {
+            if (_jobHandle == IntPtr.Zero || processHandle == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            if (AssignProcessToJobObject(_jobHandle, processHandle))
+            {
+                return true;
+            }
+
+            var err = Marshal.GetLastWin32Error();
+            _logger.LogDebug("AssignProcessToJobObject failed: Win32={Error}", err);
             return false;
         }
-
-        if (AssignProcessToJobObject(_jobHandle, processHandle))
-        {
-            return true;
-        }
-
-        var err = Marshal.GetLastWin32Error();
-        _logger.LogDebug("AssignProcessToJobObject failed: Win32={Error}", err);
-        return false;
     }
 
     public IReadOnlyList<int> EnumerateDescendantPids()
     {
-        if (!IsActive)
+        lock (_lock)
         {
-            return Array.Empty<int>();
+            return _jobHandle == IntPtr.Zero ? Array.Empty<int>() : EnumerateDescendantPidsCore();
         }
+    }
 
+    private IReadOnlyList<int> EnumerateDescendantPidsCore()
+    {
         var capacity = 64;
         while (true)
         {
@@ -109,16 +120,19 @@ internal sealed class ChildProcessTracker : IDisposable
 
     public void Dispose()
     {
-        if (_disposed)
+        lock (_lock)
         {
-            return;
-        }
-        _disposed = true;
+            if (_disposed)
+            {
+                return;
+            }
+            _disposed = true;
 
-        if (_jobHandle != IntPtr.Zero)
-        {
-            CloseHandle(_jobHandle);
-            _jobHandle = IntPtr.Zero;
+            if (_jobHandle != IntPtr.Zero)
+            {
+                CloseHandle(_jobHandle);
+                _jobHandle = IntPtr.Zero;
+            }
         }
     }
 }

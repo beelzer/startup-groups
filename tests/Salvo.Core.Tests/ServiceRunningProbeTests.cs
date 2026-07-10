@@ -17,14 +17,17 @@ public sealed class ServiceRunningProbeTests
     public async Task RunAsync_Fires_WhenServiceRunning()
     {
         var probe = new ServiceRunningProbe(new StubController(ServiceState.Running));
-        (await probe.RunAsync(MakeCtx(), CancellationToken.None)).Should().BeTrue();
+        (await probe.RunAsync(MakeCtx(), CancellationToken.None)).Should().Be(ProbeOutcome.Fired);
     }
 
     [Fact]
-    public async Task RunAsync_Aborts_WhenServiceNotFound()
+    public async Task RunAsync_FailsDefinitively_WhenServiceNotFound()
     {
+        // Failed (not GaveUp): a nonexistent service can never reach
+        // Running, and the definitive outcome is what lets the detector
+        // short-circuit instead of polling out the readiness timeout.
         var probe = new ServiceRunningProbe(new StubController(ServiceState.NotFound));
-        (await probe.RunAsync(MakeCtx(), CancellationToken.None)).Should().BeFalse();
+        (await probe.RunAsync(MakeCtx(), CancellationToken.None)).Should().Be(ProbeOutcome.Failed);
     }
 
     [Fact]
@@ -34,7 +37,7 @@ public sealed class ServiceRunningProbeTests
         var probe = new ServiceRunningProbe(controller);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
-        (await probe.RunAsync(MakeCtx(), cts.Token)).Should().BeTrue();
+        (await probe.RunAsync(MakeCtx(), cts.Token)).Should().Be(ProbeOutcome.Fired);
         controller.CallCount.Should().BeGreaterThan(1);
     }
 

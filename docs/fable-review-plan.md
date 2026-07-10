@@ -196,7 +196,7 @@ invisible to every app aggregate (no icons, stale running dots).
 
 ---
 
-### 06. [P1] Launch pipeline robustness  `[ ]`
+### 06. [P1] Launch pipeline robustness  `[x]`
 
 - **Priority:** P1 · **Effort:** M · **Risk:** low-medium · **Category:** correctness/design
 

@@ -17,18 +17,18 @@ public sealed class WaitForInputIdleProbe : IReadinessProbe
 
     public bool AppliesTo(ProbeContext context) => context.App.Kind != AppKind.Service;
 
-    public async Task<bool> RunAsync(ProbeContext context, CancellationToken cancellationToken)
+    public async Task<ProbeOutcome> RunAsync(ProbeContext context, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
             foreach (var pid in context.Session.EnumerateDescendantPids())
             {
-                if (cancellationToken.IsCancellationRequested) return false;
+                if (cancellationToken.IsCancellationRequested) return ProbeOutcome.GaveUp;
                 if (TryWaitForInputIdle(pid, context.Logger))
                 {
                     context.Session.TryMarkInputIdle(DateTimeOffset.UtcNow);
                     context.Logger.LogDebug("WaitForInputIdleProbe fired: pid={Pid}", pid);
-                    return true;
+                    return ProbeOutcome.Fired;
                 }
             }
 
@@ -38,10 +38,10 @@ public sealed class WaitForInputIdleProbe : IReadinessProbe
             }
             catch (OperationCanceledException)
             {
-                return false;
+                return ProbeOutcome.GaveUp;
             }
         }
-        return false;
+        return ProbeOutcome.GaveUp;
     }
 
     private static bool TryWaitForInputIdle(int pid, ILogger logger)

@@ -47,7 +47,6 @@ public sealed class LaunchTelemetryService : ILaunchTelemetryService
         ArgumentNullException.ThrowIfNull(app);
 
         var session = LaunchSession.Begin(_logger);
-        var usedInspectorPath = false;
         if (process is not null)
         {
             try
@@ -58,17 +57,36 @@ public sealed class LaunchTelemetryService : ILaunchTelemetryService
             {
                 process.Dispose();
             }
-        }
-        else if (_inspector is not null && _matchers is not null)
-        {
-            usedInspectorPath = true;
-            _ = Task.Run(() => ResolvePidAsync(app, session));
+            return Task.Run(() => ObserveAsync(app, resolvedPath, groupId, session, usedInspectorPath: false));
         }
 
-        return Task.Run(() => ObserveAsync(app, resolvedPath, groupId, session, usedInspectorPath));
+        if (_inspector is not null && _matchers is not null)
+        {
+            // Tie the PID resolver's lifetime to the observation: without
+            // this it kept polling (and touching the session) for up to
+            // PidResolveTimeout after ObserveAsync had already finished
+            // and disposed the session.
+            var resolveCts = new CancellationTokenSource();
+            var resolveTask = Task.Run(() => ResolvePidAsync(app, session, resolveCts.Token));
+            return Task.Run(async () =>
+            {
+                try
+                {
+                    return await ObserveAsync(app, resolvedPath, groupId, session, usedInspectorPath: true).ConfigureAwait(false);
+                }
+                finally
+                {
+                    resolveCts.Cancel();
+                    await resolveTask.ConfigureAwait(false);
+                    resolveCts.Dispose();
+                }
+            });
+        }
+
+        return Task.Run(() => ObserveAsync(app, resolvedPath, groupId, session, usedInspectorPath: false));
     }
 
-    private async Task ResolvePidAsync(AppEntry app, LaunchSession session)
+    private async Task ResolvePidAsync(AppEntry app, LaunchSession session, CancellationToken cancellationToken)
     {
         if (_inspector is null || _matchers is null) return;
 
@@ -76,7 +94,9 @@ public sealed class LaunchTelemetryService : ILaunchTelemetryService
         if (matchers.Count == 0) return;
 
         var deadline = DateTimeOffset.UtcNow + PidResolveTimeout;
-        while (DateTimeOffset.UtcNow < deadline && session.RootPid is null)
+        while (!cancellationToken.IsCancellationRequested
+               && DateTimeOffset.UtcNow < deadline
+               && session.RootPid is null)
         {
             try
             {
@@ -93,8 +113,8 @@ public sealed class LaunchTelemetryService : ILaunchTelemetryService
                 _logger.LogDebug(ex, "PID resolver failed for {App}", app.Name);
             }
 
-            try { await Task.Delay(PidResolvePollInterval).ConfigureAwait(false); }
-            catch { break; }
+            try { await Task.Delay(PidResolvePollInterval, cancellationToken).ConfigureAwait(false); }
+            catch (OperationCanceledException) { return; }
         }
     }
 
@@ -112,10 +132,11 @@ public sealed class LaunchTelemetryService : ILaunchTelemetryService
             // On the shell/inspector path the PID resolves asynchronously; if it
             // never resolved, no probe could observe the process and the outcome
             // is a genuine resolution failure, not a timeout. Reclassify to the
-            // purpose-built PidNotFound (only when we didn't otherwise reach
-            // Ready) so telemetry distinguishes "couldn't find it" from "found
-            // it but it never signalled readiness".
-            if (usedInspectorPath && session.RootPid is null && result.Outcome != LaunchOutcome.Ready)
+            // purpose-built PidNotFound (only when we didn't otherwise reach a
+            // definitive Ready/Failed) so telemetry distinguishes "couldn't find
+            // it" from "found it but it never signalled readiness".
+            if (usedInspectorPath && session.RootPid is null
+                && result.Outcome is not (LaunchOutcome.Ready or LaunchOutcome.Failed))
             {
                 result = result with { Outcome = LaunchOutcome.PidNotFound };
             }
@@ -146,7 +167,9 @@ public sealed class LaunchTelemetryService : ILaunchTelemetryService
                 GroupId = groupId,
                 ResolvedPath = resolvedPath,
                 RequestedAt = session.RequestedAt,
-                Outcome = LaunchOutcome.Unknown,
+                // The observation itself broke — Failed is more honest
+                // than Unknown, which reads as "nothing to report".
+                Outcome = LaunchOutcome.Failed,
                 SignalFired = ReadinessSignal.None,
                 IsCold = false,
                 BootEpochUtc = BootSession.BootEpochUtc,

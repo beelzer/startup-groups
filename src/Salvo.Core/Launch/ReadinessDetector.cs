@@ -33,8 +33,10 @@ public sealed class ReadinessDetector
         var applicable = _probes.Where(p => p.AppliesTo(context)).ToArray();
         if (applicable.Length == 0)
         {
-            _logger.LogDebug("No applicable probes for {App}; marking timeout", context.App.Name);
-            return new ReadinessResult(LaunchOutcome.TimedOut, ReadinessSignal.Timeout, DateTimeOffset.UtcNow);
+            // Nothing observed anything — recording a 0ms "timeout" would
+            // pollute benchmarks with fake timeouts; Unknown is honest.
+            _logger.LogDebug("No applicable probes for {App}; readiness unknown", context.App.Name);
+            return new ReadinessResult(LaunchOutcome.Unknown, ReadinessSignal.None, DateTimeOffset.UtcNow);
         }
 
         var probeTasks = applicable
@@ -44,6 +46,10 @@ public sealed class ReadinessDetector
         var earlyExitTask = WatchEarlyExitAsync(context, linkedCts.Token);
         var allWatched = probeTasks.Concat(new[] { earlyExitTask }).ToList();
 
+        var probeSet = new HashSet<Task<ReadinessResult>>(probeTasks);
+        var probesRemaining = probeTasks.Count;
+        var probesFailed = 0;
+
         while (allWatched.Count > 0)
         {
             var completed = await Task.WhenAny(allWatched).ConfigureAwait(false);
@@ -52,16 +58,33 @@ public sealed class ReadinessDetector
             var winner = await completed.ConfigureAwait(false);
             if (winner.Outcome == LaunchOutcome.Ready)
             {
-                linkedCts.Cancel();
                 context.Session.TryMarkReady(winner.ResolvedAt, winner.Signal);
                 _logger.LogDebug("Readiness {Signal} won for {App}", winner.Signal, context.App.Name);
-                return winner;
+                return await CancelAndDrainAsync(linkedCts, allWatched, winner).ConfigureAwait(false);
             }
             if (winner.Outcome == LaunchOutcome.ExitedEarly)
             {
-                linkedCts.Cancel();
                 _logger.LogDebug("Early exit detected for {App}", context.App.Name);
-                return winner;
+                return await CancelAndDrainAsync(linkedCts, allWatched, winner).ConfigureAwait(false);
+            }
+
+            if (probeSet.Contains(completed))
+            {
+                probesRemaining--;
+                if (winner.Outcome == LaunchOutcome.Failed) probesFailed++;
+
+                // Every probe has definitively failed (e.g. a service that
+                // doesn't exist) and there is no process tree the early-exit
+                // watcher could still conclude anything from — waiting out
+                // the rest of the timeout cannot change the answer.
+                if (probesRemaining == 0
+                    && probesFailed == probeTasks.Count
+                    && context.Session.RootPid is null)
+                {
+                    _logger.LogDebug("All probes definitively failed for {App}; short-circuiting", context.App.Name);
+                    var failed = new ReadinessResult(LaunchOutcome.Failed, ReadinessSignal.None, DateTimeOffset.UtcNow);
+                    return await CancelAndDrainAsync(linkedCts, allWatched, failed).ConfigureAwait(false);
+                }
             }
         }
 
@@ -74,6 +97,27 @@ public sealed class ReadinessDetector
         return new ReadinessResult(LaunchOutcome.TimedOut, ReadinessSignal.Timeout, DateTimeOffset.UtcNow);
     }
 
+    /// <summary>
+    /// Cancel the losers and wait for them to actually finish before
+    /// returning: the caller disposes the session (and with it the job
+    /// handle) right after, and a still-running probe touching
+    /// <c>EnumerateDescendantPids</c> past that point is a check-then-use
+    /// on a closed, OS-recyclable Win32 handle. The wrapped tasks never
+    /// throw and exit promptly on cancellation.
+    /// </summary>
+    private static async Task<ReadinessResult> CancelAndDrainAsync(
+        CancellationTokenSource cts,
+        List<Task<ReadinessResult>> pending,
+        ReadinessResult result)
+    {
+        cts.Cancel();
+        if (pending.Count > 0)
+        {
+            await Task.WhenAll(pending).ConfigureAwait(false);
+        }
+        return result;
+    }
+
     private static async Task<ReadinessResult> WrapProbeAsync(
         IReadinessProbe probe,
         ProbeContext context,
@@ -81,11 +125,13 @@ public sealed class ReadinessDetector
     {
         try
         {
-            var fired = await probe.RunAsync(context, cancellationToken).ConfigureAwait(false);
-            if (fired)
+            var outcome = await probe.RunAsync(context, cancellationToken).ConfigureAwait(false);
+            return outcome switch
             {
-                return new ReadinessResult(LaunchOutcome.Ready, probe.Signal, DateTimeOffset.UtcNow);
-            }
+                ProbeOutcome.Fired => new ReadinessResult(LaunchOutcome.Ready, probe.Signal, DateTimeOffset.UtcNow),
+                ProbeOutcome.Failed => new ReadinessResult(LaunchOutcome.Failed, ReadinessSignal.None, DateTimeOffset.UtcNow),
+                _ => new ReadinessResult(LaunchOutcome.Unknown, ReadinessSignal.None, DateTimeOffset.UtcNow),
+            };
         }
         catch (OperationCanceledException)
         {

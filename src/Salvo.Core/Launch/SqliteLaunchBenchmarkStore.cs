@@ -72,7 +72,8 @@ public sealed class SqliteLaunchBenchmarkStore : ILaunchBenchmarkStore
     /// if the initial creation faulted, the fault is observed here on every
     /// call — it does not retry.
     /// </summary>
-    public Task InitializeAsync(CancellationToken cancellationToken = default) => _initTask;
+    public Task InitializeAsync(CancellationToken cancellationToken = default) =>
+        _initTask.WaitAsync(cancellationToken);
 
     // Opens a connection and applies the per-connection busy timeout so a
     // concurrent writer causes a short wait rather than an immediate

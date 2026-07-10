@@ -107,18 +107,18 @@ public sealed class LaunchTelemetryServicePidResolverTests : IDisposable
     {
         public ReadinessSignal Signal => ReadinessSignal.MainWindowVisible;
         public bool AppliesTo(ProbeContext context) => true;
-        public async Task<bool> RunAsync(ProbeContext context, CancellationToken cancellationToken)
+        public async Task<ProbeOutcome> RunAsync(ProbeContext context, CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
                 if (context.Session.RootPid is not null)
                 {
-                    return true;
+                    return ProbeOutcome.Fired;
                 }
                 try { await Task.Delay(100, cancellationToken).ConfigureAwait(false); }
-                catch { return false; }
+                catch { return ProbeOutcome.GaveUp; }
             }
-            return false;
+            return ProbeOutcome.GaveUp;
         }
     }
 }

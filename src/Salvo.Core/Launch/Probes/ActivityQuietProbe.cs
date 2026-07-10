@@ -13,14 +13,32 @@ public sealed class ActivityQuietProbe : IReadinessProbe
     private const double CpuThresholdPercent = ReadinessThresholds.ActivityQuietCpuPercent;
     private const double IoThresholdBytesPerSec = ReadinessThresholds.ActivityQuietIoBytesPerSecond;
     private const double MinMaxCpuSeen = ReadinessThresholds.ActivityQuietMinMaxCpuSeen;
-    private static readonly TimeSpan QuietWindow = Timeouts.ActivityQuietWindow;
-    private static readonly TimeSpan PollInterval = Timeouts.ProbePollActivity;
+
+    internal delegate bool Sampler(int pid, DateTimeOffset now, out Sample sample);
+
+    private readonly Sampler _sample;
+    private readonly TimeSpan _quietWindow;
+    private readonly TimeSpan _pollInterval;
+
+    public ActivityQuietProbe()
+        : this(TrySample, Timeouts.ActivityQuietWindow, Timeouts.ProbePollActivity)
+    {
+    }
+
+    // Test seam: fake sampler + compressed timings, so the seeding and
+    // quiet-window logic can be pinned without real processes.
+    internal ActivityQuietProbe(Sampler sampler, TimeSpan quietWindow, TimeSpan pollInterval)
+    {
+        _sample = sampler;
+        _quietWindow = quietWindow;
+        _pollInterval = pollInterval;
+    }
 
     public ReadinessSignal Signal => ReadinessSignal.ActivityQuiet;
 
     public bool AppliesTo(ProbeContext context) => context.App.Kind != AppKind.Service;
 
-    public async Task<bool> RunAsync(ProbeContext context, CancellationToken cancellationToken)
+    public async Task<ProbeOutcome> RunAsync(ProbeContext context, CancellationToken cancellationToken)
     {
         var prior = new Dictionary<int, Sample>();
         DateTimeOffset? lastTickAt = null;
@@ -39,7 +57,7 @@ public sealed class ActivityQuietProbe : IReadinessProbe
 
             foreach (var pid in pids)
             {
-                if (!TrySample(pid, now, out var sample)) continue;
+                if (!_sample(pid, now, out var sample)) continue;
                 current[pid] = sample;
 
                 if (prior.TryGetValue(pid, out var earlier))
@@ -53,6 +71,21 @@ public sealed class ActivityQuietProbe : IReadinessProbe
                         aggregatedIoBytes += sample.IoBytes - earlier.IoBytes;
                     }
                     observedAny = true;
+                }
+                else
+                {
+                    // First sample of this pid: the cumulative CPU it burned
+                    // before our first tick is startup activity the delta
+                    // path can never see. Feed it into the activity gate so
+                    // a fast-initializing windowless app (all its CPU spent
+                    // pre-first-tick) doesn't hold maxCpuSeen at ~0 and ride
+                    // out the whole readiness timeout.
+                    var sinceLaunchMs = (now - context.Session.RequestedAt).TotalMilliseconds;
+                    if (sinceLaunchMs > 0)
+                    {
+                        var startupCpuPercent = sample.TotalCpu.TotalMilliseconds / sinceLaunchMs * 100.0;
+                        if (startupCpuPercent > maxCpuSeen) maxCpuSeen = startupCpuPercent;
+                    }
                 }
             }
 
@@ -71,11 +104,11 @@ public sealed class ActivityQuietProbe : IReadinessProbe
                     if (isQuietNow && maxCpuSeen >= MinMaxCpuSeen)
                     {
                         quietSince ??= now;
-                        if (now - quietSince.Value >= QuietWindow)
+                        if (now - quietSince.Value >= _quietWindow)
                         {
                             context.Session.TryMarkQuiet(now);
                             context.Logger.LogDebug("ActivityQuietProbe fired: maxCpu={MaxCpu:F1}%", maxCpuSeen);
-                            return true;
+                            return ProbeOutcome.Fired;
                         }
                     }
                     else
@@ -98,14 +131,14 @@ public sealed class ActivityQuietProbe : IReadinessProbe
 
             try
             {
-                await Task.Delay(PollInterval, cancellationToken).ConfigureAwait(false);
+                await Task.Delay(_pollInterval, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
-                return false;
+                return ProbeOutcome.GaveUp;
             }
         }
-        return false;
+        return ProbeOutcome.GaveUp;
     }
 
     private static bool TrySample(int pid, DateTimeOffset now, out Sample sample)
@@ -143,5 +176,5 @@ public sealed class ActivityQuietProbe : IReadinessProbe
         }
     }
 
-    private readonly record struct Sample(TimeSpan TotalCpu, ulong IoBytes, DateTimeOffset At);
+    internal readonly record struct Sample(TimeSpan TotalCpu, ulong IoBytes, DateTimeOffset At);
 }
