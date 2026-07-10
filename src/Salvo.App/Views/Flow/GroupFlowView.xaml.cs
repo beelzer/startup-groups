@@ -131,17 +131,20 @@ public partial class GroupFlowView : UserControl
            && vm.SelectedGroup is not null
            && vm.SelectedGroup.Graph.Nodes.Contains(node);
 
-    // ---- Condition editing persistence -------------------------------
+    // ---- In-card field persistence ------------------------------------
 
-    // The condition type picker (DropDownClosed) and value box (LostFocus)
-    // don't auto-persist otherwise — flush the config so the edit survives
-    // without waiting for the next structural change. DropDownClosed (not
-    // SelectionChanged) avoids a save on every virtualization realize.
-    private void Condition_OnChanged(object sender, RoutedEventArgs e) => PersistConditionEdit();
+    // Every editable field inside a node card (condition kind + value,
+    // wait duration, service names, run-command interpreter + text, group
+    // picker) updates only the VM; nothing else persists it — structural
+    // edits save, field edits didn't. Flush the config on LostFocus /
+    // DropDownClosed so the edit survives without waiting for the next
+    // structural change. DropDownClosed (not SelectionChanged) avoids a
+    // save on every virtualization realize.
+    private void NodeField_OnChanged(object sender, RoutedEventArgs e) => PersistFieldEdit();
 
-    private void ConditionKind_OnClosed(object? sender, EventArgs e) => PersistConditionEdit();
+    private void NodePicker_OnClosed(object? sender, EventArgs e) => PersistFieldEdit();
 
-    private void PersistConditionEdit()
+    private void PersistFieldEdit()
     {
         if (DataContext is MainWindowViewModel vm)
         {
@@ -298,6 +301,12 @@ public partial class GroupFlowView : UserControl
     protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
     {
         base.OnPreviewMouseLeftButtonDown(e);
+        // Drop whatever a previous press armed — a click that never
+        // crossed the drag threshold otherwise leaves _dragSource set, and
+        // a later press on a TextBox / empty space would start dragging
+        // the *old* node.
+        _dragSource = null;
+        _dragSourceElement = null;
         if (IsInsideInteractiveControl(e.OriginalSource as DependencyObject)) return;
 
         var source = FindNodeRow(e.OriginalSource as DependencyObject);
@@ -311,6 +320,13 @@ public partial class GroupFlowView : UserControl
         _dragStart = e.GetPosition(this);
         _dragSource = node;
         _dragSourceElement = source;
+    }
+
+    protected override void OnPreviewMouseLeftButtonUp(MouseButtonEventArgs e)
+    {
+        base.OnPreviewMouseLeftButtonUp(e);
+        _dragSource = null;
+        _dragSourceElement = null;
     }
 
     protected override void OnPreviewMouseMove(MouseEventArgs e)
@@ -522,22 +538,14 @@ public partial class GroupFlowView : UserControl
         if (DataContext is not MainWindowViewModel vm || vm.SelectedGroup is null) { ResetDrop(); return; }
 
         var graph = vm.SelectedGroup.Graph;
-
-        // A branch node dropped on the outer flow list: lift it out of its
-        // branch into the outer graph first, then position it like any
-        // other outer node via the boundary/merge logic below.
-        if (!graph.Nodes.Contains(dragged))
-        {
-            if (!vm.ExtractBranchNodeToOuter(dragged)) { ResetDrop(); e.Handled = true; return; }
-        }
-
         var cursorInList = e.GetPosition(StageList);
 
-        // Re-decide mode from the release position rather than trusting
-        // whatever state the last DragOver left in _activeMergeRow /
-        // _activeSnapIndex. Release-time jitter can otherwise flip the
-        // mode between visual and apply, making the drop appear to
-        // silently fail.
+        // Decide the drop operation from the release position BEFORE any
+        // graph mutation — both because release-time jitter can flip the
+        // mode the last DragOver armed, and because a branch node must
+        // only be lifted out of its branch (EnsureOuter below) once a
+        // valid target is known. Extract-first left the node edgeless and
+        // persisted disconnected whenever the decision fell through.
         var rowUnderCursor = FindRowAtY(cursorInList.Y);
         if (rowUnderCursor is { Node: var hoverNode, TopY: var top, BottomY: var bot }
             && hoverNode is not StartNodeViewModel
@@ -557,7 +565,7 @@ public partial class GroupFlowView : UserControl
             {
                 var targetStage = graph.Stages
                     .FirstOrDefault(s => s.Nodes.Any(n => ReferenceEquals(n, hoverNode)));
-                if (targetStage is not null)
+                if (targetStage is not null && EnsureOuter(vm, graph, dragged))
                 {
                     graph.MergeIntoStage(dragged, targetStage);
                     vm.PersistConfigPublic();
@@ -572,10 +580,22 @@ public partial class GroupFlowView : UserControl
         var boundaries = CollectRowBoundaries();
         if (boundaries.Count == 0) { ResetDrop(); return; }
         var snapIdx = FindClosestBoundary(boundaries, cursorInList.Y);
-        ApplyDrop(vm, dragged, boundaries, snapIdx);
+        if (EnsureOuter(vm, graph, dragged))
+        {
+            ApplyDrop(vm, dragged, boundaries, snapIdx);
+        }
         ResetDrop();
         e.Handled = true;
     }
+
+    /// <summary>
+    /// A branch node dropped on the outer flow list must first be lifted
+    /// out of its branch into the outer graph; outer nodes pass through.
+    /// Returns false when the dragged node is in neither place (stale
+    /// drag data) — the drop is then abandoned without mutating anything.
+    /// </summary>
+    private static bool EnsureOuter(MainWindowViewModel vm, GroupGraphViewModel graph, NodeViewModel dragged)
+        => graph.Nodes.Contains(dragged) || vm.ExtractBranchNodeToOuter(dragged);
 
     private void ResetDrop()
     {
@@ -606,8 +626,10 @@ public partial class GroupFlowView : UserControl
     /// <summary>
     /// Walk the visual tree of the outer ItemsControl, collect every
     /// row's Y range in StageList-local coordinates, and emit the
-    /// boundaries that sit between adjacent rows (plus one above the
-    /// first row and one below the last).
+    /// boundaries that sit between adjacent rows (plus one below the
+    /// last). There is deliberately no boundary above the first row —
+    /// the first row is always Start and nothing can be placed before
+    /// it, so that line only ever advertised a drop that no-oped.
     /// </summary>
     private List<RowBoundary> CollectRowBoundaries()
     {
@@ -617,9 +639,6 @@ public partial class GroupFlowView : UserControl
 
         var result = new List<RowBoundary>();
         if (rows.Count == 0) return result;
-
-        // Above the first row.
-        result.Add(new RowBoundary(rows[0].Top, null, null, null, rows[0].Row, rows[0].Node, rows[0].Stage));
 
         // Between each adjacent pair.
         for (var i = 0; i < rows.Count - 1; i++)

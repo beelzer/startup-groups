@@ -34,17 +34,27 @@ public partial class GroupViewModel : ObservableObject
     public GroupGraphViewModel Graph { get; } = new();
 
     /// <summary>
-    /// Flat list of every AppNode's embedded <see cref="AppEntryViewModel"/>.
-    /// Maintained for the running-state aggregates that the rest of the
-    /// shell consumes (tray menu, group-level run indicators).
+    /// Flat list of every AppNode's embedded <see cref="AppEntryViewModel"/>,
+    /// including apps living inside If then/else branches. Maintained for
+    /// the running-state aggregates that the rest of the shell consumes
+    /// (tray menu, group-level run indicators, icon loading) — branch apps
+    /// invisible here meant no icon after restart and permanently stale
+    /// running dots.
     /// </summary>
     public IReadOnlyList<AppEntryViewModel> Apps =>
-        Graph.Nodes.OfType<AppNodeViewModel>().Select(n => n.App).ToList();
+        Graph.Nodes.SelectMany(FlattenAppEntries).ToList();
+
+    private static IEnumerable<AppEntryViewModel> FlattenAppEntries(NodeViewModel node) => node switch
+    {
+        AppNodeViewModel app => [app.App],
+        IfElseNodeViewModel ifVm => ifVm.ThenNodes.Concat(ifVm.ElseNodes).SelectMany(FlattenAppEntries),
+        _ => [],
+    };
 
     public string AppsCountText =>
         string.Format(CultureInfo.CurrentUICulture, Strings.Apps_CountFormat, Apps.Count);
 
-    public bool HasApps => Graph.Nodes.OfType<AppNodeViewModel>().Any();
+    public bool HasApps => Apps.Count > 0;
     public bool IsEmpty => !HasApps;
 
     public bool AllRunning =>
@@ -60,21 +70,65 @@ public partial class GroupViewModel : ObservableObject
     {
         // Subscribe / unsubscribe to AppNodes so their embedded
         // AppEntry running-state changes bubble into the group's
-        // aggregates.
+        // aggregates. If nodes carry branch collections whose own
+        // membership changes (add-to-branch, drag in/out) must bubble
+        // the same way.
         if (e.OldItems is not null)
         {
-            foreach (NodeViewModel n in e.OldItems)
-            {
-                if (n is AppNodeViewModel app) app.App.PropertyChanged -= OnAppPropertyChanged;
-            }
+            foreach (NodeViewModel n in e.OldItems) Unhook(n);
         }
         if (e.NewItems is not null)
         {
-            foreach (NodeViewModel n in e.NewItems)
-            {
-                if (n is AppNodeViewModel app) app.App.PropertyChanged += OnAppPropertyChanged;
-            }
+            foreach (NodeViewModel n in e.NewItems) Hook(n);
         }
+        RaiseAppsChanged();
+    }
+
+    private void OnBranchNodesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems is not null)
+        {
+            foreach (NodeViewModel n in e.OldItems) Unhook(n);
+        }
+        if (e.NewItems is not null)
+        {
+            foreach (NodeViewModel n in e.NewItems) Hook(n);
+        }
+        RaiseAppsChanged();
+    }
+
+    private void Hook(NodeViewModel node)
+    {
+        switch (node)
+        {
+            case AppNodeViewModel app:
+                app.App.PropertyChanged += OnAppPropertyChanged;
+                break;
+            case IfElseNodeViewModel ifVm:
+                ifVm.ThenNodes.CollectionChanged += OnBranchNodesChanged;
+                ifVm.ElseNodes.CollectionChanged += OnBranchNodesChanged;
+                foreach (var bn in ifVm.ThenNodes.Concat(ifVm.ElseNodes)) Hook(bn);
+                break;
+        }
+    }
+
+    private void Unhook(NodeViewModel node)
+    {
+        switch (node)
+        {
+            case AppNodeViewModel app:
+                app.App.PropertyChanged -= OnAppPropertyChanged;
+                break;
+            case IfElseNodeViewModel ifVm:
+                ifVm.ThenNodes.CollectionChanged -= OnBranchNodesChanged;
+                ifVm.ElseNodes.CollectionChanged -= OnBranchNodesChanged;
+                foreach (var bn in ifVm.ThenNodes.Concat(ifVm.ElseNodes)) Unhook(bn);
+                break;
+        }
+    }
+
+    private void RaiseAppsChanged()
+    {
         RaiseRunningStateChanged();
         OnPropertyChanged(nameof(Apps));
         OnPropertyChanged(nameof(AppsCountText));

@@ -95,15 +95,23 @@ public sealed partial class GroupGraphViewModel : ObservableObject
             }
         }
 
-        // Expand each If's opaque outer edge (If → join) into two labeled
-        // branch chains that reconverge at the join, so the orchestrator
-        // sees the flat then/else-labeled graph it executes.
+        // Expand each If's opaque outer edges (If → join(s)) into two
+        // labeled branch chains that reconverge at every join, so the
+        // orchestrator sees the flat then/else-labeled graph it executes.
+        // The expansion is per-If, not per-edge: an If can have several
+        // unlabeled successors (MergeIntoStage wires it as predecessor of
+        // every node in the merged stage), and expanding once per edge
+        // emitted duplicate branch chains that corrupted the next load.
+        var joinsByIf = new Dictionary<string, List<string>>();
         foreach (var e in Edges)
         {
-            if (NodeById(e.From) is IfElseNodeViewModel ifVm && string.IsNullOrEmpty(e.Label))
+            if (NodeById(e.From) is IfElseNodeViewModel && string.IsNullOrEmpty(e.Label))
             {
-                ExpandBranch(group, ifVm, "then", ifVm.ThenNodes, joinId: e.To);
-                ExpandBranch(group, ifVm, "else", ifVm.ElseNodes, joinId: e.To);
+                if (!joinsByIf.TryGetValue(e.From, out var joins))
+                {
+                    joinsByIf[e.From] = joins = [];
+                }
+                if (!joins.Contains(e.To)) joins.Add(e.To);
             }
             else
             {
@@ -111,15 +119,13 @@ public sealed partial class GroupGraphViewModel : ObservableObject
             }
         }
 
-        // Leaf If nodes have no outer outgoing edge; their branches still
-        // need emitting (chains that simply terminate — no join).
+        // Leaf If nodes (no outer outgoing edge) get an empty join list:
+        // their branch chains simply terminate.
         foreach (var ifVm in Nodes.OfType<IfElseNodeViewModel>())
         {
-            if (Edges.All(e => e.From != ifVm.Id))
-            {
-                ExpandBranch(group, ifVm, "then", ifVm.ThenNodes, joinId: null);
-                ExpandBranch(group, ifVm, "else", ifVm.ElseNodes, joinId: null);
-            }
+            var joins = joinsByIf.GetValueOrDefault(ifVm.Id) ?? [];
+            ExpandBranch(group, ifVm, NodeBranches.Then, ifVm.ThenNodes, joins);
+            ExpandBranch(group, ifVm, NodeBranches.Else, ifVm.ElseNodes, joins);
         }
     }
 
@@ -130,11 +136,12 @@ public sealed partial class GroupGraphViewModel : ObservableObject
     /// <see cref="CollapseBranches"/> can invert it unambiguously; the
     /// orchestrator ignores the label on non-If sources (they fire all
     /// outgoing regardless), so labelling the interior edges is safe.
-    /// An empty branch with a join emits a single <c>If -[label]-> join</c>
-    /// edge; an empty branch with no join emits nothing.
+    /// With several joins the tail fans out to each of them (all labeled).
+    /// An empty branch fans the If straight out to every join; an empty
+    /// branch with no join emits nothing.
     /// </summary>
     private static void ExpandBranch(Group group, IfElseNodeViewModel ifVm, string label,
-        IReadOnlyList<NodeViewModel> branchNodes, string? joinId)
+        IReadOnlyList<NodeViewModel> branchNodes, IReadOnlyList<string> joinIds)
     {
         var prevId = ifVm.Id;
         foreach (var bn in branchNodes)
@@ -142,7 +149,7 @@ public sealed partial class GroupGraphViewModel : ObservableObject
             group.Edges.Add(new Edge { Id = Guid.NewGuid().ToString(), From = prevId, To = bn.Id, Label = label });
             prevId = bn.Id;
         }
-        if (!string.IsNullOrEmpty(joinId))
+        foreach (var joinId in joinIds)
         {
             group.Edges.Add(new Edge { Id = Guid.NewGuid().ToString(), From = prevId, To = joinId, Label = label });
         }
@@ -160,32 +167,48 @@ public sealed partial class GroupGraphViewModel : ObservableObject
     {
         foreach (var ifVm in Nodes.OfType<IfElseNodeViewModel>().ToList())
         {
-            var thenPath = FollowLabeledChain(ifVm.Id, "then");
-            var elsePath = FollowLabeledChain(ifVm.Id, "else");
+            var (thenPath, thenJoins) = FollowLabeledChain(ifVm.Id, NodeBranches.Then);
+            var (elsePath, elseJoins) = FollowLabeledChain(ifVm.Id, NodeBranches.Else);
 
-            // Reconvergence: if both chains end at the same node, that node
-            // is the join and stays in the outer graph. Otherwise the
-            // branches are leaves and every chained node belongs to them.
-            string? joinId = thenPath.Count > 0 && elsePath.Count > 0 && thenPath[^1] == elsePath[^1]
-                ? thenPath[^1]
-                : null;
-
-            var thenIds = joinId is null ? thenPath : thenPath.Take(thenPath.Count - 1).ToList();
-            var elseIds = joinId is null ? elsePath : elsePath.Take(elsePath.Count - 1).ToList();
+            List<string> joins;
+            List<string> thenIds;
+            List<string> elseIds;
+            if (thenJoins.Count > 0 || elseJoins.Count > 0)
+            {
+                // Fan-out tail: the chain ended on a node with several
+                // labeled out-edges — those targets are the joins (a
+                // multi-successor If; both branches fan to the same set).
+                joins = thenJoins.Union(elseJoins).ToList();
+                thenIds = thenPath;
+                elseIds = elsePath;
+            }
+            else
+            {
+                // Single-successor shape: if both chains end at the same
+                // node, that node is the join and stays in the outer
+                // graph. Otherwise the branches are leaves and every
+                // chained node belongs to them.
+                string? joinId = thenPath.Count > 0 && elsePath.Count > 0 && thenPath[^1] == elsePath[^1]
+                    ? thenPath[^1]
+                    : null;
+                joins = joinId is null ? [] : [joinId];
+                thenIds = joinId is null ? thenPath : thenPath.Take(thenPath.Count - 1).ToList();
+                elseIds = joinId is null ? elsePath : elsePath.Take(elsePath.Count - 1).ToList();
+            }
 
             MoveIntoBranch(ifVm.ThenNodes, thenIds);
             MoveIntoBranch(ifVm.ElseNodes, elseIds);
 
             // Drop the labeled edges that made up the branches, then
-            // reconnect the If straight to the join so the outer chain
-            // stays linear.
+            // reconnect the If straight to each join so the outer graph
+            // regains its opaque If → join edge(s).
             var branchIds = new HashSet<string>(thenIds.Concat(elseIds)) { ifVm.Id };
             foreach (var dead in Edges.Where(e =>
-                         (e.Label == "then" || e.Label == "else") && branchIds.Contains(e.From)).ToList())
+                         (e.Label == NodeBranches.Then || e.Label == NodeBranches.Else) && branchIds.Contains(e.From)).ToList())
             {
                 Edges.Remove(dead);
             }
-            if (joinId is not null)
+            foreach (var joinId in joins)
             {
                 Edges.Add(new EdgeViewModel { Id = Guid.NewGuid().ToString(), From = ifVm.Id, To = joinId });
             }
@@ -195,22 +218,29 @@ public sealed partial class GroupGraphViewModel : ObservableObject
     /// <summary>
     /// Walk a labelled chain starting at <paramref name="startId"/>,
     /// following the single out-edge carrying <paramref name="label"/> at
-    /// each step, and return the ordered list of visited target node ids.
-    /// The guard bounds it to the node count so a malformed cyclic graph
-    /// can't spin forever.
+    /// each step. Returns the ordered list of visited target node ids,
+    /// plus the join set when the walk hits a fan-out tail (a node with
+    /// several out-edges of this label — the multi-join shape
+    /// <see cref="ExpandBranch"/> emits; every target is a join, not a
+    /// branch node). The guard bounds the walk to the node count so a
+    /// malformed cyclic graph can't spin forever.
     /// </summary>
-    private List<string> FollowLabeledChain(string startId, string label)
+    private (List<string> Path, List<string> Joins) FollowLabeledChain(string startId, string label)
     {
         var path = new List<string>();
         var currentFrom = startId;
         for (var guard = 0; guard <= Nodes.Count; guard++)
         {
-            var edge = Edges.FirstOrDefault(e => e.From == currentFrom && e.Label == label);
-            if (edge is null) break;
-            path.Add(edge.To);
-            currentFrom = edge.To;
+            var outs = Edges.Where(e => e.From == currentFrom && e.Label == label).ToList();
+            if (outs.Count == 0) break;
+            if (outs.Count > 1)
+            {
+                return (path, outs.Select(e => e.To).Distinct().ToList());
+            }
+            path.Add(outs[0].To);
+            currentFrom = outs[0].To;
         }
-        return path;
+        return (path, []);
     }
 
     private void MoveIntoBranch(ObservableCollection<NodeViewModel> branch, IReadOnlyList<string> ids)
@@ -535,13 +565,21 @@ public sealed partial class GroupGraphViewModel : ObservableObject
     /// <paramref name="targetStage"/>. Implemented as "move after the
     /// stage above <paramref name="targetStage"/>" — the stages are
     /// strictly ordered, and "before" only differs from "after" by
-    /// targeting the predecessor. Refuses to move before Stage 0 (Start).
+    /// targeting the predecessor. "Before Stage 0 (Start)" is impossible,
+    /// so that degrades to "after Start" (first position) rather than
+    /// silently refusing — a refusal after the caller has already
+    /// detached the node would leave it orphaned.
     /// </summary>
     public void MoveNodeBeforeStage(NodeViewModel node, StageViewModel targetStage)
     {
         if (node is StartNodeViewModel) return;
         var idx = Stages.IndexOf(targetStage);
-        if (idx <= 0) return; // can't insert before Start
+        if (idx < 0) return;
+        if (idx == 0)
+        {
+            MoveNodeAfterStage(node, targetStage);
+            return;
+        }
         var predecessor = Stages[idx - 1];
         // If the user is dragging a node that's already in the predecessor
         // stage, "move before targetStage" would round-trip back to the

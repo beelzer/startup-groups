@@ -255,6 +255,13 @@ public partial class MainWindow : FluentWindow
 
     protected override void OnClosing(CancelEventArgs e)
     {
+        // Safety net for in-card flow-editor fields: their bindings update
+        // the VM on every keystroke but persistence waits for LostFocus,
+        // which never fires if the user closes/hides the window with the
+        // field still focused. (Config loads synchronously in the VM
+        // constructor, so this can never save a pre-load empty state.)
+        _viewModel.PersistConfigPublic();
+
         if (_viewModel.MinimizeToTrayOnClose)
         {
             e.Cancel = true;

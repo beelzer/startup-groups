@@ -183,6 +183,7 @@
                         <ui:NumberBox Value="{Binding DurationSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                       Minimum="0" Maximum="3600"
                                       AllowDrop="False"
+                                      LostFocus="NodeField_OnChanged"
                                       Width="90" Margin="10,0,0,0" />
                         <TextBlock Text="seconds before the next item runs"
                                    Margin="8,0,0,0" VerticalAlignment="Center"
@@ -287,7 +288,7 @@
                                       AllowDrop="False"
                                       SelectedValuePath="Tag"
                                       SelectedValue="{Binding ConditionKind, Mode=TwoWay}"
-                                      DropDownClosed="ConditionKind_OnClosed">
+                                      DropDownClosed="NodePicker_OnClosed">
                                 <ComboBoxItem Tag="serviceRunning">Service running</ComboBoxItem>
                                 <ComboBoxItem Tag="fileExists">File exists</ComboBoxItem>
                                 <ComboBoxItem Tag="processRunning">Process running</ComboBoxItem>
@@ -296,7 +297,7 @@
                                         AllowDrop="False"
                                         PlaceholderText="{Binding Condition.ValueLabel}"
                                         Text="{Binding Condition.Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                        LostFocus="Condition_OnChanged" />
+                                        LostFocus="NodeField_OnChanged" />
                         </Grid>
                         <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
                                    Appearance="Transparent"
@@ -401,6 +402,7 @@
                         <TextBlock Text="Start service" FontWeight="SemiBold" VerticalAlignment="Center" />
                         <TextBox Text="{Binding ServiceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  AllowDrop="False"
+                                 LostFocus="NodeField_OnChanged"
                                  Width="220" Margin="10,0,0,0" />
                     </StackPanel>
                     <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
@@ -427,6 +429,7 @@
                         <TextBlock Text="Stop service" FontWeight="SemiBold" VerticalAlignment="Center" />
                         <TextBox Text="{Binding ServiceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  AllowDrop="False"
+                                 LostFocus="NodeField_OnChanged"
                                  Width="220" Margin="10,0,0,0" />
                     </StackPanel>
                     <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
@@ -459,7 +462,8 @@
                         <ComboBox Grid.Column="1" Width="110" Margin="10,0,0,0"
                                   AllowDrop="False"
                                   SelectedValue="{Binding Interpreter, Mode=TwoWay}"
-                                  SelectedValuePath="Tag">
+                                  SelectedValuePath="Tag"
+                                  DropDownClosed="NodePicker_OnClosed">
                             <ComboBoxItem Tag="shell">Shell</ComboBoxItem>
                             <ComboBoxItem Tag="powershell">PowerShell</ComboBoxItem>
                             <ComboBoxItem Tag="direct">Direct</ComboBoxItem>
@@ -468,6 +472,7 @@
                                  AllowDrop="False"
                                  Text="{Binding Command, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  FontFamily="Consolas"
+                                 LostFocus="NodeField_OnChanged"
                                  Margin="10,0,16,0" />
                     </Grid>
                     <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"
@@ -496,6 +501,7 @@
                                   SelectedValuePath="Id"
                                   DisplayMemberPath="Name"
                                   SelectedValue="{Binding GroupId, Mode=TwoWay}"
+                                  DropDownClosed="NodePicker_OnClosed"
                                   Width="280" Margin="10,0,0,0" />
                     </StackPanel>
                     <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete24}"

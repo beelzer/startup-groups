@@ -179,9 +179,10 @@ public sealed partial class IfElseNodeViewModel : NodeViewModel
             var carried = Condition.Value;
             Condition = value switch
             {
-                "fileExists" => new FileExistsConditionViewModel { Path = carried },
-                "processRunning" => new ProcessRunningConditionViewModel { ProcessName = carried },
-                _ => new ServiceRunningConditionViewModel { ServiceName = carried },
+                ConditionKinds.FileExists => new FileExistsConditionViewModel { Path = carried },
+                ConditionKinds.ProcessRunning => new ProcessRunningConditionViewModel { ProcessName = carried },
+                ConditionKinds.ServiceRunning => new ServiceRunningConditionViewModel { ServiceName = carried },
+                _ => throw new ArgumentException($"Unknown condition kind '{value}'", nameof(value)),
             };
             OnPropertyChanged(nameof(ConditionKind));
         }

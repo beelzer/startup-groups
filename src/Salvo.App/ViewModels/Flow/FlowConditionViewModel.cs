@@ -33,7 +33,7 @@ public abstract partial class FlowConditionViewModel : ObservableObject
         ServiceRunningCondition c => new ServiceRunningConditionViewModel { ServiceName = c.ServiceName },
         FileExistsCondition c => new FileExistsConditionViewModel { Path = c.Path },
         ProcessRunningCondition c => new ProcessRunningConditionViewModel { ProcessName = c.ProcessName },
-        _ => new ServiceRunningConditionViewModel(),
+        _ => throw new ArgumentException($"Unknown condition type {cond.GetType().Name}", nameof(cond)),
     };
 }
 
@@ -41,7 +41,7 @@ public sealed partial class ServiceRunningConditionViewModel : FlowConditionView
 {
     [ObservableProperty][NotifyPropertyChangedFor(nameof(Value))] private string _serviceName = string.Empty;
     public override string DisplayName => "Service running";
-    public override string Kind => "serviceRunning";
+    public override string Kind => ConditionKinds.ServiceRunning;
     public override string ValueLabel => "Service name";
     public override string Value { get => ServiceName; set => ServiceName = value; }
     public override FlowCondition ToModel() => new ServiceRunningCondition { ServiceName = ServiceName };
@@ -51,7 +51,7 @@ public sealed partial class FileExistsConditionViewModel : FlowConditionViewMode
 {
     [ObservableProperty][NotifyPropertyChangedFor(nameof(Value))] private string _path = string.Empty;
     public override string DisplayName => "File exists";
-    public override string Kind => "fileExists";
+    public override string Kind => ConditionKinds.FileExists;
     public override string ValueLabel => "File or folder path";
     public override string Value { get => Path; set => Path = value; }
     public override FlowCondition ToModel() => new FileExistsCondition { Path = Path };
@@ -61,7 +61,7 @@ public sealed partial class ProcessRunningConditionViewModel : FlowConditionView
 {
     [ObservableProperty][NotifyPropertyChangedFor(nameof(Value))] private string _processName = string.Empty;
     public override string DisplayName => "Process running";
-    public override string Kind => "processRunning";
+    public override string Kind => ConditionKinds.ProcessRunning;
     public override string ValueLabel => "Process name (e.g. chrome)";
     public override string Value { get => ProcessName; set => ProcessName = value; }
     public override FlowCondition ToModel() => new ProcessRunningCondition { ProcessName = ProcessName };

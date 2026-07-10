@@ -22,7 +22,7 @@ Review areas: launch pipeline, core services/elevation, App ViewModels, flow edi
 
 ## Workstreams (in execution order)
 
-### 01. [P0] MSIX packaging & release-gate correctness  `[ ]`
+### 01. [P0] MSIX packaging & release-gate correctness  `[x]`
 
 - **Priority:** P0 · **Effort:** S · **Risk:** low · **Category:** build/ci correctness
 
@@ -56,7 +56,7 @@ gets published to the `.appinstaller` channel), and the winget submission runs w
 
 ---
 
-### 02. [P0] App lifecycle: single-instance, window lifetime, `--tray`, early logging  `[ ]`
+### 02. [P0] App lifecycle: single-instance, window lifetime, `--tray`, early logging  `[x]`
 
 - **Priority:** P0 · **Effort:** M · **Risk:** low-medium · **Category:** correctness
 
@@ -89,7 +89,7 @@ explicit `--tray` intent; and the two earliest startup helpers log into a not-ye
 
 ---
 
-### 03. [P0] Orchestrator & group execution correctness  `[ ]`
+### 03. [P0] Orchestrator & group execution correctness  `[x]`
 
 - **Priority:** P0 · **Effort:** M · **Risk:** medium · **Category:** correctness
 
@@ -127,7 +127,7 @@ are dropped as "recursive".
 
 ---
 
-### 04. [P0] Child-process tracking: remove silent-breakaway  `[ ]`
+### 04. [P0] Child-process tracking: remove silent-breakaway  `[x]`
 
 - **Priority:** P0 · **Effort:** S · **Risk:** low · **Category:** correctness
 
@@ -147,7 +147,7 @@ are dropped as "recursive".
 
 ---
 
-### 05. [P0] Flow editor data-loss fixes  `[ ]`
+### 05. [P0] Flow editor data-loss fixes  `[x]`
 
 - **Priority:** P0 · **Effort:** M · **Risk:** medium · **Category:** correctness
 
