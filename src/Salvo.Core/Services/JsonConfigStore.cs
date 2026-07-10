@@ -13,6 +13,12 @@ public sealed class JsonConfigStore : IConfigStore, IDisposable
     private FileSystemWatcher? _watcher;
     private DateTime _lastLoadUtc;
 
+    // The last configuration that successfully loaded or saved. On a
+    // corrupt read this is what Load returns instead of an empty
+    // Configuration — an empty result would flow into the UI and the
+    // very next Save would permanently destroy every group.
+    private Configuration? _lastGood;
+
     public JsonConfigStore(string configPath, ILogger<JsonConfigStore>? logger = null)
     {
         ConfigPath = configPath ?? throw new ArgumentNullException(nameof(configPath));
@@ -20,6 +26,8 @@ public sealed class JsonConfigStore : IConfigStore, IDisposable
     }
 
     public string ConfigPath { get; }
+
+    public bool LastLoadFailed { get; private set; }
 
     public event EventHandler<Configuration>? Changed;
 
@@ -37,9 +45,11 @@ public sealed class JsonConfigStore : IConfigStore, IDisposable
 
             var json = File.ReadAllText(ConfigPath);
 
+            // A whitespace-only file is a torn/failed write, not a valid
+            // empty config — treat it exactly like a parse failure.
             if (string.IsNullOrWhiteSpace(json))
             {
-                return new Configuration();
+                return HandleCorruptFile(null);
             }
 
             try
@@ -48,7 +58,7 @@ public sealed class JsonConfigStore : IConfigStore, IDisposable
                 _lastLoadUtc = DateTime.UtcNow;
                 if (config is null)
                 {
-                    return new Configuration();
+                    return HandleCorruptFile(null);
                 }
 
                 // One-shot migration of any legacy Apps[] lists into the
@@ -68,14 +78,42 @@ public sealed class JsonConfigStore : IConfigStore, IDisposable
                     SaveInternal(config);
                 }
 
+                LastLoadFailed = false;
+                _lastGood = config;
                 return config;
             }
             catch (JsonException ex)
             {
-                _logger.LogError(ex, "Failed to parse configuration at {Path}", ConfigPath);
-                return new Configuration();
+                return HandleCorruptFile(ex);
             }
         }
+    }
+
+    /// <summary>
+    /// Called under the write lock when the config file cannot be read.
+    /// Quarantines the corrupt bytes next to the original (so nothing is
+    /// lost when a later Save overwrites the file), flags the failure,
+    /// and returns the last known-good configuration — falling back to
+    /// empty only when this store has never seen a good one.
+    /// </summary>
+    private Configuration HandleCorruptFile(Exception? cause)
+    {
+        var quarantinePath = ConfigPath + ".bad";
+        try
+        {
+            File.Copy(ConfigPath, quarantinePath, overwrite: true);
+            _logger.LogError(cause,
+                "Configuration at {Path} is unreadable; corrupt copy quarantined at {Quarantine}. " +
+                "Keeping the last known-good configuration in memory.",
+                ConfigPath, quarantinePath);
+        }
+        catch (Exception copyEx)
+        {
+            _logger.LogError(copyEx, "Configuration at {Path} is unreadable and quarantining it also failed", ConfigPath);
+        }
+
+        LastLoadFailed = true;
+        return _lastGood ?? new Configuration();
     }
 
     public void Save(Configuration configuration)
@@ -114,6 +152,11 @@ public sealed class JsonConfigStore : IConfigStore, IDisposable
         File.WriteAllText(tempPath, json);
         File.Move(tempPath, ConfigPath, overwrite: true);
         _lastLoadUtc = DateTime.UtcNow;
+
+        // A successful save defines the new known-good state (and makes
+        // the on-disk file valid again after a corrupt read).
+        _lastGood = configuration;
+        LastLoadFailed = false;
     }
 
     public void BeginWatching()
@@ -160,7 +203,16 @@ public sealed class JsonConfigStore : IConfigStore, IDisposable
         {
             Thread.Sleep(Timeouts.ConfigPersistCooldown);
             var config = Load();
-            Changed?.Invoke(this, config);
+            // An external write that corrupted the file must not be
+            // published: subscribers would rebuild their state from the
+            // fallback and the user's next edit would persist it over
+            // whatever the external writer intended. The quarantine +
+            // LastLoadFailed flag carry the failure; the in-memory state
+            // stays as it was.
+            if (!LastLoadFailed)
+            {
+                Changed?.Invoke(this, config);
+            }
         }
         catch (Exception ex)
         {

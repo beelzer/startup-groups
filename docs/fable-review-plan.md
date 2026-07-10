@@ -249,7 +249,7 @@ implicit.
 
 ---
 
-### 07. [P1] Config-store resilience  `[ ]`
+### 07. [P1] Config-store resilience  `[x]`
 
 - **Priority:** P1 · **Effort:** S · **Risk:** low · **Category:** correctness
 

@@ -68,7 +68,7 @@ public sealed class JsonConfigStoreTests : IDisposable
     }
 
     [Fact]
-    public void Load_ReturnsEmpty_WhenJsonInvalid()
+    public void Load_ReturnsEmpty_WhenJsonInvalid_AndNoPriorGoodState()
     {
         var path = Path.Combine(_tempRoot, "bad.json");
         File.WriteAllText(path, "{ broken");
@@ -77,6 +77,68 @@ public sealed class JsonConfigStoreTests : IDisposable
         var config = store.Load();
 
         config.Groups.Should().BeEmpty();
+        store.LastLoadFailed.Should().BeTrue();
+        File.ReadAllText(path + ".bad").Should().Be("{ broken",
+            "the unreadable original must be quarantined before anything can overwrite it");
+    }
+
+    [Fact]
+    public void Load_KeepsLastGoodConfig_WhenFileTurnsCorrupt()
+    {
+        // The data-loss chain this breaks: corrupt file → Load returns
+        // empty → watcher publishes empty → user's next edit saves empty,
+        // permanently destroying every group.
+        var path = Path.Combine(_tempRoot, "config.json");
+        var store = new JsonConfigStore(path);
+        store.Save(new Configuration
+        {
+            Groups = [new Group { Id = "g", Name = "G", Apps = [new AppEntry { Name = "app", Path = @"C:\a.exe" }] }],
+        });
+        store.Load().Groups.Should().HaveCount(1);
+
+        File.WriteAllText(path, "{ definitely not json");
+
+        var reloaded = store.Load();
+
+        reloaded.Groups.Should().HaveCount(1, "a corrupt read must fall back to the last known-good configuration");
+        reloaded.Groups[0].Id.Should().Be("g");
+        store.LastLoadFailed.Should().BeTrue();
+        File.Exists(path + ".bad").Should().BeTrue();
+    }
+
+    [Fact]
+    public void Load_TreatsWhitespaceFile_AsCorrupt()
+    {
+        // A whitespace-only file is a torn write, not a deliberate empty
+        // config — it must not silently load as empty.
+        var path = Path.Combine(_tempRoot, "config.json");
+        var store = new JsonConfigStore(path);
+        store.Save(new Configuration { Groups = [new Group { Id = "g", Name = "G" }] });
+
+        File.WriteAllText(path, "   \r\n");
+
+        store.Load().Groups.Should().HaveCount(1);
+        store.LastLoadFailed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Save_AfterFailedLoad_DoesNotClobberQuarantine_AndClearsFailureState()
+    {
+        var path = Path.Combine(_tempRoot, "config.json");
+        var store = new JsonConfigStore(path);
+        store.Save(new Configuration { Groups = [new Group { Id = "g", Name = "G" }] });
+
+        File.WriteAllText(path, "{ corrupt bytes");
+        store.Load();
+        store.LastLoadFailed.Should().BeTrue();
+
+        store.Save(new Configuration { Groups = [new Group { Id = "g2", Name = "G2" }] });
+
+        File.ReadAllText(path + ".bad").Should().Be("{ corrupt bytes",
+            "the quarantined snapshot must survive the save that repairs config.json");
+        store.LastLoadFailed.Should().BeFalse("a successful save makes the on-disk file valid again");
+        store.Load().Groups.Single().Id.Should().Be("g2");
+        store.LastLoadFailed.Should().BeFalse();
     }
 
     public void Dispose()
