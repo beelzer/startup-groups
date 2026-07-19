@@ -142,6 +142,7 @@
   <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>อาร์กิวเมนต์ (ทางเลือก)</value></data>
   <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>อาร์กิวเมนต์ที่แนะนำ</value></data>
   <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>ไดเรกทอรีทำงาน (ทางเลือก)</value></data>
+  <data name="AppEditor_WindowStyle_Label" xml:space="preserve"><value>รูปแบบหน้าต่าง (Hidden = ไม่มีหน้าต่าง)</value></data>
   <data name="AppEditor_Service_Label" xml:space="preserve"><value>ชื่อบริการ (ตามที่แสดงใน services.msc)</value></data>
   <data name="AppEditor_Delay_Label" xml:space="preserve"><value>หน่วงหลังเริ่ม (วินาที)</value></data>
   <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>เปิดใช้ (รวมในการเริ่มกลุ่ม)</value></data>

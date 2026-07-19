@@ -42,7 +42,7 @@ public sealed class JsonConfigStoreTests : IDisposable
                     Apps =
                     [
                         new AppEntry { Name = "Steam", Path = @"C:\Program Files (x86)\Steam\steam.exe" },
-                        new AppEntry { Name = "Discord", Path = @"C:\discord.exe", Args = "--minimized", DelayAfterSeconds = 3 }
+                        new AppEntry { Name = "Discord", Path = @"C:\discord.exe", Args = "--minimized", DelayAfterSeconds = 3, WindowStyle = LaunchWindowStyle.Hidden }
                     ]
                 },
                 new Group
@@ -62,7 +62,9 @@ public sealed class JsonConfigStoreTests : IDisposable
 
         loaded.Groups.Should().HaveCount(2);
         loaded.Groups[0].Apps.Should().HaveCount(2);
+        loaded.Groups[0].Apps[0].WindowStyle.Should().Be(LaunchWindowStyle.Normal);
         loaded.Groups[0].Apps[1].DelayAfterSeconds.Should().Be(3);
+        loaded.Groups[0].Apps[1].WindowStyle.Should().Be(LaunchWindowStyle.Hidden);
         loaded.Groups[1].Apps[0].Kind.Should().Be(AppKind.Service);
         loaded.Groups[1].Apps[0].Service.Should().Be("Radarr");
     }

@@ -16,6 +16,8 @@ public sealed class AppEntry
 
     public string? WorkingDirectory { get; set; }
 
+    public LaunchWindowStyle WindowStyle { get; set; } = LaunchWindowStyle.Normal;
+
     public int DelayAfterSeconds { get; set; }
 
     public bool Enabled { get; set; } = true;

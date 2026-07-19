@@ -14,6 +14,7 @@ public partial class AppEntryViewModel : ObservableObject
     [ObservableProperty] private string? _service;
     [ObservableProperty] private string? _args;
     [ObservableProperty] private string? _workingDirectory;
+    [ObservableProperty] private LaunchWindowStyle _windowStyle = LaunchWindowStyle.Normal;
     [ObservableProperty] private int _delayAfterSeconds;
     [ObservableProperty] private bool _enabled = true;
     [ObservableProperty] private bool _isRunning;
@@ -80,6 +81,7 @@ public partial class AppEntryViewModel : ObservableObject
         Service = Service,
         Args = Args,
         WorkingDirectory = WorkingDirectory,
+        WindowStyle = WindowStyle,
         DelayAfterSeconds = DelayAfterSeconds,
         Enabled = Enabled
     };
@@ -92,6 +94,7 @@ public partial class AppEntryViewModel : ObservableObject
         Service = app.Service,
         Args = app.Args,
         WorkingDirectory = app.WorkingDirectory,
+        WindowStyle = app.WindowStyle,
         DelayAfterSeconds = app.DelayAfterSeconds,
         Enabled = app.Enabled
     };

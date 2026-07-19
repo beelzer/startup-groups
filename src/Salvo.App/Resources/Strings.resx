@@ -172,6 +172,7 @@ Run elevated now?</value></data>
   <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>Arguments (optional)</value></data>
   <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>Suggested arguments</value></data>
   <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>Working directory (optional)</value></data>
+  <data name="AppEditor_WindowStyle_Label" xml:space="preserve"><value>Window style (Hidden = no window)</value></data>
   <data name="AppEditor_Service_Label" xml:space="preserve"><value>Service name (as listed in services.msc)</value></data>
   <data name="AppEditor_Delay_Label" xml:space="preserve"><value>Delay after launching (seconds)</value></data>
   <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>Enabled (include in group launch)</value></data>

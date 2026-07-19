@@ -142,6 +142,7 @@
   <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>Аргументы (необязательно)</value></data>
   <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>Предлагаемые аргументы</value></data>
   <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>Рабочий каталог (необязательно)</value></data>
+  <data name="AppEditor_WindowStyle_Label" xml:space="preserve"><value>Стиль окна (Hidden — без окна)</value></data>
   <data name="AppEditor_Service_Label" xml:space="preserve"><value>Имя службы (как в services.msc)</value></data>
   <data name="AppEditor_Delay_Label" xml:space="preserve"><value>Задержка после запуска (секунды)</value></data>
   <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>Включено (включить в запуск группы)</value></data>

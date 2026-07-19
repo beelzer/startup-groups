@@ -142,6 +142,7 @@
   <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>引数 (任意)</value></data>
   <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>推奨の引数</value></data>
   <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>作業ディレクトリ (任意)</value></data>
+  <data name="AppEditor_WindowStyle_Label" xml:space="preserve"><value>ウィンドウ スタイル（Hidden＝ウィンドウなし）</value></data>
   <data name="AppEditor_Service_Label" xml:space="preserve"><value>サービス名 (services.mscに表示される名前)</value></data>
   <data name="AppEditor_Delay_Label" xml:space="preserve"><value>起動後の遅延 (秒)</value></data>
   <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>有効 (グループ起動に含める)</value></data>

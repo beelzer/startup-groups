@@ -142,6 +142,7 @@
   <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>ארגומנטים (אופציונלי)</value></data>
   <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>ארגומנטים מוצעים</value></data>
   <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>תיקיית עבודה (אופציונלי)</value></data>
+  <data name="AppEditor_WindowStyle_Label" xml:space="preserve"><value>סגנון חלון (Hidden = ללא חלון)</value></data>
   <data name="AppEditor_Service_Label" xml:space="preserve"><value>שם שירות (כפי שמופיע ב-services.msc)</value></data>
   <data name="AppEditor_Delay_Label" xml:space="preserve"><value>עיכוב לאחר הפעלה (שניות)</value></data>
   <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>מופעל (כלול בהפעלת הקבוצה)</value></data>

@@ -22,6 +22,7 @@ public sealed class ProcessLauncher : IProcessLauncher
         {
             FileName = resolvedPath,
             UseShellExecute = true,
+            WindowStyle = MapWindowStyle(app.WindowStyle),
             WorkingDirectory = ResolveWorkingDirectory(app, resolvedPath)
         };
 
@@ -48,6 +49,14 @@ public sealed class ProcessLauncher : IProcessLauncher
             return false;
         }
     }
+
+    internal static ProcessWindowStyle MapWindowStyle(LaunchWindowStyle style) => style switch
+    {
+        LaunchWindowStyle.Minimized => ProcessWindowStyle.Minimized,
+        LaunchWindowStyle.Maximized => ProcessWindowStyle.Maximized,
+        LaunchWindowStyle.Hidden => ProcessWindowStyle.Hidden,
+        _ => ProcessWindowStyle.Normal,
+    };
 
     private static string ResolveWorkingDirectory(AppEntry app, string resolvedPath)
     {

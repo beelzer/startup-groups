@@ -142,6 +142,7 @@
   <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>المعاملات (اختياري)</value></data>
   <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>المعاملات المقترحة</value></data>
   <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>دليل العمل (اختياري)</value></data>
+  <data name="AppEditor_WindowStyle_Label" xml:space="preserve"><value>نمط النافذة (Hidden = بدون نافذة)</value></data>
   <data name="AppEditor_Service_Label" xml:space="preserve"><value>اسم الخدمة (كما هو في services.msc)</value></data>
   <data name="AppEditor_Delay_Label" xml:space="preserve"><value>التأخير بعد التشغيل (ثواني)</value></data>
   <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>مُفعل (تضمينه في تشغيل المجموعة)</value></data>

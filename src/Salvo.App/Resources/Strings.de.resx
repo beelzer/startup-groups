@@ -142,6 +142,7 @@ Jetzt mit erhöhten Rechten ausführen?</value></data>
   <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>Argumente (optional)</value></data>
   <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>Vorgeschlagene Argumente</value></data>
   <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>Arbeitsverzeichnis (optional)</value></data>
+  <data name="AppEditor_WindowStyle_Label" xml:space="preserve"><value>Fensterstil (Hidden = kein Fenster)</value></data>
   <data name="AppEditor_Service_Label" xml:space="preserve"><value>Dienstname (wie in services.msc aufgeführt)</value></data>
   <data name="AppEditor_Delay_Label" xml:space="preserve"><value>Verzögerung nach dem Start (Sekunden)</value></data>
   <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>Aktiviert (in Gruppenstart einbeziehen)</value></data>

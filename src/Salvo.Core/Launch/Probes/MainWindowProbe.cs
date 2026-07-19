@@ -14,7 +14,12 @@ public sealed class MainWindowProbe : IReadinessProbe
 
     public ReadinessSignal Signal => ReadinessSignal.MainWindowVisible;
 
-    public bool AppliesTo(ProbeContext context) => context.App.Kind != AppKind.Service;
+    // Hidden launches are excluded: the show-window hint means no visible
+    // window may ever exist, so this probe could only ever give up —
+    // readiness for those falls to input-idle / activity-quiet.
+    public bool AppliesTo(ProbeContext context) =>
+        context.App.Kind != AppKind.Service
+        && context.App.WindowStyle != LaunchWindowStyle.Hidden;
 
     public async Task<ProbeOutcome> RunAsync(ProbeContext context, CancellationToken cancellationToken)
     {

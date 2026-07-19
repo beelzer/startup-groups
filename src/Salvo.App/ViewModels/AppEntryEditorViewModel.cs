@@ -32,6 +32,7 @@ public partial class AppEntryEditorViewModel : ObservableObject
     [ObservableProperty] private string? _service;
     [ObservableProperty] private string? _args;
     [ObservableProperty] private string? _workingDirectory;
+    [ObservableProperty] private LaunchWindowStyle _windowStyle = LaunchWindowStyle.Normal;
     [ObservableProperty] private int _delayAfterSeconds;
     [ObservableProperty] private bool _enabled = true;
 
@@ -41,6 +42,9 @@ public partial class AppEntryEditorViewModel : ObservableObject
     public bool IsNew { get; set; } = true;
 
     public AppKind[] AvailableKinds { get; } = [AppKind.Executable, AppKind.Service];
+
+    public LaunchWindowStyle[] AvailableWindowStyles { get; } =
+        [LaunchWindowStyle.Normal, LaunchWindowStyle.Minimized, LaunchWindowStyle.Maximized, LaunchWindowStyle.Hidden];
 
     public bool IsExecutable => Kind == AppKind.Executable;
     public bool IsService => Kind == AppKind.Service;
@@ -388,6 +392,7 @@ public partial class AppEntryEditorViewModel : ObservableObject
         Service = source.Service;
         Args = source.Args;
         WorkingDirectory = source.WorkingDirectory;
+        WindowStyle = source.WindowStyle;
         DelayAfterSeconds = source.DelayAfterSeconds;
         Enabled = source.Enabled;
     }
@@ -409,6 +414,7 @@ public partial class AppEntryEditorViewModel : ObservableObject
         }
         Args = null;
         WorkingDirectory = null;
+        WindowStyle = LaunchWindowStyle.Normal;
         DelayAfterSeconds = 0;
         Enabled = true;
     }
@@ -421,6 +427,7 @@ public partial class AppEntryEditorViewModel : ObservableObject
         target.Service = Service;
         target.Args = Args;
         target.WorkingDirectory = WorkingDirectory;
+        target.WindowStyle = WindowStyle;
         target.DelayAfterSeconds = DelayAfterSeconds;
         target.Enabled = Enabled;
     }

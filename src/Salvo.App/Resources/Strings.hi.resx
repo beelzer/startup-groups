@@ -142,6 +142,7 @@
   <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>आर्ग्युमेंट्स (वैकल्पिक)</value></data>
   <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>सुझाए गए आर्ग्युमेंट्स</value></data>
   <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>कार्य निर्देशिका (वैकल्पिक)</value></data>
+  <data name="AppEditor_WindowStyle_Label" xml:space="preserve"><value>विंडो शैली (Hidden = कोई विंडो नहीं)</value></data>
   <data name="AppEditor_Service_Label" xml:space="preserve"><value>सेवा का नाम (services.msc में सूचीबद्ध)</value></data>
   <data name="AppEditor_Delay_Label" xml:space="preserve"><value>लॉन्च के बाद विलंब (सेकंड)</value></data>
   <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>सक्षम (समूह लॉन्च में शामिल करें)</value></data>

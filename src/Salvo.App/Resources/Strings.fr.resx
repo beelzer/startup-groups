@@ -142,6 +142,7 @@ Exécuter en tant qu'administrateur maintenant ?</value></data>
   <data name="AppEditor_Arguments_Label" xml:space="preserve"><value>Arguments (facultatif)</value></data>
   <data name="AppEditor_SuggestedArguments_Label" xml:space="preserve"><value>Arguments suggérés</value></data>
   <data name="AppEditor_WorkingDir_Label" xml:space="preserve"><value>Répertoire de travail (facultatif)</value></data>
+  <data name="AppEditor_WindowStyle_Label" xml:space="preserve"><value>Style de fenêtre (Hidden = aucune fenêtre)</value></data>
   <data name="AppEditor_Service_Label" xml:space="preserve"><value>Nom du service (tel qu'affiché dans services.msc)</value></data>
   <data name="AppEditor_Delay_Label" xml:space="preserve"><value>Délai après le lancement (secondes)</value></data>
   <data name="AppEditor_Enabled_Label" xml:space="preserve"><value>Activé (inclure dans le lancement du groupe)</value></data>

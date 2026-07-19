@@ -293,6 +293,9 @@
                         <ui:TextBox x:Name="WorkingDirBox" Grid.Column="0" Text="{Binding WorkingDirectory, UpdateSourceTrigger=PropertyChanged}" />
                         <ui:Button Grid.Column="1" Content="{loc:Translate Action_Browse}" Icon="{ui:SymbolIcon FolderOpen24}" Margin="8,0,0,0" Height="{Binding ActualHeight, ElementName=WorkingDirBox}" VerticalAlignment="Center" Command="{Binding BrowseWorkingDirectoryCommand}" />
                     </Grid>
+
+                    <TextBlock Text="{loc:Translate AppEditor_WindowStyle_Label}" Style="{StaticResource AppMuted}" Margin="0,0,0,6" />
+                    <ComboBox ItemsSource="{Binding AvailableWindowStyles}" SelectedItem="{Binding WindowStyle}" Margin="0,0,0,14" />
                 </StackPanel>
 
                 <StackPanel Visibility="{Binding IsService, Converter={StaticResource BoolToVisibility}}">

@@ -152,6 +152,7 @@ public static class Strings
     public static string AppEditor_Arguments_Label => Get(nameof(AppEditor_Arguments_Label));
     public static string AppEditor_SuggestedArguments_Label => Get(nameof(AppEditor_SuggestedArguments_Label));
     public static string AppEditor_WorkingDir_Label => Get(nameof(AppEditor_WorkingDir_Label));
+    public static string AppEditor_WindowStyle_Label => Get(nameof(AppEditor_WindowStyle_Label));
     public static string AppEditor_Service_Label => Get(nameof(AppEditor_Service_Label));
     public static string AppEditor_Delay_Label => Get(nameof(AppEditor_Delay_Label));
     public static string AppEditor_Enabled_Label => Get(nameof(AppEditor_Enabled_Label));
