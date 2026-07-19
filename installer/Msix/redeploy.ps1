@@ -45,6 +45,7 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot  = Resolve-Path (Join-Path $ScriptDir '..\..')
 $AppProj   = Join-Path $RepoRoot 'src\Salvo.App\Salvo.App.csproj'
+$ElevatorProj = Join-Path $RepoRoot 'src\Salvo.Elevator\Salvo.Elevator.csproj'
 $Manifest  = Join-Path $ScriptDir 'Package.appxmanifest'
 $ImagesDir = Join-Path $ScriptDir 'Images'
 $StageDir  = Join-Path $RepoRoot 'artifacts\msix-stage'
@@ -87,6 +88,22 @@ dotnet publish $AppProj `
     -p:PublishTrimmed=false `
     -o $StageDir -nologo -v minimal
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed (exit $LASTEXITCODE)." }
+
+# Salvo.Elevator must sit beside Salvo.exe (ElevationPaths.ResolveElevatorPath
+# probes next to the host exe), but the App's CopyElevatorOutput target only
+# feeds *build* output, which publish ignores — so publish it into the layout
+# explicitly, mirroring build.ps1. Without it every elevated operation
+# (service control, machine-scope Run keys) silently fails in the dev install.
+Write-Host "Publishing Salvo.Elevator ($Configuration, win-x64) -> artifacts\msix-stage" -ForegroundColor Cyan
+dotnet publish $ElevatorProj `
+    -c $Configuration -r win-x64 --self-contained true `
+    -p:PublishSingleFile=false `
+    -p:PublishTrimmed=false `
+    -o $StageDir -nologo -v minimal
+if ($LASTEXITCODE -ne 0) { throw "dotnet publish (Elevator) failed (exit $LASTEXITCODE)." }
+if (-not (Test-Path (Join-Path $StageDir 'Salvo.Elevator.exe'))) {
+    throw 'Salvo.Elevator.exe missing from staging layout after publish.'
+}
 
 # --- Stage the manifest (as AppxManifest.xml) + visual assets ---
 $stagedManifest = Join-Path $StageDir 'AppxManifest.xml'
