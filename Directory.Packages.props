@@ -16,7 +16,7 @@
     <PackageVersion Include="Serilog.Extensions.Hosting" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Serilog.Sinks.Debug" Version="3.0.0" />
-    <PackageVersion Include="System.ServiceProcess.ServiceController" Version="10.0.6" />
+    <PackageVersion Include="System.ServiceProcess.ServiceController" Version="11.0.0" />
     <PackageVersion Include="TaskScheduler" Version="2.12.2" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.6" />
     <!-- Transitive pin (CentralPackageTransitivePinningEnabled) forcing the
