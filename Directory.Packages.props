@@ -18,7 +18,7 @@
     <PackageVersion Include="Serilog.Sinks.Debug" Version="3.0.0" />
     <PackageVersion Include="System.ServiceProcess.ServiceController" Version="10.0.6" />
     <PackageVersion Include="TaskScheduler" Version="2.12.2" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.6" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="11.0.0" />
     <!-- Transitive pin (CentralPackageTransitivePinningEnabled) forcing the
          native SQLite bundle off 2.1.11, which carries high-severity advisory
          GHSA-2m69-gcr7-jv3q. The 2.x line has no patched release; 3.0.3 bundles
